@@ -48,7 +48,8 @@ export async function POST(req){
     const destination=channel==='email'?normalizeEmail(body.email):normalizePhone(body.phone);
     if(channel==='email' && !/^\S+@\S+\.\S+$/.test(destination)) return appError('Enter a valid email address.');
     if(channel==='phone' && destination.length<8) return appError('Enter a valid mobile number.');
-    if(!process.env.ANAIRA_SECRET_KEY) return appError('OTP security key is not configured on the server.',500);
+    const otpSecret=getOtpSecret();
+    if(!otpSecret) return appError('OTP server secret is not configured. Set ANAIRA_SECRET_KEY or ensure SUPABASE_SERVICE_ROLE_KEY is available.',500);
     const db=supabaseAdmin();
     const {data:tenant,error:tenantError}=await db.from('hms_settings').select('restaurant_id').eq('restaurant_id',tenantId).maybeSingle();
     if(tenantError) throw tenantError;
@@ -70,7 +71,8 @@ export async function PUT(req){
   try{
     const body=await req.json(); const verificationId=String(body.verification_id||'').trim(); const channel=body.channel==='email'?'email':body.channel==='phone'?'phone':null;
     if(!verificationId||!channel) return appError('verification_id and channel are required.');
-    if(!process.env.ANAIRA_SECRET_KEY) return appError('OTP security key is not configured on the server.',500);
+    const otpSecret=getOtpSecret();
+    if(!otpSecret) return appError('OTP server secret is not configured. Set ANAIRA_SECRET_KEY or ensure SUPABASE_SERVICE_ROLE_KEY is available.',500);
     const destination=channel==='email'?normalizeEmail(body.email):normalizePhone(body.phone); const code=String(body.otp||'').trim();
     if(!destination||!/^[0-9]{6}$/.test(code)) return appError('Enter the 6-digit OTP.');
     const db=supabaseAdmin(); const destinationHash=hash(`${channel}:${destination}`);
