@@ -12,20 +12,17 @@ const supabaseAdmin = () => createClient(
 const normalizeEmail = v => String(v||'').trim().toLowerCase();
 const normalizePhone = v => String(v||'').replace(/\D/g,'');
 const hash = v => createHash('sha256').update(String(v)).digest('hex');
+const maskEmail = v => { const [u,d] = v.split('@'); return `${(u||'').slice(0,2)}***@${d||''}`; };
+const maskPhone = v => { const n=normalizePhone(v); return `${'*'.repeat(Math.max(0,n.length-4))}${n.slice(-4)}`; };
+const appError = (message,status=400) => Response.json({ok:false,error:message},{status});
 
-// Keep OTP signing server-side. ANAIRA_SECRET_KEY is preferred; when it is not
-// configured, derive a stable, separate OTP secret from the existing Supabase
-// service-role secret so production deployments do not fail only because this
-// optional extra environment variable was omitted.
 const getOtpSecret = () => {
   const explicit = String(process.env.ANAIRA_SECRET_KEY || '').trim();
   if (explicit) return explicit;
   const serviceRole = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
-  return serviceRole ? hash(`anaira-guest-otp:v1:${serviceRole}`) : '';
+  if (serviceRole) return hash(`anaira-guest-otp:${serviceRole}`);
+  return '';
 };
-const maskEmail = v => { const [u,d] = v.split('@'); return `${(u||'').slice(0,2)}***@${d||''}`; };
-const maskPhone = v => { const n=normalizePhone(v); return `${'*'.repeat(Math.max(0,n.length-4))}${n.slice(-4)}`; };
-const appError = (message,status=400) => Response.json({ok:false,error:message},{status});
 
 async function sendEmail(to, otp){
   if(!process.env.RESEND_API_KEY || !process.env.RESEND_FROM) throw new Error('Email OTP provider is not configured. Add RESEND_API_KEY and RESEND_FROM.');
