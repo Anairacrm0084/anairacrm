@@ -12,6 +12,17 @@ const supabaseAdmin = () => createClient(
 const normalizeEmail = v => String(v||'').trim().toLowerCase();
 const normalizePhone = v => String(v||'').replace(/\D/g,'');
 const hash = v => createHash('sha256').update(String(v)).digest('hex');
+
+// Keep OTP signing server-side. ANAIRA_SECRET_KEY is preferred; when it is not
+// configured, derive a stable, separate OTP secret from the existing Supabase
+// service-role secret so production deployments do not fail only because this
+// optional extra environment variable was omitted.
+const getOtpSecret = () => {
+  const explicit = String(process.env.ANAIRA_SECRET_KEY || '').trim();
+  if (explicit) return explicit;
+  const serviceRole = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+  return serviceRole ? hash(`anaira-guest-otp:v1:${serviceRole}`) : '';
+};
 const maskEmail = v => { const [u,d] = v.split('@'); return `${(u||'').slice(0,2)}***@${d||''}`; };
 const maskPhone = v => { const n=normalizePhone(v); return `${'*'.repeat(Math.max(0,n.length-4))}${n.slice(-4)}`; };
 const appError = (message,status=400) => Response.json({ok:false,error:message},{status});
@@ -46,7 +57,7 @@ export async function POST(req){
     const {data:recent}=await db.from('anaira_guest_otp_challenges').select('last_sent_at').eq('tenant_id',tenantId).eq('destination_hash',destinationHash).order('created_at',{ascending:false}).limit(1).maybeSingle();
     if(recent?.last_sent_at && Date.now()-new Date(recent.last_sent_at).getTime()<60000) return appError('Please wait 60 seconds before requesting another OTP.',429);
     const otp=String(randomInt(100000,1000000));
-    const otpHash=hash(`${process.env.ANAIRA_SECRET_KEY}:${channel}:${destination}:${otp}`);
+    const otpHash=hash(`${otpSecret}:${channel}:${destination}:${otp}`);
     const {data:challenge,error:insertError}=await db.from('anaira_guest_otp_challenges').insert({tenant_id:tenantId,channel,destination_hash:destinationHash,destination_masked:channel==='email'?maskEmail(destination):maskPhone(destination),otp_hash:otpHash,expires_at:new Date(Date.now()+10*60*1000).toISOString(),last_sent_at:new Date().toISOString()}).select('id,destination_masked,expires_at').single();
     if(insertError) throw insertError;
     try { if(channel==='email') await sendEmail(destination,otp); else await sendSms(destination,otp); }
@@ -68,7 +79,7 @@ export async function PUT(req){
     if(row.verified_at) return Response.json({ok:true,verified:true,verification_id:row.id});
     if(new Date(row.expires_at).getTime()<Date.now()) return appError('OTP expired. Please request a new code.',410);
     if(row.attempts>=row.max_attempts) return appError('Too many incorrect attempts. Please request a new OTP.',429);
-    const expected=hash(`${process.env.ANAIRA_SECRET_KEY}:${channel}:${destination}:${code}`);
+    const expected=hash(`${otpSecret}:${channel}:${destination}:${code}`);
     if(expected!==row.otp_hash){ await db.from('anaira_guest_otp_challenges').update({attempts:row.attempts+1}).eq('id',row.id); return appError('Invalid OTP.'); }
     const {error:updateError}=await db.from('anaira_guest_otp_challenges').update({verified_at:new Date().toISOString()}).eq('id',row.id); if(updateError) throw updateError;
     return Response.json({ok:true,verified:true,verification_id:row.id,destination_masked:row.destination_masked});
