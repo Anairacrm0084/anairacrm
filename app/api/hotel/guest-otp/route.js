@@ -1,13 +1,7 @@
 import {createHash, randomInt} from 'crypto';
-import {createClient} from '@supabase/supabase-js';
+import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
 
 export const runtime = 'nodejs';
-
-const supabaseAdmin = () => createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  {auth:{autoRefreshToken:false,persistSession:false}}
-);
 
 const normalizeEmail = v => String(v||'').trim().toLowerCase();
 const normalizePhone = v => String(v||'').replace(/\D/g,'');
@@ -47,7 +41,10 @@ export async function POST(req){
     if(channel==='phone' && destination.length<8) return appError('Enter a valid mobile number.');
     const otpSecret=getOtpSecret();
     if(!otpSecret) return appError('OTP server secret is not configured. Set ANAIRA_SECRET_KEY or ensure SUPABASE_SERVICE_ROLE_KEY is available.',500);
-    const db=supabaseAdmin();
+    let db;
+    try { db = supabaseAdmin(); } catch (e) {
+      return appError('Server Supabase credentials are not configured. Set SUPABASE_SERVICE_ROLE_KEY in the Vercel Production environment and redeploy.', 500);
+    }
     const {data:tenant,error:tenantError}=await db.from('hms_settings').select('restaurant_id').eq('restaurant_id',tenantId).maybeSingle();
     if(tenantError) throw tenantError;
     if(!tenant) return appError('Hotel configuration was not found.',404);
@@ -72,7 +69,11 @@ export async function PUT(req){
     if(!otpSecret) return appError('OTP server secret is not configured. Set ANAIRA_SECRET_KEY or ensure SUPABASE_SERVICE_ROLE_KEY is available.',500);
     const destination=channel==='email'?normalizeEmail(body.email):normalizePhone(body.phone); const code=String(body.otp||'').trim();
     if(!destination||!/^[0-9]{6}$/.test(code)) return appError('Enter the 6-digit OTP.');
-    const db=supabaseAdmin(); const destinationHash=hash(`${channel}:${destination}`);
+    let db;
+    try { db = supabaseAdmin(); } catch (e) {
+      return appError('Server Supabase credentials are not configured. Set SUPABASE_SERVICE_ROLE_KEY in the Vercel Production environment and redeploy.', 500);
+    }
+    const destinationHash=hash(`${channel}:${destination}`);
     const {data:row,error}=await db.from('anaira_guest_otp_challenges').select('*').eq('id',verificationId).eq('destination_hash',destinationHash).eq('channel',channel).maybeSingle();
     if(error) throw error; if(!row) return appError('Verification request not found.');
     if(row.verified_at) return Response.json({ok:true,verified:true,verification_id:row.id});

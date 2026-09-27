@@ -1,0 +1,10 @@
+Anaira CRM Guest OTP deployment requirements
+
+Vercel Production environment variables required by the OTP route:
+- NEXT_PUBLIC_SUPABASE_URL
+- SUPABASE_SERVICE_ROLE_KEY (server-only; never prefix with NEXT_PUBLIC_)
+- ANAIRA_SECRET_KEY (recommended explicit OTP secret)
+- RESEND_API_KEY
+- RESEND_FROM
+
+After changing Production variables, redeploy the application. The OTP table intentionally revokes anon/authenticated table access, so the server route must use the Supabase service-role key. Do not hardcode or expose the service-role key.
