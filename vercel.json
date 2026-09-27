@@ -2,35 +2,35 @@
   "crons": [
     {
       "path": "/api/reviews/automation",
-      "schedule": "0 * * * *"
+      "schedule": "0 0 * * *"
     },
     {
       "path": "/api/reviews/worker",
-      "schedule": "*/10 * * * *"
+      "schedule": "10 0 * * *"
     },
     {
       "path": "/api/reviews/process",
-      "schedule": "*/10 * * * *"
+      "schedule": "20 0 * * *"
     },
     {
       "path": "/api/reviews/sla",
-      "schedule": "*/15 * * * *"
+      "schedule": "30 0 * * *"
     },
     {
       "path": "/api/reviews/sync",
-      "schedule": "0 * * * *"
+      "schedule": "40 0 * * *"
     },
     {
       "path": "/api/crm/functional-worker",
-      "schedule": "0 * * * *"
+      "schedule": "50 0 * * *"
     },
     {
       "path": "/api/crm/campaign-worker",
-      "schedule": "*/10 * * * *"
+      "schedule": "0 1 * * *"
     },
     {
       "path": "/api/seo/automation/worker",
-      "schedule": "*/15 * * * *"
+      "schedule": "10 1 * * *"
     },
     {
       "path": "/api/seo/reports/worker",
