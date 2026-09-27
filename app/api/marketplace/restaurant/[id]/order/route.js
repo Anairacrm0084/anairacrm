@@ -1,0 +1,5 @@
+import {NextResponse} from 'next/server'
+import crypto from 'node:crypto'
+import {db,open} from '../../../../../../lib/server/provider'
+export const runtime='nodejs'
+export async function POST(req,{params}){try{const id=(await params).id;const body=await req.json();const s=db();const {data:conn,error}=await s.from('anaira_restaurant_connections').select('restaurant_id,restaurant_api_base_url,restaurant_api_key,status').eq('restaurant_id',id).eq('status','connected').maybeSingle();if(error)throw error;if(!conn)throw new Error('Restaurant SaaS is not connected');const event_id=body.client_request_id||crypto.randomUUID();const key=open(conn.restaurant_api_key);const r=await fetch(`${conn.restaurant_api_base_url}/api/integrations/anaira-crm/bridge`,{method:'POST',headers:{'content-type':'application/json','x-anaira-restaurant-key':key},body:JSON.stringify({type:'marketplace.order',event_id,payload:body})});const j=await r.json();if(!r.ok||!j.ok)throw new Error(j.error||`Restaurant SaaS returned ${r.status}`);return NextResponse.json(j)}catch(e){return NextResponse.json({ok:false,error:e.message},{status:400})}}

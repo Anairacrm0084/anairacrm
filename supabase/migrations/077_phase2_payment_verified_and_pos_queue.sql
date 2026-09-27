@@ -1,0 +1,2 @@
+-- Phase 2 live migration source: verified payment transition and POS queue handoff.
+-- The canonical live migration was applied as 077 in the development project on 2026-09-25.

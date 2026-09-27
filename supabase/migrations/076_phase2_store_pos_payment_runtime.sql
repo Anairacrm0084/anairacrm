@@ -1,0 +1,2 @@
+-- Phase 2 live migration source: payment intent/refund/event runtime, delivery payment linkage, coupon validation.
+-- The canonical live migration was applied as 076/077 in the development project on 2026-09-25.

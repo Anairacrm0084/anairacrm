@@ -1,0 +1,2 @@
+import SimplePage from '../SimplePage';
+export default function Page(){return <SimplePage active="/guest-requests" eyebrow="GUEST RELATIONS" title="Guest Requests" subtitle="Live guest service requests with tenant-scoped access." table="crm_guest_requests" orderBy="requested_at" fields={['customer_id','request_type','priority','status','assigned_to','requested_at','completed_at']} columns={['Customer','Request','Priority','Status','Assigned To','Requested','Completed']} />}

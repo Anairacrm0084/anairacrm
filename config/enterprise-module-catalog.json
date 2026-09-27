@@ -1,0 +1,240 @@
+{
+  "product": "Anaira Hotel & Restaurant CRM",
+  "edition": "Enterprise Ultra Pro",
+  "version": "2.0.0",
+  "module_count": 37,
+  "modules": [
+    {
+      "key": "customer_360",
+      "name": "Customer 360",
+      "description": "Customer master, lifetime value and unified profile",
+      "status": "foundation"
+    },
+    {
+      "key": "customer_intelligence",
+      "name": "Customer Intelligence",
+      "description": "Preferences, behavior, affinity and derived insights",
+      "status": "foundation"
+    },
+    {
+      "key": "hotel_guest_crm",
+      "name": "Hotel Guest CRM",
+      "description": "Enquiry, booking/stay and guest lifecycle",
+      "status": "foundation"
+    },
+    {
+      "key": "restaurant_crm",
+      "name": "Restaurant CRM",
+      "description": "Visits, orders, tables and food preferences",
+      "status": "foundation"
+    },
+    {
+      "key": "customer_ltv",
+      "name": "Customer Lifetime Value",
+      "description": "Hotel, restaurant, events and ancillary revenue",
+      "status": "foundation"
+    },
+    {
+      "key": "lead_management",
+      "name": "Lead Management",
+      "description": "Lead pipeline, sources and conversion",
+      "status": "foundation"
+    },
+    {
+      "key": "followups",
+      "name": "Follow-up Management",
+      "description": "Tasks, callbacks, reminders and ownership",
+      "status": "foundation"
+    },
+    {
+      "key": "corporate_crm",
+      "name": "Corporate CRM",
+      "description": "Companies, contacts, contracts and negotiated rates",
+      "status": "foundation"
+    },
+    {
+      "key": "partner_crm",
+      "name": "Partner CRM",
+      "description": "Travel agents, OTAs, planners and local partners",
+      "status": "foundation"
+    },
+    {
+      "key": "loyalty",
+      "name": "Loyalty CRM",
+      "description": "Tiers, points, rewards, referrals and redemption",
+      "status": "foundation"
+    },
+    {
+      "key": "offers_coupons",
+      "name": "Offers & Coupons",
+      "description": "Rules, vouchers, eligibility and redemption",
+      "status": "foundation"
+    },
+    {
+      "key": "marketing_automation",
+      "name": "Marketing Automation",
+      "description": "Triggers, journeys and scheduled campaigns",
+      "status": "foundation"
+    },
+    {
+      "key": "whatsapp_crm",
+      "name": "WhatsApp CRM",
+      "description": "Templates, conversations and outbound message log",
+      "status": "foundation"
+    },
+    {
+      "key": "reputation",
+      "name": "Review & Reputation",
+      "description": "Reviews, ratings and review-request workflows",
+      "status": "foundation"
+    },
+    {
+      "key": "guest_relations",
+      "name": "Guest Relations",
+      "description": "Complaints, tickets, SLA and service recovery",
+      "status": "foundation"
+    },
+    {
+      "key": "segmentation",
+      "name": "Customer Segmentation",
+      "description": "Rule-based dynamic customer audiences",
+      "status": "foundation"
+    },
+    {
+      "key": "churn",
+      "name": "Churn / At-Risk",
+      "description": "Risk signals, scores and retention actions",
+      "status": "foundation"
+    },
+    {
+      "key": "vip",
+      "name": "VIP Management",
+      "description": "VIP levels, amenities, owners and history",
+      "status": "foundation"
+    },
+    {
+      "key": "revenue_management",
+      "name": "Revenue Management",
+      "description": "Rate rules, demand and recommended room price",
+      "status": "foundation"
+    },
+    {
+      "key": "upselling",
+      "name": "Upselling Engine",
+      "description": "Room and ancillary upsell offers",
+      "status": "foundation"
+    },
+    {
+      "key": "cross_selling",
+      "name": "Cross-Selling Engine",
+      "description": "Hotel \u2194 restaurant \u2194 activity cross-sell",
+      "status": "foundation"
+    },
+    {
+      "key": "event_crm",
+      "name": "Event CRM",
+      "description": "Wedding, banquet, meeting and event sales pipeline",
+      "status": "foundation"
+    },
+    {
+      "key": "omnichannel_timeline",
+      "name": "Omnichannel Timeline",
+      "description": "Unified customer activity timeline",
+      "status": "foundation"
+    },
+    {
+      "key": "consent_privacy",
+      "name": "Consent & Privacy",
+      "description": "Marketing consent, preferences and audit",
+      "status": "foundation"
+    },
+    {
+      "key": "relationship_manager",
+      "name": "Relationship Manager",
+      "description": "Staff ownership and customer portfolios",
+      "status": "foundation"
+    },
+    {
+      "key": "advanced_analytics",
+      "name": "Advanced CRM Analytics",
+      "description": "Retention, LTV, campaign and guest analytics",
+      "status": "foundation"
+    },
+    {
+      "key": "ai_crm",
+      "name": "AI CRM",
+      "description": "Summaries, next-best-action and AI insight foundation",
+      "status": "foundation"
+    },
+    {
+      "key": "revenue_forecasting",
+      "name": "Revenue Forecasting",
+      "description": "Occupancy, ADR, RevPAR and pickup forecasts",
+      "status": "foundation"
+    },
+    {
+      "key": "competitor_intelligence",
+      "name": "Competitor Rate Intelligence",
+      "description": "Competitor-rate snapshots and comparisons",
+      "status": "foundation"
+    },
+    {
+      "key": "ota_intelligence",
+      "name": "Channel / OTA Intelligence",
+      "description": "Channel performance and rate parity foundation",
+      "status": "foundation"
+    },
+    {
+      "key": "booking_engine",
+      "name": "Booking Engine Integration",
+      "description": "Website booking events into CRM",
+      "status": "foundation"
+    },
+    {
+      "key": "pms_integration",
+      "name": "PMS Integration",
+      "description": "Stay/room lifecycle event contracts",
+      "status": "foundation"
+    },
+    {
+      "key": "pos_integration",
+      "name": "POS Integration",
+      "description": "Restaurant customer/order event contracts",
+      "status": "foundation"
+    },
+    {
+      "key": "accounting_integration",
+      "name": "Accounting Integration",
+      "description": "Customer revenue/payment references",
+      "status": "foundation"
+    },
+    {
+      "key": "notification_center",
+      "name": "Notification Center",
+      "description": "Internal alerts and customer communication jobs",
+      "status": "foundation"
+    },
+    {
+      "key": "workflow_engine",
+      "name": "CRM Workflow Engine",
+      "description": "Triggers, actions, approvals and automation",
+      "status": "foundation"
+    },
+    {
+      "key": "audit_compliance",
+      "name": "Audit & Compliance",
+      "description": "Immutable CRM activity/audit foundation",
+      "status": "foundation"
+    }
+  ],
+  "protected_ownership": {
+    "restaurant_core": "protected",
+    "pos": "protected",
+    "pms": "external/canonical operational owner",
+    "reservations": "external/canonical booking owner",
+    "accounting": "external/canonical accounting owner",
+    "channel_manager": "external/canonical distribution owner",
+    "crm": "customer relationship owner",
+    "revenue_management": "pricing recommendation/policy owner"
+  }
+}

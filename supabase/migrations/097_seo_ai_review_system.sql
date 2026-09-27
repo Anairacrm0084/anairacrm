@@ -1,0 +1,7 @@
+-- Phase 17: SEO + AI Review System
+-- Applied to live Supabase project before packaging.
+-- Tables: crm_seo_sites, crm_seo_pages, crm_seo_keywords, crm_seo_audits,
+-- crm_seo_issues, crm_seo_content_jobs, crm_seo_redirects, crm_seo_search_metrics,
+-- crm_seo_integrations, crm_review_sources, crm_reviews, crm_review_ai_actions,
+-- crm_review_automation_rules, crm_review_request_jobs, crm_review_metrics_daily.
+-- Functions: anaira_seo_audit_page, anaira_queue_review_request, anaira_classify_review_ai.

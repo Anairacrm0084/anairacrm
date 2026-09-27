@@ -1,0 +1,2 @@
+-- Phase 64: HMS canonical hotel-store catalog contract.
+-- Runtime pages consume hms_room_types, hms_rate_plans, hms_inventory, hms_reservations.

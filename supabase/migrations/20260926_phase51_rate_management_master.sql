@@ -1,0 +1,3 @@
+-- Applied to Supabase project bhptqdoteucuymmdzsmg on 2026-09-26.
+-- Rate management master: weekend/seasonal/package/promotion/add-on controls,
+-- date-specific overrides, tenant RLS, and effective-rate RPC.

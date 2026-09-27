@@ -1,0 +1,10 @@
+create or replace function public.anaira_current_restaurant_id() returns uuid language sql stable security definer set search_path=public as $$ select p.restaurant_id from public.profiles p where p.id=auth.uid() limit 1; $$;
+revoke all on function public.anaira_current_restaurant_id() from public; grant execute on function public.anaira_current_restaurant_id() to authenticated;
+drop policy if exists "profiles self or super admin" on public.profiles;
+create policy "profiles self or super admin" on public.profiles for select to authenticated using(id=auth.uid() or public.anaira_current_is_super_admin());
+create policy "profiles business admin team read" on public.profiles for select to authenticated using(id=auth.uid() or public.anaira_current_is_super_admin() or restaurant_id=public.anaira_current_restaurant_id());
+drop policy if exists "restaurants tenant access" on public.restaurants;
+create policy "restaurants tenant access" on public.restaurants for select to authenticated using(id=public.anaira_current_restaurant_id() or public.anaira_current_is_super_admin());
+create policy "restaurants tenant admin update" on public.restaurants for update to authenticated using(id=public.anaira_current_restaurant_id() or public.anaira_current_is_super_admin()) with check(id=public.anaira_current_restaurant_id() or public.anaira_current_is_super_admin());
+drop policy if exists "restaurant plugins tenant access" on public.restaurant_plugins;
+create policy "restaurant plugins tenant access" on public.restaurant_plugins for all to authenticated using(restaurant_id=public.anaira_current_restaurant_id() or public.anaira_current_is_super_admin()) with check(restaurant_id=public.anaira_current_restaurant_id() or public.anaira_current_is_super_admin());

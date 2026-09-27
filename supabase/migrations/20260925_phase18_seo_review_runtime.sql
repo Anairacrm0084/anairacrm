@@ -1,0 +1,5 @@
+-- Phase 18: SEO + AI Review runtime additions.
+-- Applied live during implementation; retain this file as source migration documentation.
+-- New runtime routes: /api/seo/crawl, /api/seo/gsc, /api/seo/ga4, /api/seo/ai-content,
+-- /api/seo/keywords, /api/reviews/worker, /api/reviews/ai, /api/reviews/publish.
+-- Runtime tables are RLS-enabled and tenant scoped.

@@ -1,0 +1,2 @@
+import SimplePage from '../SimplePage';
+export default function Page(){return <SimplePage active="/partner-bookings" eyebrow="PARTNERS" title="Partner Bookings" subtitle="Partner-sourced bookings, commissions and customer attribution." table="crm_partner_bookings" orderBy="created_at" fields={['partner_id','customer_id','booking_reference','booking_amount','commission_amount','status','created_at']} columns={['Partner','Customer','Booking Ref','Amount','Commission','Status','Created']} />}

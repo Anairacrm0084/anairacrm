@@ -1,0 +1,17 @@
+import fs from 'node:fs';import path from 'node:path';
+const root=process.cwd();
+const checks=[];
+const exists=(p)=>fs.existsSync(path.join(root,p));
+const routeCount=fs.existsSync(path.join(root,'app/api/seo'))?fs.readdirSync(path.join(root,'app/api/seo'),{recursive:true}).filter(x=>x.endsWith('route.js')).length:0;
+checks.push(['seo-api-routes',routeCount>=54,`${routeCount} route files`]);
+checks.push(['master-checklist',exists('MASTER_CHECKLIST.md')]);
+checks.push(['lock-document',exists('docs/SEO_MASTER_A_TO_Z_LOCK_2026-09-25.md')]);
+checks.push(['crawler-engine',exists('lib/server/seoEngine.js')]);
+checks.push(['issue-history-migration',exists('supabase/migrations/20260925_phase28_seo_atoz_completion.sql')]);
+checks.push(['master-completion-migration',exists('supabase/migrations/20260925_phase31_master_completion.sql')]);
+checks.push(['deployment-api',exists('app/api/seo/deployments/route.js')]);
+checks.push(['certification-api',exists('app/api/seo/certification/route.js')]);
+checks.push(['bulk-issue-api',exists('app/api/seo/issues/bulk/route.js')]);
+checks.push(['tests-directory',exists('tests/seo')]);
+for(const [name,ok,detail=''] of checks)console.log(`${ok?'PASS':'FAIL'} ${name}${detail?` — ${detail}`:''}`);
+if(checks.some(x=>!x[1]))process.exitCode=1;

@@ -1,0 +1,40 @@
+{
+  "crons": [
+    {
+      "path": "/api/reviews/automation",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/reviews/worker",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/reviews/process",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/reviews/sla",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/reviews/sync",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/crm/functional-worker",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/crm/campaign-worker",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/seo/automation/worker",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/seo/reports/worker",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}

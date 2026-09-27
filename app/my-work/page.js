@@ -1,0 +1,2 @@
+import SimplePage from '../SimplePage';
+export default function Page(){return <SimplePage active="/my-work" eyebrow="MY WORK" title="Today’s Tasks & Work Queue" subtitle="Tasks, follow-ups, assigned complaints, approvals and guest requests for the signed-in user." table="crm_tasks" orderBy="due_at" fields={['title','status','priority','due_at','assigned_to']} columns={['Task','Status','Priority','Due','Assigned To']} />}

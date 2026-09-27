@@ -1,0 +1,1 @@
+do $$ declare r record; begin for r in select p.oid,n.nspname,p.proname,pg_get_function_identity_arguments(p.oid) args from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.prokind='f' loop execute format('alter function %I.%I(%s) set search_path=public,pg_temp',r.nspname,r.proname,r.args); end loop; end $$;

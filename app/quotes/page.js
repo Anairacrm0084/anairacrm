@@ -1,0 +1,2 @@
+import SimplePage from '../SimplePage';
+export default function Page(){return <SimplePage active="/quotes" eyebrow="SALES" title="Quotes" subtitle="Sales quotations linked to CRM leads and customer opportunities." table="crm_quotes" orderBy="created_at" fields={['quote_number','lead_id','status','subtotal','discount','tax','total','valid_until']} columns={['Quote','Lead','Status','Subtotal','Discount','Tax','Total','Valid Until']} />}

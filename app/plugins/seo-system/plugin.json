@@ -1,0 +1,30 @@
+{
+  "id": "seo-system",
+  "name": "Anaira SEO System",
+  "version": "2.0.0",
+  "category": "CRM/Marketing",
+  "description": "Anaira SEO System \u2014 technical audit, crawl control, keywords, rankings, backlinks, local SEO, GSC, GA4, AI/GEO, content, internal links, schema, redirects, sitemap, robots, automation and reporting.",
+  "settings": [
+    "sitemap_enabled",
+    "robots_enabled",
+    "respect_robots",
+    "scheduled_crawl",
+    "crawl_max_pages",
+    "browser_rendering",
+    "gsc_enabled",
+    "ga4_enabled",
+    "rank_tracking_enabled",
+    "ai_content_enabled",
+    "internal_links_enabled",
+    "schema_enabled",
+    "redirects_enabled",
+    "technical_issues",
+    "backlinks_enabled",
+    "local_seo_enabled",
+    "geo_visibility_enabled",
+    "competitor_intelligence_enabled",
+    "reports_enabled",
+    "keyword_research_enabled",
+    "crawl_delay_ms"
+  ]
+}

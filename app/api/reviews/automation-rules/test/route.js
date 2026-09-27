@@ -1,0 +1,4 @@
+import {db} from '../../../../../lib/server/provider';
+import {requireTenant} from '../../../../../lib/server/auth';
+import {runAutomation} from '../../../../../lib/server/review-engine';
+export async function POST(req){try{const {tenantId,ruleId,reviewId}=await req.json();const {user}=await requireTenant(req,tenantId);const s=db();const {data:rule}=await s.from('crm_review_automation_rules').select('*').eq('id',ruleId).eq('tenant_id',tenantId).single();if(!rule)throw new Error('Rule not found');const {data:r}=await s.from('crm_reviews').select('*').eq('id',reviewId).eq('tenant_id',tenantId).single();if(!r)throw new Error('Review not found');const results=await runAutomation({tenantId,trigger:rule.trigger,review:r,context:{sentiment:r.sentiment,sentimentScore:r.sentiment_score,topics:r.topics},actorId:user.id});return Response.json({ok:true,results});}catch(e){return Response.json({ok:false,error:e.message},{status:400})}}

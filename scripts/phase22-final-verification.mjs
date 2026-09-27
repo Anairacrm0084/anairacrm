@@ -1,0 +1,28 @@
+import fs from 'node:fs';
+import path from 'node:path';
+const root=process.cwd();
+const registry=fs.readFileSync(path.join(root,'app/pluginRegistry.js'),'utf8');
+const catalog=fs.readFileSync(path.join(root,'app/pluginCatalog.js'),'utf8');
+const engine=fs.readFileSync(path.join(root,'app/pluginEngine.js'),'utf8');
+const page=fs.readFileSync(path.join(root,'app/PluginPage.js'),'utf8');
+const action=fs.readFileSync(path.join(root,'app/api/plugins/[pluginKey]/action/route.js'),'utf8');
+const routes=[...registry.matchAll(/"route": "([^"]+)"/g)].map(x=>x[1]);
+const keys=[...registry.matchAll(/"owner": "([^"]+)"/g)].map(x=>x[1]);
+const checks=[];
+checks.push(['registry_count',keys.length===40,keys.length]);
+checks.push(['route_count',routes.length===40,routes.length]);
+checks.push(['unique_routes',new Set(routes).size===40,new Set(routes).size]);
+checks.push(['catalog_count',(catalog.match(/"key":/g)||[]).length===40,(catalog.match(/"key":/g)||[]).length]);
+checks.push(['settings_engine',engine.includes('getEnhancedSettings'),engine.includes('getEnhancedSettings')]);
+checks.push(['id_select',page.includes("['id',...(def.primaryKey||[])")||page.includes("'id'"),page.includes("['id'")]);
+checks.push(['action_api',fs.existsSync(path.join(root,'app/api/plugins/[pluginKey]/action/route.js')),true]);
+checks.push(['settings_binding',page.includes('loadState')&&page.includes('plugin_settings'),true]);
+checks.push(['tenant_auth',action.includes('requireTenant(req,tenantId)'),true]);
+checks.push(['audit_logging',action.includes('crm_audit_logs'),true]);
+checks.push(['functional_worker',fs.existsSync(path.join(root,'app/api/crm/functional-worker/route.js')),true]);
+checks.push(['cron_worker',fs.readFileSync(path.join(root,'vercel.json'),'utf8').includes('/api/crm/functional-worker'),true]);
+const missingRoutes=[];
+for(const route of routes){const seg=route.replace(/^\//,'').split('/');const p=path.join(root,'app',...seg,'page.js');const p2=path.join(root,'app',...seg,'page.jsx');if(!fs.existsSync(p)&&!fs.existsSync(p2))missingRoutes.push(route)}
+checks.push(['route_pages',missingRoutes.length===0,missingRoutes]);
+for(const [name,ok,value] of checks)console.log(`${ok?'PASS':'FAIL'} ${name}: ${typeof value==='string'?value:JSON.stringify(value)}`);
+process.exit(checks.some(x=>!x[1])?1:0);

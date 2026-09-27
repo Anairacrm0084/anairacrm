@@ -1,0 +1,29 @@
+{
+  "product": "Anaira Hotel & Restaurant CRM",
+  "edition": "Ultra Pro",
+  "modules": [
+    "customer_360",
+    "hotel_guest_management",
+    "restaurant_intelligence",
+    "revenue_management",
+    "loyalty",
+    "guest_relations",
+    "campaigns",
+    "analytics",
+    "integrations"
+  ],
+  "pricing_engine": {
+    "min_base_max": true,
+    "occupancy": true,
+    "lead_time": true,
+    "season": true,
+    "weekend": true,
+    "event": true,
+    "booking_pace": true,
+    "audit": true
+  },
+  "protected_integrations": [
+    "restaurant-core",
+    "pos"
+  ]
+}

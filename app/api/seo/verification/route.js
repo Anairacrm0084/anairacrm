@@ -1,0 +1,2 @@
+import {db} from '../../../../lib/server/provider';import {requireSeoFeature} from '../../../../lib/server/seoRuntime';
+export async function GET(req){try{const siteId=new URL(req.url).searchParams.get('siteId');const {site}=await requireSeoFeature(req,siteId,null,'seo-system.view');return Response.json({ok:true,method:'dns_txt',host:new URL(site.domain).hostname,record:`anaira-seo-verification=${site.public_token}`,status:site.verification_status,verifiedAt:site.verified_at})}catch(e){return Response.json({ok:false,error:e.message},{status:400})}}

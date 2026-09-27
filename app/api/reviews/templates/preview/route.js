@@ -1,0 +1,3 @@
+import {db} from '../../../../../lib/server/provider';
+import {requireTenant} from '../../../../../lib/server/auth';
+export async function POST(req){try{const {tenantId,templateId,variables={}}=await req.json();await requireTenant(req,tenantId);const s=db();const {data:t}=await s.from('crm_review_templates').select('body,name,channel,trigger').eq('id',templateId).eq('tenant_id',tenantId).single();if(!t)throw new Error('Template not found');let body=t.body||'';for(const [k,v] of Object.entries(variables)){body=body.replaceAll(`{{${k}}}`,String(v??''));}return Response.json({ok:true,preview:body,channel:t.channel,trigger:t.trigger,name:t.name})}catch(e){return Response.json({ok:false,error:e.message},{status:400})}}

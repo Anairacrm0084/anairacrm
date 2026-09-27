@@ -1,0 +1,8 @@
+'use client';
+import {useParams} from 'next/navigation';
+import {useEffect,useState} from 'react';
+import {supabase} from '../../../lib/supabase';
+export default function Reservation(){const {id}=useParams();const [r,setR]=useState(null),[f,setF]=useState({name:'',phone:'',email:'',date:'',time:'19:30',party:2}),[msg,setMsg]=useState('');
+useEffect(()=>{if(id)supabase.rpc('anaira_marketplace_business',{p_restaurant_id:id}).then(({data})=>setR(data?.[0]||null))},[id]);
+async function reserve(){const {data,error}=await supabase.rpc('anaira_create_public_restaurant_reservation_by_id',{p_restaurant_id:id,p_guest_name:f.name,p_guest_phone:f.phone,p_guest_email:f.email,p_date:f.date,p_time:f.time,p_party_size:+f.party,p_source:'anaira_marketplace'});setMsg(error?error.message:`Reservation ${data?.[0]?.reservation_code||''} confirmed.`)}
+return <main className="public-shell"><div className="eyebrow">ANAIRA RESTAURANT RESERVATION</div><h1>{r?.name||'Restaurant'}</h1><p>{r?.cuisine||''} · {r?.address||''}</p><section className="section form-grid"><input placeholder="Name" value={f.name} onChange={e=>setF({...f,name:e.target.value})}/><input placeholder="Phone" value={f.phone} onChange={e=>setF({...f,phone:e.target.value})}/><input placeholder="Email" value={f.email} onChange={e=>setF({...f,email:e.target.value})}/><input type="date" value={f.date} onChange={e=>setF({...f,date:e.target.value})}/><input type="time" value={f.time} onChange={e=>setF({...f,time:e.target.value})}/><input type="number" min="1" value={f.party} onChange={e=>setF({...f,party:e.target.value})}/><button className="btn primary" onClick={reserve}>Reserve Table</button>{msg&&<div className="notice">{msg}</div>}</section><a className="btn" href="/marketplace">← Back</a></main>}

@@ -1,0 +1,2 @@
+import SimplePage from '../SimplePage';
+export default function Page(){return <SimplePage active="/housekeeping" eyebrow="HOUSEKEEPING" title="Housekeeping Workspace" subtitle="Room status, cleaning queue, maintenance requests and completed-room workflow." permissionNote="Connect this workspace to the canonical PMS housekeeping tables when those operational tables are populated. The CRM layer does not duplicate PMS room ownership." />}

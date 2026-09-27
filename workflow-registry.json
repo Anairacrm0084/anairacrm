@@ -1,0 +1,144 @@
+{
+  "version": "2026-09-25-production-hardening-v3",
+  "rule": "A workflow is not production-ready until defined, implemented, wired, tested and provider-configured where applicable.",
+  "workflows": [
+    {
+      "key": "pms.check_in",
+      "rpc": "anaira_pms_check_in",
+      "status": "wired_transactional_rpc"
+    },
+    {
+      "key": "pms.check_out",
+      "rpc": "anaira_pms_check_out",
+      "status": "wired_transactional_rpc"
+    },
+    {
+      "key": "pms.room_move",
+      "rpc": "anaira_pms_move_room",
+      "status": "wired_transactional_rpc"
+    },
+    {
+      "key": "pms.no_show",
+      "rpc": "anaira_pms_mark_no_show",
+      "status": "wired_transactional_rpc"
+    },
+    {
+      "key": "restaurant_reservation.slot_available",
+      "rpc": "anaira_phase1_reservation_slot_available",
+      "status": "live_verified"
+    },
+    {
+      "key": "restaurant_reservation.assign_table",
+      "rpc": "anaira_phase1_assign_restaurant_table",
+      "status": "live_verified"
+    },
+    {
+      "key": "restaurant_reservation.cancel",
+      "rpc": "anaira_cancel_restaurant_reservation",
+      "status": "wired_transactional_rpc"
+    },
+    {
+      "key": "delivery.transition",
+      "rpc": "anaira_phase1_delivery_transition",
+      "status": "live_verified"
+    },
+    {
+      "key": "payment.create_intent",
+      "rpc": "anaira_create_payment_intent",
+      "status": "wired_server_route"
+    },
+    {
+      "key": "payment.mark_status",
+      "rpc": "anaira_mark_payment",
+      "status": "wired_verified_webhook"
+    },
+    {
+      "key": "loyalty.earn",
+      "rpc": "anaira_loyalty_earn",
+      "status": "implemented_source_migration"
+    },
+    {
+      "key": "loyalty.redeem",
+      "rpc": "anaira_loyalty_redeem",
+      "status": "implemented_source_migration"
+    },
+    {
+      "key": "coupon.validate_redeem",
+      "status": "wired_transactional_rpc",
+      "rpc": "anaira_validate_coupon + anaira_redeem_coupon"
+    },
+    {
+      "key": "ota.ari_sync",
+      "status": "queue_ready_provider_adapter_required"
+    },
+    {
+      "key": "ota.inbound_reservation",
+      "status": "queue_ready_provider_adapter_required"
+    },
+    {
+      "key": "notifications.dispatch",
+      "status": "queue_runtime_ready_provider_required",
+      "rpc": "anaira_enqueue_notification"
+    },
+    {
+      "key": "workflow.execute",
+      "status": "server_dispatch_ready"
+    },
+    {
+      "key": "audit.immutable_event",
+      "status": "immutable_event_trigger_ready"
+    },
+    {
+      "key": "pos.bridge",
+      "status": "contract_runtime_pending_canonical_pos_source"
+    },
+    {
+      "key": "forecasting.run",
+      "status": "engine_not_configured"
+    },
+    {
+      "key": "competitor.collect",
+      "status": "connector_not_configured"
+    },
+    {
+      "key": "ai.score",
+      "status": "model_not_configured"
+    },
+    {
+      "key": "payment.refund",
+      "status": "wired_provider_route"
+    },
+    {
+      "key": "hotel.inventory_hold",
+      "status": "wired_transactional_rpc",
+      "rpc": "anaira_create_inventory_hold"
+    },
+    {
+      "key": "hotel.booking_confirmation",
+      "status": "payment_notification_wiring_pending"
+    },
+    {
+      "key": "restaurant_store.create_order",
+      "rpc": "anaira_phase1_create_restaurant_order",
+      "status": "live_verified"
+    },
+    {
+      "key": "delivery.settlement",
+      "rpc": "anaira_phase1_settle_delivery",
+      "status": "live_verified"
+    },
+    {
+      "key": "reservation.transition",
+      "rpc": "anaira_phase1_reservation_transition",
+      "status": "live_verified"
+    }
+  ],
+  "phase3": {
+    "status": "live_db_applied",
+    "flows": {
+      "store_pos_payment_delivery": "order.create -> payment -> pos.order -> kot -> kds -> billing -> delivery",
+      "reservation_pos": "slot -> table -> reservation -> confirmation -> seating -> pos.handoff -> complete",
+      "delivery": "order -> accept -> prepare -> ready -> rider -> pickup -> delivery -> settlement"
+    }
+  }
+}

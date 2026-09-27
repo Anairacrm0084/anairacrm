@@ -1,0 +1,6 @@
+import fs from 'node:fs';import path from 'node:path';
+const root=process.cwd();const must=['app/api/seo/control-plane/route.js','app/api/seo/tasks/route.js','app/api/seo/alerts/route.js','app/api/seo/operations/route.js','app/api/seo/remediation/route.js','app/api/seo/diagnostics/route.js','app/api/seo/sco/route.js','app/api/seo/content/brief/route.js','app/api/seo/content/optimize/route.js','app/api/seo/gsc/inspect/route.js','app/api/seo/local/citations/route.js','app/api/seo/schema/route.js','app/api/seo/sitemap/route.js','app/api/seo/reports/route.js'];
+for(const f of must)if(!fs.existsSync(path.join(root,f)))throw new Error(`missing ${f}`);
+const u=fs.readFileSync(path.join(root,'app/seo-review-utils.js'),'utf8');const count=(u.match(/\['[^']+'/g)||[]).length;if(count<200)throw new Error(`technical rule registry below 200: ${count}`);
+const c=fs.readFileSync(path.join(root,'app/sitemap.xml/route.js'),'utf8'),r=fs.readFileSync(path.join(root,'app/robots.txt/route.js'),'utf8');if(!c.includes("headers.get('host')")||!r.includes("headers.get('host')"))throw new Error('multi-tenant public sitemap/robots host routing missing');
+console.log(`Phase35 real-function static: PASS; technical rule registry >=200; ${must.length} critical runtime surfaces present`);

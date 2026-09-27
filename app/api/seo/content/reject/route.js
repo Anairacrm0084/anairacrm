@@ -1,0 +1,4 @@
+import {db} from '../../../../../lib/server/provider';
+import {requireJobTenant} from '../../../../../lib/server/auth';
+import {requireSeoUser} from '../../../../../lib/server/seoRuntime';
+export async function POST(req){try{const {jobId}=await req.json();const j0=await requireJobTenant(req,'crm_seo_content_jobs',jobId,'site_id');const {user}=await requireSeoUser(req,j0.site_id,'ai_content_enabled');const s=db();const {data,error}=await s.from('crm_seo_content_jobs').update({status:'rejected',approved_by:user.id,approved_at:new Date().toISOString()}).eq('id',j0.id).eq('site_id',j0.site_id).select().single();if(error)throw error;return Response.json({ok:true,job:data,actor:user.id})}catch(e){return Response.json({ok:false,error:e.message},{status:400})}}

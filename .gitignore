@@ -1,0 +1,12 @@
+node_modules/
+node_modules/
+.next/
+
+# Local secrets and generated files
+.env.local
+*.tmp
+*.backup
+*.bak
+verify.out
+.next/
+node_modules/
