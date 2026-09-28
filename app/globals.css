@@ -574,3 +574,327 @@ pre {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
+
+/* =========================================================
+   ANAIRA RESPONSIVE PRO v2 — global page + navigation hardening
+   Desktop  > 1200
+   Tablet   601–1200
+   Mobile   <= 600
+   ========================================================= */
+
+.mobile-nav-toggle,
+.mobile-nav-backdrop { display:none; }
+
+/* Prevent long labels/data from expanding layout containers. */
+.main *, .page-shell *, .card *, .section *, .top * {
+  overflow-wrap: anywhere;
+}
+
+/* Keep common flex toolbars usable on narrow screens. */
+.actions, .filters, .admin-toolbar, .section-head {
+  min-width:0;
+}
+
+@media (max-width: 1100px) {
+  .sidebar {
+    width: 78px;
+    padding: 10px 7px;
+  }
+  .brand { height: 68px; }
+  .brand img { width: 46px; height:46px; }
+  .brand > div { display:none; }
+  .navtitle, .nav a span { display:none; }
+  .nav a { justify-content:center; min-height:42px; padding:9px 5px; }
+  .nav a i { width:auto; font-size:16px; }
+  .portal-badge { display:none; }
+  .logout-btn { margin-left:2px; margin-right:2px; width:calc(100% - 4px); font-size:0; }
+  .logout-btn::before { content:'↪'; font-size:17px; }
+  .main { margin-left:78px; width:calc(100% - 78px); max-width:calc(100% - 78px); }
+  .kpis { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .module-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .quick-actions { grid-template-columns:repeat(4,minmax(0,1fr)); }
+
+  /* Inline React grids: tablet gets two usable columns instead of six tiny ones. */
+  .main [style*="gridTemplateColumns"],
+  .page-shell [style*="gridTemplateColumns"] {
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .mobile-nav-toggle {
+    position:fixed;
+    left:10px;
+    top:10px;
+    z-index:1002;
+    width:42px;
+    height:42px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    gap:5px;
+    border:1px solid rgba(201,163,75,.5);
+    border-radius:10px;
+    background:#062719;
+    box-shadow:0 8px 22px rgba(0,0,0,.25);
+    cursor:pointer;
+  }
+  .mobile-nav-toggle span { display:block;width:19px;height:2px;border-radius:2px;background:#f2c65d; }
+  .mobile-nav-backdrop {
+    display:block;
+    position:fixed;
+    inset:0;
+    z-index:999;
+    border:0;
+    padding:0;
+    background:rgba(2,10,7,.58);
+    backdrop-filter:blur(2px);
+  }
+  .sidebar {
+    width:min(310px,86vw);
+    transform:translateX(-105%);
+    transition:transform .22s ease;
+    z-index:1001;
+    padding:12px 10px;
+    border-right:3px solid var(--gold);
+    box-shadow:18px 0 45px rgba(0,0,0,.28);
+  }
+  .sidebar.is-open { transform:translateX(0); }
+  .brand { height:74px; justify-content:flex-start; padding:0 8px; }
+  .brand img { width:50px;height:50px; }
+  .brand > div { display:block; }
+  .navtitle, .nav a span { display:block; }
+  .nav a { justify-content:flex-start; min-height:42px; padding:9px 10px; }
+  .nav a i { width:20px; font-size:14px; }
+  .portal-badge { display:block; }
+  .logout-btn { font-size:13px; width:calc(100% - 32px); margin-left:16px; margin-right:16px; }
+  .logout-btn::before { content:none; }
+  .main { margin-left:0; width:100%; max-width:100%; padding:66px 8px 18px; }
+  .top { position:relative; }
+  .top .actions { width:100%; max-width:none; justify-content:flex-start; }
+  .top .actions .btn { flex:1 1 auto; }
+  .kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .module-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .quick-actions { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .form-grid-2, .form-grid-4, .admin-form { grid-template-columns:1fr !important; }
+  .main [style*="gridTemplateColumns"],
+  .page-shell [style*="gridTemplateColumns"] {
+    grid-template-columns:minmax(0,1fr) !important;
+  }
+  .main [style*="display: flex"],
+  .page-shell [style*="display: flex"] {
+    flex-wrap:wrap !important;
+  }
+  .main [style*="minWidth"],
+  .page-shell [style*="minWidth"] {
+    min-width:0 !important;
+  }
+  .main [style*="width: 100vw"],
+  .page-shell [style*="width: 100vw"] {
+    width:100% !important;
+    max-width:100% !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .mobile-nav-toggle { left:8px; top:8px; width:40px;height:40px; }
+  .main { padding-left:6px; padding-right:6px; }
+  .top { padding:9px; }
+  .title { font-size:17px; }
+  .kpis, .module-grid, .quick-actions { grid-template-columns:1fr; }
+  .actions .btn { width:100%; }
+  .filters { display:grid; grid-template-columns:1fr; }
+  .filters input, .filters select, .filters .btn { width:100%; }
+  .card { padding:10px; }
+  .table { min-width:650px; }
+}
+
+/* Native tables generated outside the shared Table component remain scrollable. */
+.main table, .page-shell table { max-width:100%; }
+.main table:not(.table), .page-shell table:not(.table) { display:table; }
+
+/* Modal safety: never allow dialogs to exceed the viewport on phones/tablets. */
+@media (max-width:760px) {
+  [class*="modal"], [class*="Modal"] { max-width:calc(100vw - 20px) !important; }
+  [class*="modal-card"], [class*="ModalCard"] { max-height:calc(100vh - 20px) !important; overflow:auto !important; }
+}
+
+/* =========================================================
+   ANAIRA RESPONSIVE PRO v2 — global page + navigation hardening
+   ========================================================= */
+.mobile-nav-toggle,.mobile-nav-backdrop{display:none}
+.main *, .page-shell *, .card *, .section *, .top *{overflow-wrap:anywhere}
+.actions,.filters,.admin-toolbar,.section-head{min-width:0}
+@media (max-width:1100px){
+  .sidebar{width:78px;padding:10px 7px}
+  .brand{height:68px}.brand img{width:46px;height:46px}.brand>div{display:none}
+  .navtitle,.nav a span{display:none}.nav a{justify-content:center;min-height:42px;padding:9px 5px}.nav a i{width:auto;font-size:16px}
+  .portal-badge{display:none}.logout-btn{margin-left:2px;margin-right:2px;width:calc(100% - 4px);font-size:0}.logout-btn::before{content:'↪';font-size:17px}
+  .main{margin-left:78px;width:calc(100% - 78px);max-width:calc(100% - 78px)}
+  .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.module-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.quick-actions{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .main [style*="gridTemplateColumns"],.page-shell [style*="gridTemplateColumns"]{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+}
+@media (max-width:760px){
+  .mobile-nav-toggle{position:fixed;left:10px;top:10px;z-index:1002;width:42px;height:42px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;border:1px solid rgba(201,163,75,.5);border-radius:10px;background:#062719;box-shadow:0 8px 22px rgba(0,0,0,.25);cursor:pointer}
+  .mobile-nav-toggle span{display:block;width:19px;height:2px;border-radius:2px;background:#f2c65d}
+  .mobile-nav-backdrop{display:block;position:fixed;inset:0;z-index:999;border:0;padding:0;background:rgba(2,10,7,.58);backdrop-filter:blur(2px)}
+  .sidebar{width:min(310px,86vw);transform:translateX(-105%);transition:transform .22s ease;z-index:1001;padding:12px 10px;border-right:3px solid var(--gold);box-shadow:18px 0 45px rgba(0,0,0,.28)}
+  .sidebar.is-open{transform:translateX(0)}
+  .brand{height:74px;justify-content:flex-start;padding:0 8px}.brand img{width:50px;height:50px}.brand>div{display:block}
+  .navtitle,.nav a span{display:block}.nav a{justify-content:flex-start;min-height:42px;padding:9px 10px}.nav a i{width:20px;font-size:14px}.portal-badge{display:block}
+  .logout-btn{font-size:13px;width:calc(100% - 32px);margin-left:16px;margin-right:16px}.logout-btn::before{content:none}
+  .main{margin-left:0;width:100%;max-width:100%;padding:66px 8px 18px}
+  .top{position:relative}.top .actions{width:100%;max-width:none;justify-content:flex-start}.top .actions .btn{flex:1 1 auto}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.module-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .form-grid-2,.form-grid-4,.admin-form{grid-template-columns:1fr !important}
+  .main [style*="gridTemplateColumns"],.page-shell [style*="gridTemplateColumns"]{grid-template-columns:minmax(0,1fr) !important}
+  .main [style*="display: flex"],.page-shell [style*="display: flex"]{flex-wrap:wrap !important}
+  .main [style*="minWidth"],.page-shell [style*="minWidth"]{min-width:0 !important}
+  .main [style*="width: 100vw"],.page-shell [style*="width: 100vw"]{width:100% !important;max-width:100% !important}
+}
+@media (max-width:430px){
+  .mobile-nav-toggle{left:8px;top:8px;width:40px;height:40px}.main{padding-left:6px;padding-right:6px}.top{padding:9px}.title{font-size:17px}
+  .kpis,.module-grid,.quick-actions{grid-template-columns:1fr}.actions .btn{width:100%}.filters{display:grid;grid-template-columns:1fr}.filters input,.filters select,.filters .btn{width:100%}.card{padding:10px}.table{min-width:650px}
+}
+@media (max-width:760px){[class*="modal"],[class*="Modal"]{max-width:calc(100vw - 20px) !important}[class*="modal-card"],[class*="ModalCard"]{max-height:calc(100vh - 20px) !important;overflow:auto !important}}
+
+
+/* =========================================================
+   ANAIRA RESPONSIVE PRO v3 — VISUAL LAYOUT HARDENING
+   Goal: consistent desktop / tablet / mobile composition
+   without changing module ownership or routes.
+   ========================================================= */
+
+html, body { max-width:100%; overflow-x:hidden; }
+body { -webkit-text-size-adjust:100%; }
+img, video, canvas, svg { max-width:100%; }
+button, .btn, input, select, textarea { max-width:100%; }
+.main { overflow-x:hidden; }
+.page-shell { width:100%; max-width:1300px; }
+.card, .module-card, .top { min-width:0; }
+.actions { flex-wrap:wrap; align-items:center; }
+.actions > * { min-width:0; }
+.filters > *, .admin-toolbar > * { min-width:0; }
+
+/* Data tables: preserve readable columns, scroll the table rather than the page. */
+.main .table-wrap, .page-shell .table-wrap,
+.main .table-responsive, .page-shell .table-responsive,
+.main .table-scroll, .page-shell .table-scroll {
+  width:100%; max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;
+}
+.main table, .page-shell table { max-width:100%; }
+.main table:not(.table), .page-shell table:not(.table) { min-width:640px; }
+
+/* Inline React layouts: neutralize desktop-only column counts at smaller widths. */
+@media (max-width:1100px) {
+  .main [style*="gridTemplateColumns"],
+  .page-shell [style*="gridTemplateColumns"] {
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+  .main [style*="minWidth"],
+  .page-shell [style*="minWidth"] { min-width:0 !important; }
+  .main [style*="width: 100vw"],
+  .page-shell [style*="width: 100vw"] { width:100% !important; max-width:100% !important; }
+  .main [style*="display: flex"],
+  .page-shell [style*="display: flex"] { flex-wrap:wrap !important; }
+  .top .actions { justify-content:flex-end; }
+}
+
+/* Tablet gets the same usable drawer navigation as mobile.
+   A 78px icon-only rail is too restrictive for a dense enterprise CRM. */
+@media (min-width:761px) and (max-width:1100px) {
+  .mobile-nav-toggle {
+    position:fixed; left:12px; top:12px; z-index:1002;
+    width:42px; height:42px; display:flex; flex-direction:column;
+    justify-content:center; align-items:center; gap:5px;
+    border:1px solid rgba(201,163,75,.5); border-radius:10px;
+    background:#062719; box-shadow:0 8px 22px rgba(0,0,0,.25); cursor:pointer;
+  }
+  .mobile-nav-toggle span { display:block; width:19px; height:2px; border-radius:2px; background:#f2c65d; }
+  .mobile-nav-backdrop {
+    display:block; position:fixed; inset:0; z-index:999; border:0; padding:0;
+    background:rgba(2,10,7,.58); backdrop-filter:blur(2px);
+  }
+  .sidebar {
+    width:min(310px,42vw); transform:translateX(-105%); transition:transform .22s ease;
+    z-index:1001; padding:12px 10px; border-right:3px solid var(--gold);
+    box-shadow:18px 0 45px rgba(0,0,0,.28);
+  }
+  .sidebar.is-open { transform:translateX(0); }
+  .brand { height:74px; justify-content:flex-start; padding:0 8px; }
+  .brand img { width:50px; height:50px; }
+  .brand > div { display:block; }
+  .navtitle, .nav a span { display:block; }
+  .nav a { justify-content:flex-start; min-height:42px; padding:9px 10px; }
+  .nav a i { width:20px; font-size:14px; }
+  .portal-badge { display:block; }
+  .logout-btn { font-size:13px; width:calc(100% - 32px); margin-left:16px; margin-right:16px; }
+  .logout-btn::before { content:none; }
+  .main {
+    margin-left:0; width:100%; max-width:100%;
+    padding:66px 16px 24px;
+  }
+  .top { gap:12px; }
+  .kpis { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .module-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .quick-actions { grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .form-grid-2 { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+  .form-grid-4 { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+}
+
+/* Tablet portrait: give cards breathing room. */
+@media (min-width:761px) and (max-width:900px) {
+  .kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .module-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .quick-actions { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .top { align-items:flex-start; }
+  .top .actions { width:100%; justify-content:flex-start; }
+}
+
+/* Mobile: single-column composition except compact KPI/action strips. */
+@media (max-width:760px) {
+  .main [style*="gridTemplateColumns"],
+  .page-shell [style*="gridTemplateColumns"] {
+    grid-template-columns:minmax(0,1fr) !important;
+  }
+  .main [style*="display: flex"],
+  .page-shell [style*="display: flex"] { flex-wrap:wrap !important; }
+  .top { display:flex; flex-direction:column; align-items:stretch; gap:8px; }
+  .top .actions { width:100%; display:flex; }
+  .top .actions > * { flex:1 1 140px; }
+  .section-head { align-items:flex-start; flex-wrap:wrap; gap:6px; }
+  .filters, .admin-toolbar { width:100%; }
+  .filters > *, .admin-toolbar > * { flex:1 1 180px; }
+  .table-wrap, .table-responsive, .table-scroll { border-radius:8px; }
+  .card { width:100%; }
+}
+
+/* Narrow phones: eliminate two-column KPI/module density and protect touch targets. */
+@media (max-width:430px) {
+  .kpis, .module-grid, .quick-actions, .mini-grid { grid-template-columns:1fr !important; }
+  .top .actions { flex-direction:column; }
+  .top .actions > * { width:100%; flex:0 0 auto; min-height:42px; }
+  .filters > *, .admin-toolbar > * { flex-basis:100%; width:100%; }
+  .btn, button { min-height:40px; }
+  .title { font-size:17px; }
+  .subtitle { font-size:10px; }
+}
+
+/* Public booking/store pages can sit outside .main; prevent common grid overflow. */
+@media (max-width:900px) {
+  .hotel-hero-inner, .store-hero-inner, .checkout-head, .rd-top, .direct {
+    flex-wrap:wrap !important;
+  }
+}
+@media (max-width:760px) {
+  .hotel-gallery, .room-grid, .gallery { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+}
+@media (max-width:520px) {
+  .hotel-gallery, .room-grid, .gallery { grid-template-columns:1fr !important; }
+}
+
+/* Accessibility / interaction */
+@media (prefers-reduced-motion:reduce) {
+  *, *::before, *::after { scroll-behavior:auto !important; transition:none !important; animation:none !important; }
+}

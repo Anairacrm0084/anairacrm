@@ -131,11 +131,25 @@ export function AppShell({children, active}) {
   },[ctx.loading,ctx.session,ctx.isSuperAdmin,ctx.role,ctx.profileKey,ctx.plugins,ctx.permissions,pathname,router]);
 
   const portalLabel=ctx.isSuperAdmin?'SUPER ADMIN':(ctx.role==='admin'||ctx.profileKey==='business_admin')?'BUSINESS PORTAL':ctx.role==='manager'?'MANAGER PORTAL':'STAFF PORTAL';
+  const [mobileNavOpen,setMobileNavOpen]=useState(false);
+  useEffect(()=>{setMobileNavOpen(false)},[pathname]);
+  useEffect(()=>{
+    if(!mobileNavOpen) return;
+    const onKey=(e)=>{if(e.key==='Escape') setMobileNavOpen(false)};
+    document.addEventListener('keydown',onKey);
+    const previous=document.body.style.overflow;
+    document.body.style.overflow='hidden';
+    return ()=>{document.removeEventListener('keydown',onKey);document.body.style.overflow=previous};
+  },[mobileNavOpen]);
   return <div className="shell">
-    <aside className="sidebar">
+    <button type="button" className="mobile-nav-toggle" aria-label={mobileNavOpen?'Close navigation':'Open navigation'} aria-expanded={mobileNavOpen} onClick={()=>setMobileNavOpen(v=>!v)}>
+      <span></span><span></span><span></span>
+    </button>
+    {mobileNavOpen&&<button type="button" className="mobile-nav-backdrop" aria-label="Close navigation" onClick={()=>setMobileNavOpen(false)}/>}
+    <aside className={'sidebar'+(mobileNavOpen?' is-open':'')}>
       <div className="brand"><img src="/assets/anaira-logo.webp" alt="Anaira"/><div><b>ANAIRA</b><span>HOTEL & RESTAURANT CRM</span></div></div>
       <div className="portal-badge">{portalLabel}{ctx.restaurantId&&!ctx.isSuperAdmin?' • '+ctx.restaurantId.slice(0,8):''}</div>
-      <nav className="nav">{visibleGroups.map((group,gi)=><div className="nav-group" key={group.title}><div className="navtitle">{group.title}</div>{group.items.map(item=><a key={`${item.href}-${item.label}`} href={item.href} className={active===item.href||pathname===item.href?'active':''}><i>{item.icon}</i><span>{item.label}</span></a>)}</div>)}</nav>
+      <nav className="nav">{visibleGroups.map((group,gi)=><div className="nav-group" key={group.title}><div className="navtitle">{group.title}</div>{group.items.map(item=><a key={`${item.href}-${item.label}`} href={item.href} className={active===item.href||pathname===item.href?'active':''} onClick={()=>setMobileNavOpen(false)}><i>{item.icon}</i><span>{item.label}</span></a>)}</div>)}</nav>
       <button className="logout-btn" onClick={async()=>{await supabase?.auth.signOut();location.href='/login'}}>Sign out</button>
     </aside>
     <main className="main">{children}</main>
