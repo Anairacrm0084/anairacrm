@@ -9,7 +9,15 @@
     "seo:audit": "node scripts/seo-a-to-z-certify.mjs",
     "seo:test": "node tests/seo/a-to-z-static.mjs",
     "check:js": "node scripts/verify-js-syntax.mjs",
-    "seo:market-test": "node tests/seo/market-parity-static.mjs"
+    "seo:market-test": "node tests/seo/market-parity-static.mjs",
+    "p0:check": "node scripts/p0-production-foundation.mjs",
+    "p1:check": "node tests/p1/crm-market-parity-static.mjs",
+    "p2:check": "node scripts/p2-hotel-booking-static.mjs",
+    "p3:check": "node scripts/p3-restaurant-reservation-static.mjs",
+    "p4:check": "node scripts/p4-ai-review-static.mjs",
+    "p5:check": "node scripts/p5-seo-market-parity-static.mjs",
+    "p6:check": "node scripts/p6-integration-hub-static.mjs",
+    "p7:check": "node scripts/p7-final-certification.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

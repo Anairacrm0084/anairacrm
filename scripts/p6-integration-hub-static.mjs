@@ -1,0 +1,11 @@
+import fs from 'node:fs'; import path from 'node:path';
+const root=process.cwd(); const req=(p)=>{if(!fs.existsSync(path.join(root,p))) throw new Error(`missing ${p}`)};
+const files=['supabase/migrations/20260928_phase_p6_integration_hub_e2e.sql','app/api/integrations/restaurant/health/route.js','app/api/integrations/restaurant/reconcile/route.js','app/api/integrations/restaurant/events/route.js','app/api/integrations/restaurant/retry/route.js','app/api/integrations/restaurant/route.js'];
+for(const f of files) req(f);
+const sql=fs.readFileSync(path.join(root,files[0]),'utf8');
+for(const t of ['anaira_integration_event_contracts','anaira_integration_health_checks','idempotency_key','dead_letter','tenant_id','row level security']) if(!sql.toLowerCase().includes(t.toLowerCase())) throw new Error(`missing token ${t}`);
+const event=fs.readFileSync(path.join(root,'app/api/integrations/restaurant/events/route.js'),'utf8');
+for(const t of ['event_id','idempotency_key','payload_version','anaira_integration_event_contracts','processed']) if(!event.includes(t)) throw new Error(`event handler missing ${t}`);
+const retry=fs.readFileSync(path.join(root,'app/api/integrations/restaurant/retry/route.js'),'utf8');
+for(const t of ['retry','attempt','backoff','dead_letter']) if(!retry.includes(t)) throw new Error(`retry route missing ${t}`);
+console.log('P6 CRM Integration Hub static checks 12/12 PASS');

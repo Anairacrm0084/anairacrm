@@ -1,5 +1,8 @@
 // Production-safe page metadata. Live records are rendered from Supabase dataSources; demo KPI/sample rows are intentionally not embedded here.
 export const pages = {
+  'sales-pipeline': {active:'/sales-pipeline', eyebrow:'SALES CRM', title:'Sales Pipeline', subtitle:'Accounts, opportunities, stages, probability, expected revenue and conversion workflow.'},
+  'service-tickets': {active:'/service-tickets', eyebrow:'SERVICE CRM', title:'Service Tickets', subtitle:'Ticket lifecycle with priority, assignment, SLA, escalation, resolution and CSAT.'},
+  'identity-resolution': {active:'/identity-resolution', eyebrow:'CUSTOMER 360', title:'Identity Resolution', subtitle:'Canonical customer identity links, match confidence and merge audit history.'},
   'timeline': {"active": "/timeline", "eyebrow": "OMNICHANNEL TIMELINE", "title": "Customer Journey Timeline", "subtitle": "A single chronological view of enquiries, bookings, payments, stays, dining, messages, complaints, reviews and loyalty events."},
   'customer-360': {"active": "/customer-360", "eyebrow": "CUSTOMER ENGINE", "title": "Customer 360", "subtitle": "A complete relationship record combining hotel, restaurant, communication, value and loyalty history."},
   'restaurant': {"active": "/restaurant", "eyebrow": "RESTAURANT CRM", "title": "Restaurant Customer Intelligence", "subtitle": "Connect restaurant visits and spending to customer relationships, preferences and hotel cross-sell opportunities."},

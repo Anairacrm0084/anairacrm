@@ -1,0 +1,60 @@
+{
+  "project": "anaira-hotel-restaurant-crm",
+  "phase": "P0",
+  "timestamp": "2026-09-28T09:08:46.984Z",
+  "summary": {
+    "failures": 0,
+    "warnings": 0,
+    "checks": 8
+  },
+  "checks": [
+    {
+      "name": "required:package.json",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "required:next.config.js",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "required:app",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "required:lib",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "required:docs",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "required:scripts",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "script:dev",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "script:build",
+      "status": "PASS",
+      "detail": ""
+    }
+  ],
+  "productionBuild": {
+    "status": "NOT_RUN",
+    "reason": "Dependency installation timed out in the clean environment; build must be rerun after dependencies are available."
+  },
+  "e2e": {
+    "status": "NOT_RUN",
+    "reason": "No live provider credentials/environment are available inside the source archive."
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "phase": "P7",
+  "generated_at": "2026-09-28T09:08:47.316Z",
+  "certified": false,
+  "status": "RELEASE CANDIDATE / NOT PRODUCTION CERTIFIED",
+  "checks": [
+    {
+      "name": "package.json",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "P0 report",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "P6 static script",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "SEO certification report",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "P0",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "P1",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "P2",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "P3",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "P4",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "P5",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "P6",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "package-lock",
+      "status": "BLOCKED",
+      "evidence": "Reproducible install requires lockfile."
+    },
+    {
+      "name": "production build",
+      "status": "BLOCKED",
+      "evidence": "Not executed: clean npm install could not complete in this environment; no false PASS."
+    },
+    {
+      "name": "live Supabase/RLS",
+      "status": "BLOCKED",
+      "evidence": "Requires deployed test project and migration execution."
+    },
+    {
+      "name": "provider E2E",
+      "status": "BLOCKED",
+      "evidence": "Requires real provider credentials and deployed callbacks."
+    },
+    {
+      "name": "browser E2E",
+      "status": "BLOCKED",
+      "evidence": "Requires running deployed application and test fixtures."
+    },
+    {
+      "name": "cross-tenant negative E2E",
+      "status": "BLOCKED",
+      "evidence": "Requires isolated multi-tenant runtime test environment."
+    }
+  ]
+}
