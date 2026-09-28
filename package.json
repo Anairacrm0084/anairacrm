@@ -17,7 +17,8 @@
     "p4:check": "node scripts/p4-ai-review-static.mjs",
     "p5:check": "node scripts/p5-seo-market-parity-static.mjs",
     "p6:check": "node scripts/p6-integration-hub-static.mjs",
-    "p7:check": "node scripts/p7-final-certification.mjs"
+    "p7:check": "node scripts/p7-final-certification.mjs",
+    "restaurant-marketplace:check": "node scripts/restaurant-marketplace-pro-static.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

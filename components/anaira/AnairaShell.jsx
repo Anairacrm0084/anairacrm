@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { Hotel, Utensils, Users, ShieldCheck, Store, LayoutDashboard, CalendarDays, ShoppingBag, Menu, X } from 'lucide-react'
 
 const links = [
@@ -17,12 +18,14 @@ const links = [
 
 export default function AnairaShell({children, title='Anaira'}) {
   const [open,setOpen]=useState(false)
+  const pathname=usePathname()
+  const isAdminShell=pathname?.startsWith('/super-admin') || pathname?.startsWith('/anaira/super-admin') || pathname?.startsWith('/anaira/business-admin')
   return <div className="anaira-shell">
     <header className="anaira-topbar">
       <button type="button" className="anaira-mobile-menu" aria-label="Open navigation" aria-expanded={open} onClick={()=>setOpen(v=>!v)}>{open?<X size={20}/>:<Menu size={20}/>}</button>
       <div className="anaira-brand"><span className="anaira-logo">A</span><div><b>ANAIRA</b><small>Hospitality • Food • Commerce</small></div></div>
-      <nav className={open?'is-open':''}>{links.slice(1,7).map(([href,label,Icon]) => <Link key={href} href={href} onClick={()=>setOpen(false)}><Icon size={16}/>{label}</Link>)}</nav>
-      <Link className="anaira-admin-btn" href="/anaira/business-admin"><ShieldCheck size={16}/> Admin</Link>
+      {!isAdminShell&&<nav className={open?'is-open':''}>{links.slice(1,7).map(([href,label,Icon]) => <Link key={href} href={href} onClick={()=>setOpen(false)}><Icon size={16}/>{label}</Link>)}</nav>}
+      {!isAdminShell&&<Link className="anaira-admin-btn" href="/anaira/business-admin"><ShieldCheck size={16}/> Admin</Link>}
     </header>
     <main className="anaira-main">
       <div className="anaira-page-title"><div><span>ANAIRA PLATFORM</span><h1>{title}</h1></div></div>

@@ -20,15 +20,16 @@ const PERMISSION_BY_ROUTE = {
   '/delivery':'delivery.order.view','/store':'store.view','/channel-manager':'ota.sync.view','/pos':'pos.order.view','/housekeeping':'housekeeping.task.view','/my-work':'task.view','/team-tasks':'task.view',
   '/import-export':'customer.export','/activity':'staff.activity','/store-builder':'store.view','/plugins/seo-system/settings':'seo-system.configure'
 };
-const SUPER_ONLY_ROUTES = ['/super-admin','/anaira/super-admin','/admin','/properties','/business-admins','/audit','/platform-settings','/system'];
+const SUPER_ONLY_ROUTES = ['/super-admin','/anaira/super-admin','/admin','/properties','/business-admins','/audit','/platform-settings','/system','/super-admin/marketplace-settings','/super-admin/hotel-marketplace-settings','/super-admin/booking-engine','/super-admin/stores','/super-admin/anaira-store'];
 const ADMIN_ONLY_ROUTES = ['/store-builder','/users','/roles','/hotel-management/setup','/hotel-management/room-types','/hotel-management/rooms','/hotel-management/rates','/hotel-management/inventory','/restaurant-setup'];
 const BUSINESS_SETTINGS_ROUTE='/business-settings';
 
 const SUPER_GROUPS = [
-  {title:'COMMAND CENTER',items:[['▦','Dashboard','/admin'],['▦','Properties / Tenants','/properties'],['♙','Business Admins','/business-admins'],['♙','Users & Staff','/users'],['◆','Roles & Profiles','/roles'],['◇','Plugin Control Center','/plugins'],['⚙','Global Integrations','/super-admin/integrations'],['◆','SEO System','/seo'],['★','AI Review Automation','/ai-reviews'],['◫','Audit Logs','/audit'],['⚙','Platform Settings','/platform-settings'],['⚙','Marketplace Settings','/super-admin/marketplace-settings'],['▣','Global Booking Engine','/super-admin/booking-engine']]},
+  {title:'COMMAND CENTER',items:[['▦','Dashboard','/admin'],['▦','Properties / Tenants','/properties'],['♙','Business Admins','/business-admins'],['♙','Users & Staff','/users'],['◆','Roles & Profiles','/roles'],['◇','Plugin Control Center','/plugins'],['⚙','Global Integrations','/super-admin/integrations'],['◆','SEO System','/seo'],['★','AI Review Automation','/ai-reviews'],['◫','Audit Logs','/audit'],['⚙','Platform Settings','/platform-settings'],['▣','Global Booking Engine','/super-admin/booking-engine']]},
+  {title:'ANAIRA STORES',items:[['◆','ANAIRA Store & QR','/super-admin/anaira-store'],['🏨','Hotel Marketplace Store','/anaira/hotels'],['⚙','Hotel Marketplace Settings','/super-admin/hotel-marketplace-settings'],['🍽','Restaurant Marketplace','/store'],['⚙','Restaurant Marketplace Settings','/super-admin/marketplace-settings']]},
   {title:'CRM PLATFORM',items:[['◉','Customer 360','/customer-360'],['⌂','Hotel Guest CRM','/stays'],['♨','Restaurant CRM','/restaurant'],['◆','Leads & Sales','/leads'],['▣','Corporate CRM','/corporate'],['♢','Partners','/partners'],['↔','Timeline / Interactions','/timeline'],['★','Guest Relations','/guest-relations'],['⚠','Complaints / Service Recovery','/complaints'],['★','Loyalty','/loyalty'],['◇','Segmentation','/segmentation'],['✦','VIP Management','/vip'],['◈','Offers & Coupons','/marketing'],['✉','Campaigns','/campaigns'],['◌','WhatsApp CRM','/integrations'],['⚙','Workflows / Automation','/workflows'],['✦','Events & Upselling','/events']]},
   {title:'BUSINESS INTELLIGENCE',items:[['▤','Analytics','/analytics'],['₹','Revenue Management','/revenue'],['◈','Forecasting','/forecasting'],['◈','Competitor Intelligence','/competitors'],['⇄','OTA / Channel Performance','/ota'],['✧','AI Insights','/ai'],['✧','Decision Intelligence','/intelligence']]},
-  {title:'OPERATIONS',items:[['⌂','Hotel Booking','/booking'],['🏨','Hotel Marketplace','/anaira/hotels'],['▣','Booking Engine Control','/booking-engine'],['▦','Anaira Hotel Management','/hotel-management'],['▤','Hotel PMS','/pms'],['◫','Restaurant Reservation','/reservation'],['▣','Anaira POS','/pos'],['◉','Food Delivery','/delivery'],['◇','Restaurant Marketplace','/store'],['◆','Platform Store Control','/super-admin/stores'],['⇄','Channel / OTA Manager','/channel-manager'],['⚙','Hotel Setup','/hotel-management/setup'],['♨','Restaurant Setup','/restaurant-setup']]},
+  {title:'OPERATIONS',items:[['⌂','Hotel Booking','/booking'],['▣','Booking Engine Control','/booking-engine'],['▦','Anaira Hotel Management','/hotel-management'],['▤','Hotel PMS','/pms'],['◫','Restaurant Reservation','/reservation'],['▣','Anaira POS','/pos'],['◉','Food Delivery','/delivery'],['⇄','Channel / OTA Manager','/channel-manager'],['⚙','Hotel Setup','/hotel-management/setup'],['♨','Restaurant Setup','/restaurant-setup']]},
 ];
 
 const BUSINESS_GROUPS = [
@@ -132,6 +133,17 @@ export function AppShell({children, active}) {
 
   const portalLabel=ctx.isSuperAdmin?'SUPER ADMIN':(ctx.role==='admin'||ctx.profileKey==='business_admin')?'BUSINESS PORTAL':ctx.role==='manager'?'MANAGER PORTAL':'STAFF PORTAL';
   const [mobileNavOpen,setMobileNavOpen]=useState(false);
+  const [openGroups,setOpenGroups]=useState(()=>({}));
+  useEffect(()=>{
+    setOpenGroups(prev=>{
+      const next={};
+      visibleGroups.forEach(g=>{
+        const containsActive=g.items.some(item=>item.href===pathname);
+        next[g.title]=typeof prev[g.title]==='boolean'?prev[g.title]:containsActive;
+      });
+      return next;
+    });
+  },[visibleGroups.map(g=>g.title).join('|'),pathname]);
   useEffect(()=>{setMobileNavOpen(false)},[pathname]);
   useEffect(()=>{
     if(!mobileNavOpen) return;
@@ -149,7 +161,7 @@ export function AppShell({children, active}) {
     <aside className={'sidebar'+(mobileNavOpen?' is-open':'')}>
       <div className="brand"><img src="/assets/anaira-logo.webp" alt="Anaira"/><div><b>ANAIRA</b><span>HOTEL & RESTAURANT CRM</span></div></div>
       <div className="portal-badge">{portalLabel}{ctx.restaurantId&&!ctx.isSuperAdmin?' • '+ctx.restaurantId.slice(0,8):''}</div>
-      <nav className="nav">{visibleGroups.map((group,gi)=><div className="nav-group" key={group.title}><div className="navtitle">{group.title}</div>{group.items.map(item=><a key={`${item.href}-${item.label}`} href={item.href} className={active===item.href||pathname===item.href?'active':''} onClick={()=>setMobileNavOpen(false)}><i>{item.icon}</i><span>{item.label}</span></a>)}</div>)}</nav>
+      <nav className="nav">{visibleGroups.map((group,gi)=>{const open=!!openGroups[group.title]; return <div className="nav-group" key={group.title}><button type="button" className={'navtitle navtitle-toggle'+(open?' is-open':'')} aria-expanded={open} onClick={()=>setOpenGroups(prev=>({...prev,[group.title]:!open}))}><span>{group.title}</span><b aria-hidden="true">{open?'⌃':'⌄'}</b></button><div className={'nav-submenu'+(open?' is-open':'')}>{group.items.map(item=><a key={`${item.href}-${item.label}`} href={item.href} className={active===item.href||pathname===item.href?'active':''} onClick={()=>setMobileNavOpen(false)}><i>{item.icon}</i><span>{item.label}</span></a>)}</div></div>})}</nav>
       <button className="logout-btn" onClick={async()=>{await supabase?.auth.signOut();location.href='/login'}}>Sign out</button>
     </aside>
     <main className="main">{children}</main>
