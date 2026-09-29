@@ -35,7 +35,7 @@ function StoreTabNav({active,onChange}){
 function StoreBuilder(){
  const router=useRouter(),searchParams=useSearchParams();
  const [session,setSession]=useState(undefined),[profile,setProfile]=useState(null),[property,setProperty]=useState(null),[rid,setRid]=useState(''),[kind,setKind]=useState('restaurant'),[availableKinds,setAvailableKinds]=useState(['restaurant']);
- const [store,setStore]=useState(null),[membership,setMembership]=useState(null),[settings,setSettings]=useState(null),[connections,setConnections]=useState([]);
+ const [store,setStore]=useState(null),[membership,setMembership]=useState(null),[settings,setSettings]=useState(null),[connections,setConnections]=useState([]),[activeHospitalityType,setActiveHospitalityType]=useState('hotel');
  const [form,setForm]=useState({title:'',tagline:'',description:'',logo_url:'',cover_url:'',gallery:[],phone:'',whatsapp:'',website:'',address:'',city:'',state:'',postal_code:'',delivery:true,pickup:true,dine_in:true,seo_title:'',seo_description:'',min_order_amount:0,delivery_fee:0,delivery_radius_km:'',tax_percent:0,payment_methods:'cod,pay_at_hotel',open_time:'09:00',close_time:'23:00',banner_title:'',banner_subtitle:'',banner_image_url:'',banner_mobile_image_url:'',banner_cta_label:'',banner_cta_url:'',theme_mode:'light',accent_color:'#0b6b4f',announcement:'',social_instagram:'',social_facebook:'',social_whatsapp:'',delivery_eta_minutes:45,service_fee:0,order_notes_enabled:true,show_popular:true,show_offers:true,show_gallery:true,show_reviews:false,hero_overlay:0.45,card_radius:20,store_background:'#f7f5ef',show_categories:true,show_search:true,show_cart:true,show_announcement:true,show_footer:true,hero_cta_label:'Order Now',hero_cta_url:'',gallery_title:'Our Place',gallery_subtitle:'A look inside our restaurant'});
  const [categories,setCategories]=useState([]),[items,setItems]=useState([]),[homeBanners,setHomeBanners]=useState([]),[featuredItems,setFeaturedItems]=useState([]),[liveMenu,setLiveMenu]=useState([]),[selectedItem,setSelectedItem]=useState(null),[variants,setVariants]=useState([]),[addons,setAddons]=useState([]),[newVariant,setNewVariant]=useState(blankOption),[newAddon,setNewAddon]=useState(blankOption);
  const [categoryForm,setCategoryForm]=useState(blankCategory),[itemForm,setItemForm]=useState(blankItem);
@@ -52,22 +52,61 @@ function StoreBuilder(){
    if(!p?.restaurant_id)return;
    setRid(p.restaurant_id);
    const [{data:r},{data:pl}]=await Promise.all([
-     supabase.from('restaurants').select('id,name,status,city,address,logo,cover_image,cuisine,phone,website,delivery_enabled').eq('id',p.restaurant_id).maybeSingle(),
+     supabase.from('restaurants').select('id,name,status,city,address,logo,cover_image,cuisine,phone,website,delivery_enabled,hospitality_type,hospitality_types').eq('id',p.restaurant_id).maybeSingle(),
      supabase.from('restaurant_plugins').select('plugin_code,enabled').eq('restaurant_id',p.restaurant_id)
    ]);
    setProperty(r||null);
    const enabled=new Set((pl||[]).filter(x=>x.enabled).map(x=>x.plugin_code));
    const kinds=[];
    if(enabled.has('restaurant-store')||enabled.has('anaira-pos')||enabled.has('food-delivery'))kinds.push('restaurant');
-   if(enabled.has('hotel-booking')||enabled.has('hotel-management-suite')||enabled.has('hotel-pms'))kinds.push('hotel');
+   const configured=Array.isArray(r?.hospitality_types)&&r.hospitality_types.length
+     ? r.hospitality_types
+     : (r?.hospitality_type?[r.hospitality_type]:[]);
+   const hospitalityPlugin={hotel:'hotel-management-suite',camp:'camping-management',homestay:'homestay-management',guest_house:'guest-house-management',cottage:'cottage-management'};
+   const hasExplicitHospitalitySelection=configured.length>0;
+   let hospitality=[...new Set(configured.filter(t=>Object.prototype.hasOwnProperty.call(hospitalityPlugin,t)))];
+   // Profile hospitality_types is authoritative. Never infer Hotel from legacy HMS rows
+   // when the property is explicitly configured as Camping/Homestay/etc.
+   if(!hasExplicitHospitalitySelection){
+     const [{data:legacyCamp},{data:hmsTypes}]=await Promise.all([
+       supabase.from('camp_unit_types').select('id').eq('restaurant_id',r.id).eq('active',true).limit(1),
+       supabase.from('hms_room_types').select('hospitality_type').eq('restaurant_id',r.id).eq('active',true)
+     ]);
+     for(const row of (hmsTypes||[])){const t=row?.hospitality_type;if(Object.prototype.hasOwnProperty.call(hospitalityPlugin,t)&&!hospitality.includes(t))hospitality.push(t)}
+     if((legacyCamp||[]).length&&!hospitality.includes('camp'))hospitality.push('camp');
+   }
+   for(const t of hospitality){
+     // Explicit property selection wins over stale legacy plugin assignments.
+     // Super Admin can still remove the property type from hospitality_types to
+     // remove this store context entirely.
+     kinds.push(t);
+   }
    const safe=kinds.length?kinds:['restaurant'];setAvailableKinds(safe);
-   const requested=searchParams.get('kind');setKind(requested&&safe.includes(requested)?requested:safe[0]);
+   const requestedType=searchParams.get('hospitality_type');
+   const hospitalityKinds=safe.filter(x=>x!=='restaurant');
+   const nextType=requestedType&&hospitalityKinds.includes(requestedType)?requestedType:(hospitalityKinds[0]||'hotel');
+   // `kind` is the customer-facing context (hotel/camp/homestay/etc).
+   // All non-restaurant hospitality contexts still use the single canonical
+   // ANAIRA hospitality platform store underneath.
+   const requestedKind=searchParams.get('kind');
+   const nextKind=requestedKind==='restaurant'&&safe.includes('restaurant')
+     ?'restaurant'
+     :(hospitalityKinds.includes(requestedKind)?requestedKind:nextType);
+   setKind(nextKind);setActiveHospitalityType(nextKind==='restaurant'?nextType:nextKind);
+   if(typeof window!=='undefined'){
+     const u=new URL(window.location.href);
+     u.searchParams.set('kind',nextKind);
+     if(nextKind!=='restaurant')u.searchParams.set('hospitality_type',nextKind);
+     else u.searchParams.delete('hospitality_type');
+     window.history.replaceState({},'',u.toString());
+   }
  })()},[router,searchParams]);
 
- useEffect(()=>{if(rid&&kind)load()},[rid,kind]);
+ useEffect(()=>{if(rid&&kind)load()},[rid,kind,activeHospitalityType]);
+ const storeKind=kind==='restaurant'?'restaurant':'hotel';
  async function load(){
    setError('');
-   const {data:s,error:se}=await supabase.from('anaira_platform_stores').select('*').eq('store_type',kind).maybeSingle();
+   const {data:s,error:se}=await supabase.from('anaira_platform_stores').select('*').eq('store_type',storeKind).maybeSingle();
    if(se){setError(se.message);return} setStore(s||null); if(!s)return;
    const {data:m,error:me}=await supabase.from('anaira_store_memberships').select('*').eq('store_id',s.id).eq('restaurant_id',rid).maybeSingle();
    if(me){setError(me.message);return} setMembership(m||null);
@@ -79,7 +118,7 @@ function StoreBuilder(){
      seo_title:ss?.seo_title||o.seo_title||'',seo_description:ss?.seo_description||o.seo_description||'',min_order_amount:ss?.min_order_amount??sc.min_order_amount??0,delivery_fee:ss?.delivery_fee??sc.delivery_fee??0,delivery_radius_km:ss?.delivery_radius_km??sc.delivery_radius_km??'',tax_percent:ss?.tax_percent??sc.tax_percent??0,payment_methods:Array.isArray(ss?.payment_methods)?ss.payment_methods.join(','):ss?.payment_methods||'cod,pay_at_hotel',open_time:timings.open||'09:00',close_time:timings.close||'23:00',theme_mode:sc.theme_mode||'light',accent_color:sc.accent_color||'#0b6b4f',announcement:sc.announcement||'',social_instagram:sc.social_instagram||'',social_facebook:sc.social_facebook||'',social_whatsapp:sc.social_whatsapp||'',delivery_eta_minutes:sc.delivery_eta_minutes??45,service_fee:sc.service_fee??0,order_notes_enabled:sc.order_notes_enabled!==false,show_popular:sc.show_popular!==false,show_offers:sc.show_offers!==false,show_gallery:sc.show_gallery!==false,show_reviews:sc.show_reviews===true,hero_overlay:sc.hero_overlay??0.45,card_radius:sc.card_radius??20,store_background:sc.store_background||'#f7f5ef',show_categories:sc.show_categories!==false,show_search:sc.show_search!==false,show_cart:sc.show_cart!==false,show_announcement:sc.show_announcement!==false,show_footer:sc.show_footer!==false,hero_cta_label:sc.hero_cta_label||'Order Now',hero_cta_url:sc.hero_cta_url||'',gallery_title:sc.gallery_title||'Our Place',gallery_subtitle:sc.gallery_subtitle||'A look inside our restaurant',catalog_source:m?.catalog_source||(kind==='restaurant'?'anaira_pos':'anaira_hms'),integration_connection_id:m?.integration_connection_id||''
    });
    const {data:c}=await supabase.from('anaira_integration_connections_v2').select('id,name,provider,integration_type,status').eq('restaurant_id',rid).order('name');setConnections(c||[]);
-   if(kind==='restaurant'){
+   if(storeKind==='restaurant'){
      const [{data:cats},{data:mi},{data:os},{data:of}]=await Promise.all([
        supabase.from('anaira_store_categories').select('*').eq('restaurant_id',rid).order('display_order').order('name'),
        supabase.from('anaira_marketplace_menu_items').select('*').eq('restaurant_id',rid).order('display_order').order('category_name').order('item_name').limit(500),
@@ -89,12 +128,69 @@ function StoreBuilder(){
      const {data:hb}=await supabase.from('anaira_store_banners').select('*').eq('store_id',s.id).eq('restaurant_id',rid).order('display_order'); setHomeBanners(hb||[]); const {data:fi}=await supabase.from('anaira_marketplace_featured_items').select('*').eq('store_id',s.id).eq('restaurant_id',rid).order('display_order'); setFeaturedItems(fi||[]); try { if(m?.catalog_source==='restaurant_saas'){ const lr=await fetch('/api/marketplace/restaurant/'+rid,{cache:'no-store'}); const lj=await lr.json(); setLiveMenu(lj?.ok?(lj.data?.menu||[]):[]); } else setLiveMenu(mi||[]); } catch { setLiveMenu(mi||[]); }
    }else{
      const [{data:rt},{data:rp},{data:inv},{data:rs}]=await Promise.all([
-       supabase.from('hms_room_types').select('id,name,code,short_description,base_rate,max_adults,max_children,active').eq('restaurant_id',rid).order('name'),
-       supabase.from('hms_rate_plans').select('id,name,code,room_type_id,board_type,rate,weekend_rate,seasonal_multiplier,active,refundable,deposit_percent').eq('restaurant_id',rid).order('name'),
+       supabase.from('hms_room_types').select('id,name,code,short_description,description,base_rate,max_adults,max_children,max_guests,hospitality_type,active,image_urls,amenities').eq('restaurant_id',rid).eq('hospitality_type',activeHospitalityType).order('name'),
+       supabase.from('hms_rate_plans').select('id,name,code,room_type_id,board_type,rate,weekend_rate,seasonal_multiplier,active,refundable,deposit_percent,pricing_mode').eq('restaurant_id',rid).eq('hospitality_type',activeHospitalityType).order('name'),
        supabase.from('hms_inventory').select('id,room_type_id,stay_date,total_rooms,sold_rooms,blocked_rooms,closed').eq('restaurant_id',rid).order('stay_date').limit(180),
        supabase.from('hms_reservations').select('id,reservation_code,status,check_in,check_out,total_amount,created_at,room_type_id,rate_plan_id').eq('restaurant_id',rid).order('created_at',{ascending:false}).limit(12)
      ]);
-     setHotelRoomTypes(rt||[]);setHotelRatePlans(rp||[]);setHotelInventory(inv||[]);setHotelReservations(rs||[]);setOrders(rs||[]);
+     let finalRt=rt||[], finalRp=rp||[], finalInv=inv||[], finalRs=rs||[];
+
+     // Camping compatibility: the property may already have real data in the
+     // legacy camp_* tables while the canonical HMS tables are empty/partial.
+     // Always read both sources for CAMPING, then map legacy unit/rate IDs to
+     // the canonical HMS room IDs by code/name. This prevents an existing
+     // camping property from appearing empty after the HMS unification.
+     if(activeHospitalityType==='camp'){
+       const [{data:legacyUnits},{data:legacyRates},{data:legacyInv},{data:legacyRes}]=await Promise.all([
+         supabase.from('camp_unit_types').select('*').eq('restaurant_id',rid).eq('active',true).order('name'),
+         supabase.from('camp_rate_plans').select('*').eq('restaurant_id',rid).eq('active',true).order('name'),
+         supabase.from('camp_inventory').select('*').eq('restaurant_id',rid).order('stay_date').limit(180),
+         supabase.from('camp_reservations').select('id,reservation_code,status,check_in,check_out,total_amount,created_at,unit_type_id,rate_plan_id').eq('restaurant_id',rid).order('created_at',{ascending:false}).limit(12)
+       ]);
+       const canonicalByKey=new Map(finalRt.map(x=>[`${String(x.code||'').trim().toLowerCase()}|${String(x.name||'').trim().toLowerCase()}`,x]));
+       const unitMap=new Map();
+       for(const u of (legacyUnits||[])){
+         const key=`${String(u.code||'').trim().toLowerCase()}|${String(u.name||'').trim().toLowerCase()}`;
+         let target=canonicalByKey.get(key);
+         if(!target){
+           target={...u,room_type_id:u.id,hospitality_type:'camp',short_description:u.description||'',max_guests:u.max_guests||u.max_adults||1,pricing_mode:'per_person'};
+           finalRt.push(target);
+           canonicalByKey.set(key,target);
+         }
+         unitMap.set(String(u.id),target);
+       }
+       const canonicalRateKeys=new Set(finalRp.map(x=>`${String(x.room_type_id)}|${String(x.name||'').trim().toLowerCase()}`));
+       for(const rplan of (legacyRates||[])){
+         const target=unitMap.get(String(rplan.unit_type_id)) || finalRt.find(x=>String(x.id)===String(rplan.unit_type_id));
+         const roomId=target?.room_type_id||target?.id;
+         if(!roomId) continue;
+         const key=`${String(roomId)}|${String(rplan.name||'').trim().toLowerCase()}`;
+         if(!canonicalRateKeys.has(key)){
+           finalRp.push({...rplan,id:rplan.id,room_type_id:roomId,hospitality_type:'camp',pricing_mode:rplan.pricing_mode||'per_person'});
+           canonicalRateKeys.add(key);
+         }
+       }
+       const roomKey=(x)=>String(x?.room_type_id||x?.unit_type_id||'');
+       const existingInv=new Set(finalInv.map(x=>`${String(x.room_type_id)}|${String(x.stay_date)}`));
+       for(const i of (legacyInv||[])){
+         const target=unitMap.get(String(i.unit_type_id)); const roomId=target?.room_type_id||target?.id;
+         if(!roomId) continue;
+         const key=`${String(roomId)}|${String(i.stay_date)}`;
+         if(!existingInv.has(key)){
+           finalInv.push({id:i.id,room_type_id:roomId,stay_date:i.stay_date,total_rooms:i.total_units,sold_rooms:Number(i.sold_units||0)+Number(i.held_units||0),blocked_rooms:i.blocked_units,closed:i.closed});
+           existingInv.add(key);
+         }
+       }
+       const existingRes=new Set(finalRs.map(x=>String(x.id)));
+       for(const reservation of (legacyRes||[])){ if(!existingRes.has(String(reservation.id))) finalRs.push({...reservation,room_type_id:unitMap.get(String(reservation.unit_type_id))?.room_type_id||reservation.unit_type_id}); }
+     }
+
+     // Inventory and reservations are keyed by room/unit type. Scope them to the
+     // active hospitality catalog so Hotel rows can never appear in a Camping store.
+     const activeTypeIds=new Set(finalRt.map(x=>String(x.id||x.room_type_id)));
+     finalInv=finalInv.filter(x=>activeTypeIds.has(String(x.room_type_id||x.unit_type_id)));
+     finalRs=finalRs.filter(x=>activeTypeIds.has(String(x.room_type_id||x.unit_type_id)));
+     setHotelRoomTypes(finalRt);setHotelRatePlans(finalRp);setHotelInventory(finalInv);setHotelReservations(finalRs);setOrders(finalRs);
    }
  }
 
@@ -103,12 +199,12 @@ function StoreBuilder(){
  async function toggleFeatured(item){if(!store)return;const existing=featuredItems.find(x=>String(x.external_item_id)===String(item.id));if(existing){const {error}=await supabase.from('anaira_marketplace_featured_items').update({active:!existing.active,updated_at:new Date().toISOString()}).eq('id',existing.id);if(!error)setFeaturedItems(x=>x.map(i=>i.id===existing.id?{...i,active:!existing.active}:i));}else{const {data,error}=await supabase.from('anaira_marketplace_featured_items').insert({store_id:store.id,restaurant_id:rid,external_item_id:String(item.id),title_override:null,image_override:item.image||item.image_url||null,badge:'Popular',display_order:featuredItems.length,active:true}).select('*').single();if(!error)setFeaturedItems(x=>[...x,data]);}}
  async function saveStore(){if(!store||!rid)return;setBusy(true);setSaved(false);setError('');
    const gallery=String(form.galleryText??(form.gallery||[]).join('\n')).split(/\n|,/).map(x=>x.trim()).filter(Boolean);
-   const listing=kind==='hotel'?{seo_title:form.seo_title,seo_description:form.seo_description}:{title:form.title,tagline:form.tagline,description:form.description,logo_url:form.logo_url,cover_url:form.cover_url,gallery,phone:form.phone,whatsapp:form.whatsapp,website:form.website,address:form.address,city:form.city,state:form.state,postal_code:form.postal_code,seo_title:form.seo_title,seo_description:form.seo_description};
-   const source=form.catalog_source||(kind==='restaurant'?'anaira_pos':'anaira_hms');
+   const listing=storeKind==='hotel'?{hospitality_types:property?.hospitality_types||[activeHospitalityType],title:form.title||property?.name,tagline:form.tagline,description:form.description,logo_url:form.logo_url,cover_url:form.cover_url,gallery,phone:form.phone,whatsapp:form.whatsapp,website:form.website,address:form.address,city:form.city,state:form.state,postal_code:form.postal_code,seo_title:form.seo_title,seo_description:form.seo_description}:{title:form.title,tagline:form.tagline,description:form.description,logo_url:form.logo_url,cover_url:form.cover_url,gallery,phone:form.phone,whatsapp:form.whatsapp,website:form.website,address:form.address,city:form.city,state:form.state,postal_code:form.postal_code,seo_title:form.seo_title,seo_description:form.seo_description};
+   const source=form.catalog_source||(storeKind==='restaurant'?'anaira_pos':'anaira_hms');
    const payload={listing_override:listing,enabled:true,catalog_source:source,integration_connection_id:form.integration_connection_id||null,manual_catalog_enabled:source==='manual',store_config:{delivery:!!form.delivery,pickup:!!form.pickup,dine_in:!!form.dine_in,min_order_amount:Number(form.min_order_amount)||0,delivery_fee:Number(form.delivery_fee)||0,delivery_radius_km:form.delivery_radius_km===''?null:Number(form.delivery_radius_km),tax_percent:Number(form.tax_percent)||0,theme_mode:form.theme_mode||'light',accent_color:form.accent_color||'#0b6b4f',announcement:form.announcement||'',social_instagram:form.social_instagram||'',social_facebook:form.social_facebook||'',social_whatsapp:form.social_whatsapp||'',delivery_eta_minutes:Number(form.delivery_eta_minutes)||45,service_fee:Number(form.service_fee)||0,order_notes_enabled:!!form.order_notes_enabled,show_popular:!!form.show_popular,show_offers:!!form.show_offers,show_gallery:!!form.show_gallery,show_reviews:!!form.show_reviews,hero_overlay:Number(form.hero_overlay)||0.45,card_radius:Number(form.card_radius)||20,store_background:form.store_background||'#f7f5ef',show_categories:!!form.show_categories,show_search:!!form.show_search,show_cart:!!form.show_cart,show_announcement:!!form.show_announcement,show_footer:!!form.show_footer,hero_cta_label:form.hero_cta_label||'Order Now',hero_cta_url:form.hero_cta_url||'',gallery_title:form.gallery_title||'Our Place',gallery_subtitle:form.gallery_subtitle||'A look inside our restaurant'}};
    const r=membership?await supabase.from('anaira_store_memberships').update(payload).eq('id',membership.id):await supabase.from('anaira_store_memberships').insert({store_id:store.id,restaurant_id:rid,...payload});
    if(r.error){setError(r.error.message);setBusy(false);return}
-   const sp={restaurant_id:rid,store_id:store.id,store_type:kind,seo_title:form.seo_title||null,seo_description:form.seo_description||null,min_order_amount:Number(form.min_order_amount)||0,delivery_fee:Number(form.delivery_fee)||0,delivery_radius_km:form.delivery_radius_km===''?null:Number(form.delivery_radius_km),tax_percent:Number(form.tax_percent)||0,timings:{open:form.open_time,close:form.close_time},payment_methods:String(form.payment_methods||'').split(',').map(x=>x.trim()).filter(Boolean),published:true};
+   const sp={restaurant_id:rid,store_id:store.id,store_type:storeKind,seo_title:form.seo_title||null,seo_description:form.seo_description||null,min_order_amount:Number(form.min_order_amount)||0,delivery_fee:Number(form.delivery_fee)||0,delivery_radius_km:form.delivery_radius_km===''?null:Number(form.delivery_radius_km),tax_percent:Number(form.tax_percent)||0,timings:{open:form.open_time,close:form.close_time},payment_methods:String(form.payment_methods||'').split(',').map(x=>x.trim()).filter(Boolean),published:true};
    const sr=await supabase.from('anaira_store_settings').upsert(sp,{onConflict:'store_id,restaurant_id'}); if(sr.error){setError(sr.error.message);setBusy(false);return}
    await supabase.from('anaira_store_activity_log').insert({store_id:store.id,restaurant_id:rid,actor_user_id:session?.user?.id,action:'store.configuration.updated',details:{catalog_source:source}});
    setSaved(true);await load();setBusy(false);
@@ -123,9 +219,10 @@ function StoreBuilder(){
  async function saveOffer(){if(!newOffer.code||!newOffer.title||!newOffer.discount_value)return;const r=await supabase.from('anaira_store_offers').insert({restaurant_id:rid,store_id:store.id,code:newOffer.code.toUpperCase(),title:newOffer.title,description:newOffer.description||null,discount_type:newOffer.discount_type,discount_value:Number(newOffer.discount_value),min_order_amount:Number(newOffer.min_order_amount)||0,active:true});if(r.error)setError(r.error.message);else{setNewOffer({code:'',title:'',description:'',discount_type:'percent',discount_value:'',min_order_amount:0,active:true});await load()}}
  async function toggleOffer(o){const r=await supabase.from('anaira_store_offers').update({active:!o.active}).eq('id',o.id);if(r.error)setError(r.error.message);else await load()}
 
- const source=form.catalog_source||(kind==='restaurant'?'anaira_pos':'anaira_hms');
- const storeName=kind==='restaurant'?'My Restaurant Store':'My Hotel Store';
- const publicUrl=kind==='restaurant'?`/store/${rid}`:`/book/${rid}`;
+ const source=form.catalog_source||(storeKind==='restaurant'?'anaira_pos':'anaira_hms');
+ const hospitalityLabel={hotel:'Hotel',camp:'Camping',homestay:'Homestay',guest_house:'Guest House',cottage:'Cottage'}[activeHospitalityType]||'Hospitality';
+ const storeName=kind==='restaurant'?'My Restaurant Store':`My ${hospitalityLabel} Store`;
+ const publicUrl=kind==='restaurant'?`/store/${rid}`:`/book/${rid}?stay_type=${encodeURIComponent(activeHospitalityType)}`;
  const grouped=useMemo(()=>categories,[categories]);
  if(session===undefined)return <div className="notice">Connecting…</div>;
  if(!session)return <AppShell><div className="auth-card"><h1>Sign in required</h1><a className="btn primary" href="/login">Open CRM Login</a></div></AppShell>;
@@ -133,12 +230,12 @@ function StoreBuilder(){
   <div className="sb-page">
    <div className="sb-hero">
     <div><div className="sb-eyebrow">ANAIRA BUSINESS STORE</div><h1>{storeName}</h1><p>Build and control your own customer-facing store. Restaurant SaaS remains the operational source of truth.</p></div>
-    <div className="sb-actions">{availableKinds.length>1&&<select className="compact-input" value={kind} onChange={e=>setKind(e.target.value)}><option value="restaurant">My Restaurant Store</option><option value="hotel">My Hotel Store</option></select>}<a className="btn" href={publicUrl} target="_blank">Preview Store ↗</a>{kind==='restaurant'&&<button className="btn primary" disabled={busy} onClick={saveStore}>{busy?'Saving…':'Save Changes'}</button>}</div>
+    <div className="sb-actions">{kind!=='restaurant'&&availableKinds.filter(k=>k!=='restaurant').length>1&&<select className="compact-input" value={activeHospitalityType} onChange={e=>{const next=e.target.value;setActiveHospitalityType(next);setKind(next);router.replace(`/store-builder?kind=${encodeURIComponent(next)}&hospitality_type=${encodeURIComponent(next)}`);}}>{availableKinds.filter(k=>k!=='restaurant').map(k=><option key={k} value={k}>{`My ${{hotel:'Hotel',camp:'Camping',homestay:'Homestay',guest_house:'Guest House',cottage:'Cottage'}[k]||'Hospitality'} Store`}</option>)}</select>}<a className="btn" href={publicUrl} target="_blank">Preview Store ↗</a><button className="btn primary" disabled={busy} onClick={saveStore}>{busy?'Saving…':'Save Changes'}</button></div>
    </div>
    {error&&<div className="notice error">{error}</div>}
    {!store?<div className="notice">This platform store is disabled or unpublished by Super Admin.</div>:<>
-    <div className="sb-kpis"><div><span>BUSINESS</span><b>{property?.name||rid.slice(0,8)}</b><small>Business Admin scope</small></div><div><span>CATALOG SOURCE</span><b>{sourceLabels[source]||source}</b><small>Single source of truth</small></div><div><span>{kind==='restaurant'?'MENU ITEMS':'BOOKINGS'}</span><b>{kind==='restaurant'?items.length:orders.length}</b><small>Live operational data</small></div><div><span>STORE</span><b>Connected</b><small>{publicUrl}</small></div></div>
-    {kind==='restaurant'?<>
+    <div className="sb-kpis"><div><span>BUSINESS</span><b>{property?.name||rid.slice(0,8)}</b><small>Business Admin scope</small></div><div><span>CATALOG SOURCE</span><b>{sourceLabels[source]||source}</b><small>Single source of truth</small></div><div><span>{storeKind==='restaurant'?'MENU ITEMS':'BOOKINGS'}</span><b>{storeKind==='restaurant'?items.length:orders.length}</b><small>Live operational data</small></div><div><span>STORE</span><b>Connected</b><small>{publicUrl}</small></div></div>
+    {storeKind==='restaurant'?<>
       <StoreTabNav active={storeTab} onChange={setStoreTab}/>
 
       {storeTab==='overview'&&<div className="sb-panel-grid">
@@ -186,9 +283,9 @@ function StoreBuilder(){
 
       <div className="sb-savebar"><span>{saved?'✓ Saved':'Changes are local until you save'}</span><button className="btn primary" disabled={busy} onClick={saveStore}>{busy?'Saving…':'Save Store Settings'}</button><a className="btn" href={publicUrl} target="_blank">Preview ↗</a></div>
      </>:<div className="sb-tab-content">
-       <Section title="Hotel Store Preview" meta="Live HMS data — hotel identity and operational data remain in Hotel Management."><div className="sb-hotel-preview"><div className="sb-hotel-cover" style={{backgroundImage:property?.cover_image?`linear-gradient(90deg,#1a120ccc,#1a120c55),url(${property.cover_image})`:'linear-gradient(120deg,#3d2415,#8b5c32)'}}><div>{property?.logo&&<img src={property.logo} alt=""/>}<div><small>ANAIRA HOTELS</small><h2>{property?.name||'Hotel'}</h2><p>{property?.city||''} · Live availability · Direct booking</p></div></div></div><div className="sb-hotel-stats"><b>{hotelRoomTypes.length}<small>Room Types</small></b><b>{hotelRatePlans.length}<small>Rate Plans</small></b><b>{hotelInventory.length}<small>Inventory Days</small></b><b>{hotelReservations.length}<small>Bookings</small></b></div><div className="sb-hotel-actions"><a className="btn" href="/hotel-management/setup">Edit Hotel Profile ↗</a><a className="btn" href="/hotel-management/room-types">Manage Rooms ↗</a><a className="btn" href="/hotel-management/rates">Manage Rates ↗</a><a className="btn" href="/hotel-management/inventory">Manage Inventory ↗</a><a className="btn primary" href={publicUrl} target="_blank">Open Hotel Store ↗</a></div></div></Section>
-       <Section title="Hotel Marketplace QR & Booking Link" meta="Share this hotel's direct booking experience"><MarketplaceQR restaurantId={rid} hotelName={property?.name||'Hotel'}/></Section>
-       <Section title="Hotel SEO" meta="Public discovery metadata"><div className="sb-form-grid"><Field label="SEO Title"><input className="compact-input" value={form.seo_title} onChange={e=>setForm({...form,seo_title:e.target.value})}/></Field><Field label="SEO Description"><textarea className="compact-input" value={form.seo_description} onChange={e=>setForm({...form,seo_description:e.target.value})}/></Field></div><div className="sb-savebar"><button className="btn primary" onClick={saveStore}>Save Hotel Store Settings</button><a className="btn" href={publicUrl} target="_blank">Preview ↗</a></div></Section>
+       <Section title="Hospitality Store Preview" meta="Live HMS data — identity and operational data remain in the canonical hospitality management workspace."><div className="sb-hotel-preview"><div className="sb-hotel-cover" style={{backgroundImage:property?.cover_image?`linear-gradient(90deg,#1a120ccc,#1a120c55),url(${property.cover_image})`:'linear-gradient(120deg,#3d2415,#8b5c32)'}}><div>{property?.logo&&<img src={property.logo} alt=""/>}<div><small>ANAIRA HOSPITALITY MARKETPLACE</small><h2>{property?.name||'Property'}</h2><p>{(property?.hospitality_types||[activeHospitalityType]).map(x=>({hotel:'Hotel',camp:'Camping',homestay:'Homestay',guest_house:'Guest House',cottage:'Cottage'}[x]||x)).join(' · ')}</p><p>{property?.city||''} · Live availability · Direct booking</p></div></div></div><div className="sb-hotel-stats"><b>{hotelRoomTypes.length}<small>{{hotel:'Hotel',camp:'Camp / Tent',homestay:'Homestay',guest_house:'Guest House',cottage:'Cottage'}[activeHospitalityType]||'Accommodation'} Types</small></b><b>{hotelRatePlans.length}<small>Rate Plans</small></b><b>{hotelInventory.length}<small>Inventory Days</small></b><b>{hotelReservations.length}<small>Bookings</small></b></div><div className="sb-hotel-actions"><a className="btn" href={`/hotel-management/setup?type=${activeHospitalityType}`}>Edit Property Profile ↗</a><a className="btn" href={`/hotel-management/room-types?type=${activeHospitalityType}`}>Manage Stay Types ↗</a><a className="btn" href={`/hotel-management/rates?type=${activeHospitalityType}`}>Manage Rates ↗</a><a className="btn" href={`/hotel-management/inventory?type=${activeHospitalityType}`}>Manage Inventory ↗</a><a className="btn primary" href={publicUrl} target="_blank">Open Store ↗</a></div></div></Section>
+       <Section title="Hospitality Marketplace QR & Booking Link" meta="Share this property's direct ${hospitalityLabel.toLowerCase()} booking experience"><MarketplaceQR restaurantId={rid} hotelName={property?.name||hospitalityLabel}/></Section>
+       <Section title="${hospitalityLabel} SEO" meta="Public discovery metadata"><div className="sb-form-grid"><Field label="SEO Title"><input className="compact-input" value={form.seo_title} onChange={e=>setForm({...form,seo_title:e.target.value})}/></Field><Field label="SEO Description"><textarea className="compact-input" value={form.seo_description} onChange={e=>setForm({...form,seo_description:e.target.value})}/></Field></div><div className="sb-savebar"><button className="btn primary" onClick={saveStore}>Save ${hospitalityLabel} Store Settings</button><a className="btn" href={publicUrl} target="_blank">Preview ↗</a></div></Section>
      </div>}
     </>}
   </div>

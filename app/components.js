@@ -8,7 +8,7 @@ const PLUGIN_BY_ROUTE = {
   '/loyalty':'crm','/marketing':'crm','/campaigns':'crm','/guest-relations':'crm','/complaints':'crm','/revenue':'crm',
   '/analytics':'crm','/events':'crm','/ai':'crm','/segmentation':'crm','/vip':'crm','/timeline':'crm','/upselling':'crm',
   '/forecasting':'crm','/competitors':'crm','/ota':'crm','/workflows':'crm','/intelligence':'crm','/guest-requests':'crm',
-  '/quotes':'crm','/partner-bookings':'crm','/reviews':'crm','/booking':'hotel-booking','/booking-engine':'hotel-booking','/hotel-management':'hotel-management-suite','/hotel-management/setup':'hotel-management-suite','/hotel-management/room-types':'hotel-management-suite','/hotel-management/rooms':'hotel-management-suite','/hotel-management/rates':'hotel-management-suite','/hotel-management/inventory':'hotel-management-suite','/pms':'hotel-pms','/reservation':'restaurant-reservation',
+  '/quotes':'crm','/partner-bookings':'crm','/reviews':'crm','/booking':'hotel-booking','/booking-engine':'hotel-booking','/hotel-management':'hotel-management-suite','/hotel-management/setup':'hotel-management-suite','/booking-engine/camping':'hotel-booking','/booking-engine/stays':'hotel-booking','/hotel-management/room-types':'hotel-management-suite','/hotel-management/rooms':'hotel-management-suite','/hotel-management/rates':'hotel-management-suite','/hotel-management/inventory':'hotel-management-suite','/pms':'hotel-pms','/reservation':'restaurant-reservation',
   '/delivery':'food-delivery','/store':'restaurant-store','/restaurant-stores':'restaurant-store','/channel-manager':'channel-manager','/pos':'anaira-pos','/housekeeping':'hotel-pms','/seo':'seo-system','/plugins/seo-system/settings':'seo-system','/ai-reviews':'ai-review-system'
 };
 const PERMISSION_BY_ROUTE = {
@@ -25,12 +25,24 @@ const ADMIN_ONLY_ROUTES = ['/store-builder','/users','/roles','/hotel-management
 const BUSINESS_SETTINGS_ROUTE='/business-settings';
 
 const SUPER_GROUPS = [
-  {title:'COMMAND CENTER',items:[['▦','Dashboard','/admin'],['▦','Properties / Tenants','/properties'],['♙','Business Admins','/business-admins'],['♙','Users & Staff','/users'],['◆','Roles & Profiles','/roles'],['◇','Plugin Control Center','/plugins'],['⚙','Global Integrations','/super-admin/integrations'],['◆','SEO System','/seo'],['★','AI Review Automation','/ai-reviews'],['◫','Audit Logs','/audit'],['⚙','Platform Settings','/platform-settings'],['▣','Global Booking Engine','/super-admin/booking-engine']]},
+  {title:'COMMAND CENTER',items:[['▦','Dashboard','/admin'],['▦','Properties / Tenants','/properties'],['♙','Business Admins','/business-admins'],['♙','Users & Staff','/users'],['◆','Roles & Profiles','/roles'],['◇','Plugin Control Center','/plugins'],['⚙','Global Integrations','/super-admin/integrations'],['◆','SEO System','/seo'],['★','AI Review Automation','/ai-reviews'],['◫','Audit Logs','/audit'],['⚙','Platform Settings','/platform-settings'],['▣','Global Booking Engine','/super-admin/booking-engine'],['⌂','Hotel Profile / Setup','/hotel-management/setup'],['♨','Restaurant Profile / Setup','/restaurant-setup']]},
   {title:'ANAIRA STORES',items:[['◆','ANAIRA Store & QR','/super-admin/anaira-store'],['🏨','Hotel Marketplace Store','/anaira/hotels'],['⚙','Hotel Marketplace Settings','/super-admin/hotel-marketplace-settings'],['🍽','Restaurant Marketplace','/store'],['⚙','Restaurant Marketplace Settings','/super-admin/marketplace-settings']]},
   {title:'CRM PLATFORM',items:[['◉','Customer 360','/customer-360'],['⌂','Hotel Guest CRM','/stays'],['♨','Restaurant CRM','/restaurant'],['◆','Leads & Sales','/leads'],['▣','Corporate CRM','/corporate'],['♢','Partners','/partners'],['↔','Timeline / Interactions','/timeline'],['★','Guest Relations','/guest-relations'],['⚠','Complaints / Service Recovery','/complaints'],['★','Loyalty','/loyalty'],['◇','Segmentation','/segmentation'],['✦','VIP Management','/vip'],['◈','Offers & Coupons','/marketing'],['✉','Campaigns','/campaigns'],['◌','WhatsApp CRM','/integrations'],['⚙','Workflows / Automation','/workflows'],['✦','Events & Upselling','/events']]},
   {title:'BUSINESS INTELLIGENCE',items:[['▤','Analytics','/analytics'],['₹','Revenue Management','/revenue'],['◈','Forecasting','/forecasting'],['◈','Competitor Intelligence','/competitors'],['⇄','OTA / Channel Performance','/ota'],['✧','AI Insights','/ai'],['✧','Decision Intelligence','/intelligence']]},
   {title:'OPERATIONS',items:[['⌂','Hotel Booking','/booking'],['▣','Booking Engine Control','/booking-engine'],['▦','Anaira Hotel Management','/hotel-management'],['▤','Hotel PMS','/pms'],['◫','Restaurant Reservation','/reservation'],['▣','Anaira POS','/pos'],['◉','Food Delivery','/delivery'],['⇄','Channel / OTA Manager','/channel-manager'],['⚙','Hotel Setup','/hotel-management/setup'],['♨','Restaurant Setup','/restaurant-setup']]},
 ];
+
+const HOSPITALITY_MANAGEMENT_GROUPS = {
+  hotel: {title:'HOTEL MANAGEMENT', items:[]},
+  camp: {title:'CAMPING MANAGEMENT', items:[]},
+  homestay: {title:'HOMESTAY MANAGEMENT', items:[]},
+  guest_house: {title:'GUEST HOUSE MANAGEMENT', items:[]},
+  cottage: {title:'COTTAGE MANAGEMENT', items:[]}
+};
+const HOSPITALITY_PLUGIN={hotel:'hotel-management-suite',camp:'camping-management',homestay:'homestay-management',guest_house:'guest-house-management',cottage:'cottage-management'};
+const HOSPITALITY_MENU_META={
+ hotel:['Hotel','Hotel','Hotel'],camp:['Camping','Camp','Camping'],homestay:['Homestay','Accommodation','Homestay'],guest_house:['Guest House','Accommodation','Guest House'],cottage:['Cottage','Cottage','Cottage']
+};
 
 const BUSINESS_GROUPS = [
   {title:'COMMAND CENTER',items:[['▦','Dashboard','/'],['◌','My Tasks / Work Queue','/my-work']]},
@@ -71,46 +83,194 @@ const PROFILE_GROUPS = {
   read_only:[{title:'COMMAND CENTER',items:[['▦','Dashboard','/']]},{title:'VIEW',items:[['◉','Customer 360','/customer-360','customer.view','crm'],['⌂','Bookings','/booking','booking.view','hotel-booking'],['▣','Booking Engine Control','/booking-engine','booking.view','hotel-booking'],['▦','Hotel Management','/hotel-management','hms.room.view','hotel-management-suite'],['▤','PMS','/pms','pms.room.view','hotel-pms'],['▣','POS','/pos','pos.order.view','anaira-pos'],['▤','Reports','/analytics','report.view','crm']]}]
 };
 
+
+Object.entries(HOSPITALITY_MANAGEMENT_GROUPS).forEach(([type,g])=>{
+ const [label,unit,short]=HOSPITALITY_MENU_META[type];
+ g.items=[
+  ['▦',`${label} Dashboard`,'/hotel-management','hms.room.view',HOSPITALITY_PLUGIN[type]],
+  ['⌂',`${label} Profile`,'/hotel-management/setup','business.settings',HOSPITALITY_PLUGIN[type]],
+  ['▣',type==='hotel'?'Room Types':`${unit} Types`,'/hotel-management/room-types','hms.room.view',HOSPITALITY_PLUGIN[type]],
+  ['▣',type==='hotel'?'Rooms':`${unit}s`,'/hotel-management/rooms','hms.room.view',HOSPITALITY_PLUGIN[type]],
+  ['▦',type==='hotel'?'Room Inventory':`${label} Inventory`,'/hotel-management/inventory','hms.room.view',HOSPITALITY_PLUGIN[type]],
+  ['₹','Rate Plans','/hotel-management/rates','booking.view',HOSPITALITY_PLUGIN[type]],
+  ['⌂','Reservations','/booking','booking.view','hotel-booking'],
+  ['▤',`${label} PMS / Front Desk`,'/pms','pms.room.view',HOSPITALITY_PLUGIN[type]],
+  ['⌂',`${label} Housekeeping`,'/housekeeping','housekeeping.task.view',HOSPITALITY_PLUGIN[type]]
+ ];
+});
+
 function normalizeGroups(groups){return groups.map(g=>({...g,items:g.items.map(x=>({icon:x[0],label:x[1],href:x[2],permission:x[3],plugin:x[4]}))}));}
+
+function hospitalityManagementItems(type){
+  const m=hospitalityMetaForSidebar(type);
+  const plugin=HOSPITALITY_PLUGIN[type]||'hotel-management-suite';
+  const unitType={hotel:'Room',camp:'Camp / Tent',homestay:'Homestay Unit',guest_house:'Guest House Unit',cottage:'Cottage'}[type]||'Accommodation';
+  const unit={hotel:'Room',camp:'Camp',homestay:'Unit',guest_house:'Unit',cottage:'Cottage'}[type]||'Unit';
+  return [
+    ['▦',`${m.label} Dashboard`,`/hotel-management?type=${type}`,'hms.room.view',plugin],
+    ['⌂',`${m.label} Profile`,`/hotel-management/setup?type=${type}`,'business.settings',plugin],
+    ['▣',type==='hotel'?'Room Types':`${unitType} Types`,`/hotel-management/room-types?type=${type}`,'hms.room.view',plugin],
+    ['▣',type==='hotel'?'Rooms':`${unit}s`,`/hotel-management/rooms?type=${type}`,'hms.room.view',plugin],
+    ['▦',type==='hotel'?'Room Inventory':`${m.label} Inventory`,`/hotel-management/inventory?type=${type}`,'hms.room.view',plugin],
+    ['₹','Rate Plans',`/hotel-management/rates?type=${type}`,'booking.view',plugin],
+    ['⌂','Reservations',`/booking?type=${type}`,'booking.view',plugin],
+    ['▤',`${m.label} PMS / Front Desk`,`/pms?type=${type}`,'pms.room.view',plugin],
+    ['⌂',`${m.label} Housekeeping`,`/housekeeping?type=${type}`,'housekeeping.task.view',plugin]
+  ];
+}
+function hospitalityOperationItems(types){
+  const out=[];
+  for(const type of types){
+    const m=hospitalityMetaForSidebar(type);
+    const plugin=HOSPITALITY_PLUGIN[type]||'hotel-management-suite';
+    out.push(
+      ['⌂',`${m.label} Booking Engine`,`/booking?type=${type}`,'booking.view',plugin],
+      ['🏨',`My ${m.label} Store`,'/store-builder?kind=hotel&hospitality_type='+type,'booking.view',plugin],
+      ['▣',`${m.label} Booking Control`,`/booking-engine?type=${type}`,'booking.view',plugin]
+    );
+  }
+  return out;
+}
+function hospitalityMetaForSidebar(type){
+  return {
+    hotel:{label:'Hotel'},
+    camp:{label:'Camping'},
+    homestay:{label:'Homestay'},
+    guest_house:{label:'Guest House'},
+    cottage:{label:'Cottage'}
+  }[type]||{label:'Hospitality'};
+}
+function stripStaticHospitalityItems(group){
+  const blocked=['/hotel-management','/hotel-management/setup','/hotel-management/room-types','/hotel-management/rooms','/hotel-management/rates','/hotel-management/inventory','/booking','/booking-engine','/pms','/housekeeping','/store-builder'];
+  return {...group,items:group.items.filter(x=>!blocked.includes(String(x[2]||'').split('?')[0]))};
+}
 
 export function AppShell({children, active}) {
   const pathname=usePathname(); const router=useRouter();
-  const [ctx,setCtx]=useState({loading:true,session:null,role:null,profileKey:null,isSuperAdmin:false,restaurantId:null,plugins:{},permissions:{}});
+  const [ctx,setCtx]=useState({loading:true,session:null,role:null,profileKey:null,isSuperAdmin:false,restaurantId:null,plugins:{},permissions:{},hospitalityType:'hotel',hospitalityTypes:['hotel']});
   useEffect(()=>{let alive=true;(async()=>{
     if(!supabase){if(alive)setCtx(x=>({...x,loading:false}));return;}
     const {data:{session}}=await supabase.auth.getSession();
     if(!session){if(alive)setCtx({loading:false,session:null,role:null,profileKey:null,isSuperAdmin:false,restaurantId:null,plugins:{},permissions:{}});return;}
     const {data:p}=await supabase.from('anaira_my_profile').select('is_super_admin,role,restaurant_id,full_name').eq('id',session.user.id).maybeSingle();
     const superAdmin=p?.is_super_admin===true||p?.role==='super_admin';
-    let plugins={},permissions={};
+    let plugins={},permissions={},hospitalityType=null,hospitalityTypes=[];
     if(!superAdmin&&p?.restaurant_id){
-      const [{data:pl},{data:rp},{data:up},{data:prof}]=await Promise.all([
+      const [{data:pl},{data:rp},{data:up},{data:prof},{data:biz}]=await Promise.all([
         supabase.from('restaurant_plugins').select('plugin_code,enabled').eq('restaurant_id',p.restaurant_id),
         supabase.from('anaira_role_permissions').select('permission_key').eq('role_key',p.role||'staff'),
         supabase.from('anaira_user_permissions').select('permission_key,allowed').eq('user_id',session.user.id).eq('restaurant_id',p.restaurant_id),
-        supabase.from('anaira_user_profiles').select('profile_key').eq('user_id',session.user.id).eq('restaurant_id',p.restaurant_id).maybeSingle()
+        supabase.from('anaira_user_profiles').select('profile_key').eq('user_id',session.user.id).eq('restaurant_id',p.restaurant_id).maybeSingle(),
+        supabase.from('restaurants').select('hospitality_type,hospitality_types').eq('id',p.restaurant_id).maybeSingle()
       ]);
-      plugins=Object.fromEntries((pl||[]).map(x=>[x.plugin_code,x.enabled===true]));
+      const pluginsMap=Object.fromEntries((pl||[]).map(x=>[x.plugin_code,x.enabled===true]));
+      // Resolve the tenant hospitality profile robustly. The sidebar must not
+      // disappear just because hospitality_types is null/empty or an older
+      // tenant only has hospitality_type populated.
+      const rawMulti = biz?.hospitality_types;
+      let configuredRaw = [];
+      if(Array.isArray(rawMulti)) configuredRaw = rawMulti;
+      else if(typeof rawMulti === 'string'){
+        try { const parsed=JSON.parse(rawMulti); configuredRaw=Array.isArray(parsed)?parsed:[rawMulti]; } catch { configuredRaw=[rawMulti]; }
+      }
+      if(!configuredRaw.length && biz?.hospitality_type) configuredRaw=[biz.hospitality_type];
+      const normalizedConfigured = configuredRaw
+        .map(x=>String(x||'').trim().toLowerCase())
+        .map(x=>x==='camping'?'camp':x==='campground'?'camp':x==='guest-house'?'guest_house':x==='guest house'?'guest_house':x)
+        .filter(x=>HOSPITALITY_PLUGIN[x]);
+      const configured = [...new Set(normalizedConfigured)];
+      // A selected hospitality type is enabled by default when no explicit plugin assignment exists.
+      // Super Admin can still disable it by creating/updating the corresponding restaurant_plugins row to enabled=false.
+      for(const t of configured){const key=HOSPITALITY_PLUGIN[t];if(key && !Object.prototype.hasOwnProperty.call(pluginsMap,key))pluginsMap[key]=true;}
+      hospitalityTypes=[];
+      if(configured.length){
+        // Profile selections are authoritative for the core hospitality workspace.
+        // A stale/disabled plugin row must never make the property's selected
+        // Hotel/Camping/Homestay/Guest House/Cottage management disappear.
+        // Restaurant/commerce plugins remain controlled by restaurant_plugins.
+        for(const t of configured){
+          if(HOSPITALITY_PLUGIN[t]&&!hospitalityTypes.includes(t)) hospitalityTypes.push(t);
+        }
+      }else{
+        const [{data:hmsTypes},{data:campTypes}]=await Promise.all([
+          supabase.from('hms_room_types').select('hospitality_type').eq('restaurant_id',p.restaurant_id).eq('active',true),
+          supabase.from('camp_unit_types').select('id').eq('restaurant_id',p.restaurant_id).eq('active',true).limit(1)
+        ]);
+        for(const row of (hmsTypes||[])){const t=row?.hospitality_type;if(HOSPITALITY_PLUGIN[t]&&pluginsMap[HOSPITALITY_PLUGIN[t]]!==false&&!hospitalityTypes.includes(t))hospitalityTypes.push(t);}
+        if((campTypes||[]).length&&pluginsMap['camping-management']!==false&&!hospitalityTypes.includes('camp'))hospitalityTypes.push('camp');
+        // Legacy tenants can have no catalog rows yet. Fall back to the
+        // property's primary hospitality_type so the correct management
+        // workspace is still visible and usable.
+        if(!hospitalityTypes.length){
+          const fallbackType=String(biz?.hospitality_type||'').trim().toLowerCase();
+          if(HOSPITALITY_PLUGIN[fallbackType] && pluginsMap[HOSPITALITY_PLUGIN[fallbackType]]!==false){
+            hospitalityTypes.push(fallbackType);
+          }
+        }
+      }
+      hospitalityType=hospitalityTypes[0]||null;
+      plugins=pluginsMap;
       permissions=Object.fromEntries((rp||[]).map(x=>[x.permission_key,true]));
       if(prof?.profile_key){ const {data:pp}=await supabase.from('anaira_profile_permissions').select('permission_key').eq('profile_key',prof.profile_key); (pp||[]).forEach(x=>{permissions[x.permission_key]=true}); }
       (up||[]).forEach(x=>{permissions[x.permission_key]=x.allowed===true});
       var profileKey=prof?.profile_key||null;
     }
-    if(alive)setCtx({loading:false,session,role:p?.role||'staff',profileKey:typeof profileKey==='undefined'?null:profileKey,isSuperAdmin:superAdmin,restaurantId:p?.restaurant_id||null,plugins,permissions,fullName:p?.full_name||''});
+    if(alive)setCtx({loading:false,session,role:p?.role||'staff',profileKey:typeof profileKey==='undefined'?null:profileKey,isSuperAdmin:superAdmin,restaurantId:p?.restaurant_id||null,plugins,permissions,hospitalityType,hospitalityTypes,fullName:p?.full_name||''});
   })();return()=>{alive=false}},[]);
 
   const groups=useMemo(()=>{
     if(ctx.isSuperAdmin)return normalizeGroups(SUPER_GROUPS);
-    if(ctx.role==='admin'||ctx.profileKey==='business_admin')return normalizeGroups(BUSINESS_GROUPS);
-    if(ctx.role==='staff' && ctx.profileKey && PROFILE_GROUPS[ctx.profileKey]) return normalizeGroups(PROFILE_GROUPS[ctx.profileKey]);
-    return normalizeGroups(ROLE_GROUPS[ctx.role]||ROLE_GROUPS.staff);
-  },[ctx.isSuperAdmin,ctx.role,ctx.profileKey]);
+    // The management context must follow the current hospitality route.
+    // Previously the sidebar always preferred the property's first configured
+    // type, so /hotel-management?type=camp could still render HOTEL MANAGEMENT.
+    const urlType=typeof window!=='undefined'?new URLSearchParams(window.location.search).get('type'):'';
+    const validUrlType=urlType&&HOSPITALITY_PLUGIN[urlType]?urlType:'';
+    const configuredTypes=ctx.hospitalityTypes?.length?ctx.hospitalityTypes:[];
+    // The property's explicit hospitality_types are the source of truth for the
+    // management context. A stale/legacy hotel plugin assignment must never turn a
+    // Camping-only property back into Hotel Management. Super Admin plugin state
+    // still controls unrelated modules, while the selected property type determines
+    // which hospitality workspace is rendered here.
+    const types=validUrlType && configuredTypes.includes(validUrlType)
+      ?[validUrlType]
+      :configuredTypes;
+    const mgGroups=types.map(type=>({
+      title:(HOSPITALITY_MANAGEMENT_GROUPS[type]||HOSPITALITY_MANAGEMENT_GROUPS.hotel).title,
+      items:hospitalityManagementItems(type)
+    }));
+    const dynamicOps={title:'HOSPITALITY OPERATIONS',items:hospitalityOperationItems(types)};
+    const tenantAdmin=ctx.role==='admin'||ctx.role==='business_admin'||ctx.profileKey==='business_admin';
+    if(tenantAdmin){
+      const base=BUSINESS_GROUPS.filter(g=>g.title!=='HOTEL MANAGEMENT').map(stripStaticHospitalityItems);
+      // Restaurant administration is a tenant-level capability and must remain
+      // visible even when the property is configured primarily as hotel/camp/etc.
+      // Do not let the hospitality-type sidebar replacement hide the restaurant
+      // profile, menu/store, POS or reservation controls.
+      const restaurantEnabled=ctx.plugins['restaurant-management']===true || ctx.plugins['restaurant-core']===true || ctx.plugins['restaurant-store']===true || ctx.plugins['anaira-pos']===true || ctx.plugins['restaurant-reservation']===true || ctx.plugins['food-delivery']===true;
+      const restaurantGroup=restaurantEnabled?{title:'RESTAURANT MANAGEMENT',items:[
+        ['♨','Restaurant Setup','/restaurant-setup','business.settings','restaurant-store'],
+        ['◇','My Restaurant Store','/store-builder?kind=restaurant','store.view','restaurant-store'],
+        ['▣','Anaira POS / Menu','/pos','pos.order.view','anaira-pos'],
+        ['◫','Restaurant Reservations','/reservation','reservation.view','restaurant-reservation'],
+        ['◉','Food Delivery','/delivery','delivery.order.view','food-delivery']
+      ]}:null;
+      return normalizeGroups([...mgGroups,...(restaurantGroup?[restaurantGroup]:[]),...base,dynamicOps]);
+    }
+    if(ctx.role==='staff' && ctx.profileKey && PROFILE_GROUPS[ctx.profileKey]){
+      const base=PROFILE_GROUPS[ctx.profileKey].map(stripStaticHospitalityItems);
+      return normalizeGroups([...mgGroups,...base,dynamicOps]);
+    }
+    const base=(ROLE_GROUPS[ctx.role]||ROLE_GROUPS.staff).map(stripStaticHospitalityItems);
+    return normalizeGroups([...mgGroups,...base,dynamicOps]);
+  },[ctx.isSuperAdmin,ctx.role,ctx.profileKey,ctx.plugins,ctx.hospitalityType,ctx.hospitalityTypes?.join('|')]);
 
   const visibleGroups=groups.map(g=>({...g,items:g.items.filter(item=>{
     if(!item.permission && !item.plugin)return true;
     if(ctx.isSuperAdmin)return true;
-    if(item.plugin && ctx.plugins[item.plugin]!==true)return false;
-    if(item.permission && ctx.permissions[item.permission]!==true && ctx.role!=='admin' && ctx.profileKey!=='business_admin')return false;
+    const hospitalityPluginKeys=Object.values(HOSPITALITY_PLUGIN);
+    const hospitalityItem=item.plugin && hospitalityPluginKeys.includes(item.plugin);
+    if(item.plugin && ctx.plugins[item.plugin]!==true && !hospitalityItem) return false;
+    if(item.permission && ctx.permissions[item.permission]!==true && ctx.role!=='admin' && ctx.role!=='business_admin' && ctx.profileKey!=='business_admin')return false;
     return true;
   })})).filter(g=>g.items.length);
 
@@ -123,8 +283,12 @@ export function AppShell({children, active}) {
     if(ADMIN_ONLY_ROUTES.some(r=>pathname===r||pathname.startsWith(r+'/')) && !ctx.isSuperAdmin && ctx.role!=='admin' && ctx.profileKey!=='business_admin'){router.replace('/');return;}
     if(pathname===BUSINESS_SETTINGS_ROUTE && !ctx.isSuperAdmin && ctx.role!=='admin' && ctx.profileKey!=='business_admin'){router.replace('/');return;}
     if(ctx.isSuperAdmin)return;
-    const plugin=PLUGIN_BY_ROUTE[pathname];
-    if(plugin && ctx.plugins[plugin]!==true){router.replace('/');return;}
+    let plugin=PLUGIN_BY_ROUTE[pathname];
+    if(pathname==='/hotel-management'||pathname.startsWith('/hotel-management/')){ const urlType=typeof window!=='undefined'?new URLSearchParams(window.location.search).get('type'):'hotel'; plugin=HOSPITALITY_PLUGIN[urlType]||'hotel-management-suite'; }
+    const requestedType=typeof window!=='undefined'?new URLSearchParams(window.location.search).get('type'):'';
+    const configuredHospitality = requestedType && ctx.hospitalityTypes?.includes(requestedType);
+    const hospitalityPath = pathname==='/hotel-management' || pathname.startsWith('/hotel-management/') || pathname==='/pms' || pathname==='/housekeeping' || pathname==='/booking';
+    if(plugin && ctx.plugins[plugin]!==true && !(hospitalityPath && configuredHospitality)){router.replace('/');return;}
     if(ctx.role!=='admin' && ctx.profileKey!=='business_admin'){
       const required=PERMISSION_BY_ROUTE[pathname];
       if(required && ctx.permissions[required]!==true)router.replace('/');

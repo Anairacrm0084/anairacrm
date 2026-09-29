@@ -1,2 +1,14 @@
-import SimplePage from '../SimplePage';
-export default function Page(){return <SimplePage active="/housekeeping" eyebrow="HOUSEKEEPING" title="Housekeeping Workspace" subtitle="Room status, cleaning queue, maintenance requests and completed-room workflow." permissionNote="Connect this workspace to the canonical PMS housekeeping tables when those operational tables are populated. The CRM layer does not duplicate PMS room ownership." />}
+'use client';
+import {useEffect,useState} from 'react';
+import {AppShell,Header,Section,Table,Pill} from '../components';
+import {hospitalityMeta} from '../hotel-management/setup-components';
+import {supabase} from '../../lib/supabase';
+
+export default function Housekeeping(){
+ const [rid,setRid]=useState(null),[rows,setRows]=useState([]),[type,setType]=useState('hotel'),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ async function load(activeType=type){if(!rid)return;const [r,t]=await Promise.all([supabase.from('hms_rooms').select('id,room_number,floor,status,housekeeping_status,room_type_id,hospitality_type').eq('restaurant_id',rid).eq('hospitality_type',activeType).order('room_number'),supabase.from('hms_room_types').select('id,name').eq('restaurant_id',rid)]);const tm=Object.fromEntries((t.data||[]).map(x=>[x.id,x.name]));setRows((r.data||[]).map(x=>({...x,type_name:tm[x.room_type_id]||'—'})));}
+ useEffect(()=>{(async()=>{const {data:{session}}=await supabase.auth.getSession();if(!session){location.href='/login';return;}const {data:p}=await supabase.from('anaira_my_profile').select('restaurant_id').eq('id',session.user.id).maybeSingle();if(p?.restaurant_id){setRid(p.restaurant_id);const {data:t}=await supabase.from('restaurants').select('hospitality_type,hospitality_types').eq('id',p.restaurant_id).maybeSingle();const types=Array.isArray(t?.hospitality_types)&&t.hospitality_types.length?t.hospitality_types:[t?.hospitality_type||'hotel'];const requested=typeof window!=='undefined'?new URLSearchParams(window.location.search).get('type'):'';const activeType=types.includes(requested)?requested:types[0];setType(activeType);setTimeout(load,0);}})()},[]);
+ async function transition(room,action){setBusy(room.id+action);setError('');const {error:e}=await supabase.rpc('anaira_room_housekeeping_transition',{p_restaurant_id:rid,p_room_id:room.id,p_action:action});if(e)setError(e.message);else await load();setBusy('');}
+ const m=hospitalityMeta(type);
+ return <AppShell active='/housekeeping'><Header eyebrow={`${m.label.toUpperCase()} OPERATIONS`} title={`${m.label} Housekeeping`} subtitle={`Same housekeeping workflow as Hotel Management for ${m.units.toLowerCase()}.`} actions={<button className='btn' onClick={load}>Refresh</button>}/>{error&&<div className='notice error'>{error}</div>}<Section title={`${m.unit} Readiness`} meta={`Live ${m.units.toLowerCase()} from canonical HMS`}><Table columns={[m.unit,'Type','Status','Housekeeping','Actions']} rows={rows.map(r=>[r.room_number,r.type_name,<Pill>{r.status}</Pill>,<Pill>{r.housekeeping_status||'—'}</Pill>,<div style={{display:'flex',gap:6,flexWrap:'wrap'}}>{['dirty','cleaning','clean','inspected'].map(a=><button className='btn' key={a} disabled={!!busy} onClick={()=>transition(r,a)}>{a[0].toUpperCase()+a.slice(1)}</button>)}</div>])}/></Section></AppShell>
+}

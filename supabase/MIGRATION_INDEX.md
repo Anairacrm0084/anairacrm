@@ -35,3 +35,8 @@ Apply in numeric order after 001–021. Do not skip migrations in production.
 - 063_hms_store_booking_bridge.sql — Hotel Store live HMS availability and booking bridge with CRM linkage and folio creation.
 
 - 20260925_phase28_seo_atoz_completion.sql — SEO A-to-Z completion hardening
+
+- `20260929_hotel_marketplace_destination_assignment_and_slider.sql` — canonical hotel-to-destination assignment on `hms_settings`, destination-aware marketplace hotel search, and legacy city/address fallback for free-text search.
+- `20260929_hotel_property_marketplace_media.sql` — property/global hotel marketplace background media and overlay controls.
+
+- `20260929_camping_booking_engine.sql` — parallel Camping Marketplace and Booking Engine: camp properties, tent/camp unit catalog, per-person/per-unit rates, date inventory, inventory holds, guest reservations, booking transactions, public search/availability RPCs and payment/confirmation lifecycle.

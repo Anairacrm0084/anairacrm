@@ -1,0 +1,3 @@
+-- Marketplace routing is locked to the property's selected hospitality_type.
+-- Hotel, camp, homestay, guest_house and cottage listings cannot cross-publish.
+-- The live functions were applied directly to Supabase with this same contract.

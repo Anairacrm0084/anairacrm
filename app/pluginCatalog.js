@@ -318,5 +318,37 @@ export const pluginCatalog = [
     "description": "Enterprise CRM module: Competitor Rate Intelligence",
     "route": "/competitor-intelligence",
     "core": false
-  }
+  },
+  {
+    "key": "camping-management",
+    "name": "Anaira Camping Management",
+    "category": "Hospitality",
+    "description": "Hotel Management parity for camping, tents, inventory, per-person rates and reservations.",
+    "route": "/hotel-management",
+    "core": false
+  },
+  {
+    "key": "homestay-management",
+    "name": "Anaira Homestay Management",
+    "category": "Hospitality",
+    "description": "Hotel Management parity for homestays, accommodations, inventory, rates and reservations.",
+    "route": "/hotel-management",
+    "core": false
+  },
+  {
+    "key": "guest-house-management",
+    "name": "Anaira Guest House Management",
+    "category": "Hospitality",
+    "description": "Hotel Management parity for guest houses, accommodations, inventory, rates and reservations.",
+    "route": "/hotel-management",
+    "core": false
+  },
+  {
+    "key": "cottage-management",
+    "name": "Anaira Cottage Management",
+    "category": "Hospitality",
+    "description": "Hotel Management parity for cottages, inventory, rates and reservations.",
+    "route": "/hotel-management",
+    "core": false
+  },
 ];

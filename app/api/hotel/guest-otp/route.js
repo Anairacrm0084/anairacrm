@@ -20,21 +20,21 @@ const getOtpSecret = () => {
 
 async function sendEmail(to, otp){
   if(!process.env.RESEND_API_KEY || !process.env.RESEND_FROM) throw new Error('Email OTP provider is not configured. Add RESEND_API_KEY and RESEND_FROM.');
-  const r=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${process.env.RESEND_API_KEY}`,'content-type':'application/json'},body:JSON.stringify({from:process.env.RESEND_FROM,to:[to],subject:'Your hotel booking verification code',text:`Your Anaira hotel booking verification code is ${otp}. It expires in 10 minutes. Do not share this code.`})});
+  const r=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${process.env.RESEND_API_KEY}`,'content-type':'application/json'},body:JSON.stringify({from:process.env.RESEND_FROM,to:[to],subject:'Your Anaira booking verification code',text:`Your Anaira booking verification code is ${otp}. It expires in 10 minutes. Do not share this code.`})});
   const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.message||'Email OTP delivery failed'); return {provider:'resend',id:j.id};
 }
 
 async function sendSms(to, otp){
   if(!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_FROM) throw new Error('SMS OTP provider is not configured. Add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and TWILIO_FROM.');
   const auth=Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64');
-  const r=await fetch(`https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/Messages.json`,{method:'POST',headers:{Authorization:`Basic ${auth}`,'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({From:process.env.TWILIO_FROM,To:to,Body:`Your Anaira hotel booking OTP is ${otp}. It expires in 10 minutes. Do not share it.`})});
+  const r=await fetch(`https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/Messages.json`,{method:'POST',headers:{Authorization:`Basic ${auth}`,'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({From:process.env.TWILIO_FROM,To:to,Body:`Your Anaira booking OTP is ${otp}. It expires in 10 minutes. Do not share it.`})});
   const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.message||'SMS OTP delivery failed'); return {provider:'twilio',id:j.sid};
 }
 
 export async function POST(req){
   try{
     const body=await req.json();
-    const tenantId=String(body.tenant_id||'').trim(), channel=body.channel==='email'?'email':body.channel==='phone'?'phone':null;
+    const tenantId=String(body.tenant_id||'').trim(), propertyType=body.property_type==='camp'?'camp':'hotel', channel=body.channel==='email'?'email':body.channel==='phone'?'phone':null;
     if(!tenantId||!channel) return appError('tenant_id and channel are required.');
     const destination=channel==='email'?normalizeEmail(body.email):normalizePhone(body.phone);
     if(channel==='email' && !/^\S+@\S+\.\S+$/.test(destination)) return appError('Enter a valid email address.');
@@ -45,9 +45,10 @@ export async function POST(req){
     try { db = supabaseAdmin(); } catch (e) {
       return appError('Server Supabase credentials are not configured. Set SUPABASE_SERVICE_ROLE_KEY in the Vercel Production environment and redeploy.', 500);
     }
-    const {data:tenant,error:tenantError}=await db.from('hms_settings').select('restaurant_id').eq('restaurant_id',tenantId).maybeSingle();
-    if(tenantError) throw tenantError;
-    if(!tenant) return appError('Hotel configuration was not found.',404);
+    let tenant;
+    if(propertyType==='camp'){ const {data,error}=await db.from('camp_properties').select('restaurant_id').eq('restaurant_id',tenantId).eq('active',true).maybeSingle(); if(error) throw error; tenant=data; }
+    else { const {data,error}=await db.from('hms_settings').select('restaurant_id').eq('restaurant_id',tenantId).maybeSingle(); if(error) throw error; tenant=data; }
+    if(!tenant) return appError(propertyType==='camp'?'Camping configuration was not found.':'Hotel configuration was not found.',404);
     const destinationHash=hash(`${channel}:${destination}`);
     const {data:recent}=await db.from('anaira_guest_otp_challenges').select('last_sent_at').eq('tenant_id',tenantId).eq('destination_hash',destinationHash).order('created_at',{ascending:false}).limit(1).maybeSingle();
     if(recent?.last_sent_at && Date.now()-new Date(recent.last_sent_at).getTime()<60000) return appError('Please wait 60 seconds before requesting another OTP.',429);
