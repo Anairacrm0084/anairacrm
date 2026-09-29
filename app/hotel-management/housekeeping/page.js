@@ -1,15 +1,6 @@
 'use client';
 import {useEffect,useState} from 'react';
-import {SetupShell,SetupHeader,useTenantProperty,ensureSelected,SelectField,Section,Table,Pill} from '../setup-components';
-
-const LOCAL_HOSPITALITY_META={
- hotel:{label:'Hotel',unit:'Room'},
- camp:{label:'Camping',unit:'Camp / Tent'},
- homestay:{label:'Homestay',unit:'Accommodation'},
- guest_house:{label:'Guest House',unit:'Accommodation'},
- cottage:{label:'Cottage',unit:'Cottage'}
-};
-const hospitalityMeta=(type)=>LOCAL_HOSPITALITY_META[type]||LOCAL_HOSPITALITY_META.hotel;
+import {SetupShell,SetupHeader,useTenantProperty,ensureSelected,SelectField,Section,Table,Pill,hospitalityMeta} from '../setup-components';
 import {supabase} from '../../../lib/supabase';
 const STATES=['pending','in_progress','completed','inspected'];
 export default function Housekeeping(){

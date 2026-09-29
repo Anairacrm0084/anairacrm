@@ -1,0 +1,15 @@
+FINAL FIX
+
+The root cause was not only the React publication gate. Supabase availability functions still had a 5-argument version that unconditionally raised "Hotel store is not published".
+
+Database fix applied to project bhptqdoteucuymmdzsmg:
+- anaira_public_hms_room_availability(..., p_hospitality_type text default 'hotel')
+- anaira_public_room_availability_by_id(..., p_hospitality_type text default 'hotel')
+- publication gate runs only when hospitality_type = hotel
+- non-hotel types use HMS availability without Hotel Store publication dependency
+
+Frontend fix:
+- app/book/[id]/page.js passes activeStayType
+- app/book/[id]/checkout/page.js passes stayType
+
+Hotel behavior remains gated by published Hotel Store. Camping/Homestay/Guest House/Cottage do not use the Hotel Store publication gate.

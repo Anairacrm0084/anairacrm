@@ -88,7 +88,7 @@ function HotelBookingCheckout(){
     if(!row||Number(row.available_units||0)<=0)setMsg('This camping unit is not available for the selected dates.');
     return;
   }
-  const {data,error}=await supabase.rpc('anaira_public_room_availability_by_id',{p_restaurant_id:hotel.id,p_check_in:form.checkIn,p_check_out:form.checkOut,p_adults:Number(form.adults),p_children:Number(form.children)});
+  const {data,error}=await supabase.rpc('anaira_public_hospitality_room_availability_by_id',{p_restaurant_id:hotel.id,p_check_in:form.checkIn,p_check_out:form.checkOut,p_adults:Number(form.adults),p_children:Number(form.children),p_hospitality_type:stayType});
   if(error){setMsg(error.message);setAvailable(null);return}
   const row=(data||[]).find(x=>String(x.room_type_id)===String(room.id));
   setAvailable(row?.available_rooms??0);
