@@ -44,7 +44,17 @@ export default function PlatformStoreControl(){
         if(memberIds.length){
           const {data:typedListings}=await supabase.from('anaira_marketplace_listings').select('restaurant_id,listing_type,hotel_booking_enabled,food_ordering_enabled,marketplace_visible,approval_status').in('restaurant_id',memberIds);
           const lm=Object.fromEntries((typedListings||[]).map(x=>[x.restaurant_id,x]));
-          typedMembers=rawMembers.filter(x=>{const l=lm[x.restaurant_id]; if(!l)return true; return nextType==='hotel' ? (l.hotel_booking_enabled===true || l.listing_type==='hotel_restaurant') : (l.food_ordering_enabled===true && l.listing_type!=='hotel_restaurant');});
+          // An explicit platform-store membership is authoritative for that store.
+        // Do not hide a restaurant that Super Admin/Admin has already attached to
+        // ANAIRA Restaurants merely because its marketplace listing registry is
+        // missing food_ordering_enabled or is classified as hotel_restaurant.
+        // The Restaurant Store membership itself is the opt-in boundary.
+        typedMembers=rawMembers.filter(x=>{
+          const l=lm[x.restaurant_id];
+          if(!l)return true;
+          if(nextType==='hotel') return l.hotel_booking_enabled===true || l.listing_type==='hotel_restaurant';
+          return true;
+        });
         }
         setMembers(typedMembers);
         // A connected marketplace may already have an approved canonical listing
