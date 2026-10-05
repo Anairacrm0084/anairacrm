@@ -60,6 +60,27 @@ function PageTextSettings({initial, onSaved}){
     }catch(e){setMsg(e.message)}
   }
 
+  async function uploadFeatured(file){
+    if(!file) return;
+    try{
+      const token = await getToken();
+      const fd = new FormData(); fd.append('file',file);
+      const r = await fetch('/api/anaira-graphics/content',{method:'POST',headers:{Authorization:`Bearer ${token}`},body:fd});
+      const j = await r.json();
+      if(!r.ok) throw new Error(j.error || 'Featured image upload failed');
+      setField('featuredImages',[...(Array.isArray(f.featuredImages)?f.featuredImages:[]),{url:j.url,title:'Featured Work',alt:'Anaira Graphics featured work'}]);
+      setMsg('Featured image added. Save All Changes to publish it.');
+    }catch(e){setMsg(e.message)}
+  }
+
+  function updateFeatured(index,key,value){
+    setField('featuredImages',(Array.isArray(f.featuredImages)?f.featuredImages:[]).map((item,i)=>i===index?{...item,[key]:value}:item));
+  }
+
+  function removeFeatured(index){
+    setField('featuredImages',(Array.isArray(f.featuredImages)?f.featuredImages:[]).filter((_,i)=>i!==index));
+  }
+
   return (
     <div className="ag-page-settings">
       <div className="ag-page-settings-intro">
@@ -71,13 +92,35 @@ function PageTextSettings({initial, onSaved}){
         <div className="ag-page-settings-group-head"><span>00</span><h3>Focus Visuals</h3></div>
         <div className="ag-focus-settings-images">
           {[['webImage','Web showcase'],['softwareImage','Software showcase'],['designImage','Design showcase'],['printImage','Printing showcase']].map(([key,label])=>(
-            <label key={key}>{label}<input type="file" accept="image/*" onChange={e=>uploadFocus(key,label,e.target.files?.[0])}/>{f[key] && <img src={f[key]} alt={label}/>}</label>
+            <label key={key}>{label}<input type="file" accept="image/*" onChange={e=>uploadFocus(key,label,e.target.files?.[0])}/>{f[key] ? <img src={f[key]} alt={label}/> : <span className="ag-settings-image-empty">No image selected</span>}</label>
           ))}
         </div>
       </section>
+      <section className="ag-page-settings-group ag-featured-settings">
+        <div className="ag-page-settings-group-head"><span>01</span><div><h3>Featured Work — Scrolling Images</h3><p className="ag-settings-section-note">Focus Visuals ke bilkul niche landing page par ye images continuously scroll hongi.</p></div></div>
+        <div className="ag-featured-settings-toolbar">
+          <label className="ag-featured-upload">
+            <span>＋ Add Featured Image</span>
+            <input type="file" accept="image/*" onChange={e=>{uploadFeatured(e.target.files?.[0]);e.target.value='';}}/>
+          </label>
+          <small>{Array.isArray(f.featuredImages)?f.featuredImages.length:0} featured image(s)</small>
+        </div>
+        {(Array.isArray(f.featuredImages)?f.featuredImages:[]).length>0 ? <div className="ag-featured-settings-grid">
+          {(f.featuredImages||[]).map((item,index)=>(
+            <div className="ag-featured-settings-card" key={`${item.url}-${index}`}>
+              <div className="ag-featured-settings-image"><img src={item.url} alt={item.alt||item.title||'Featured work'}/></div>
+              <div className="ag-featured-settings-fields">
+                <label>Title<input value={item.title||''} onChange={e=>updateFeatured(index,'title',e.target.value)} placeholder="Featured Work"/></label>
+                <label>Alt Text<input value={item.alt||''} onChange={e=>updateFeatured(index,'alt',e.target.value)} placeholder="Describe this image"/></label>
+                <button type="button" className="ag-featured-remove" onClick={()=>removeFeatured(index)}>Remove Image</button>
+              </div>
+            </div>
+          ))}
+        </div> : <div className="ag-featured-settings-empty">Abhi koi featured image nahi hai. Upar <b>＋ Add Featured Image</b> se images add karo.</div>}
+      </section>
       {Object.entries(PAGE_GROUPS).map(([group,fields],index)=>(
         <section className="ag-page-settings-group" key={group}>
-          <div className="ag-page-settings-group-head"><span>{String(index+1).padStart(2,'0')}</span><h3>{group}</h3></div>
+          <div className="ag-page-settings-group-head"><span>{String(index+2).padStart(2,'0')}</span><h3>{group}</h3></div>
           <div className="ag-page-settings-grid">
             {fields.map(([key,label])=>(
               <label key={key}>{label}<textarea rows={key.toLowerCase().includes('description') || key.toLowerCase().includes('text') ? 3 : 2} value={f[key] || ''} onChange={e=>setField(key,e.target.value)} /></label>

@@ -394,6 +394,19 @@ export function AppShell({children, active}) {
   const portalLabel=ctx.isSuperAdmin?'SUPER ADMIN':(ctx.role==='admin'||ctx.profileKey==='business_admin')?'BUSINESS PORTAL':ctx.role==='manager'?'MANAGER PORTAL':'STAFF PORTAL';
   const [mobileNavOpen,setMobileNavOpen]=useState(false);
   const [openGroups,setOpenGroups]=useState(()=>({}));
+
+  // Mobile uses the exact same `visibleGroups` source as desktop.
+  // When the hamburger opens, expand every currently visible group so no
+  // business-type menu item is hidden behind collapsed desktop-style sections.
+  const toggleMobileNavigation=()=>{
+    setMobileNavOpen(prev=>{
+      const next=!prev;
+      if(next && typeof window!=='undefined' && window.matchMedia('(max-width:760px)').matches){
+        setOpenGroups(Object.fromEntries(visibleGroups.map(group=>[group.title,true])));
+      }
+      return next;
+    });
+  };
   useEffect(()=>{
     setOpenGroups(prev=>{
       const next={};
@@ -414,7 +427,7 @@ export function AppShell({children, active}) {
     return ()=>{document.removeEventListener('keydown',onKey);document.body.style.overflow=previous};
   },[mobileNavOpen]);
   return <div className="shell">
-    <button type="button" className="mobile-nav-toggle" aria-label={mobileNavOpen?'Close navigation':'Open navigation'} aria-expanded={mobileNavOpen} onClick={()=>setMobileNavOpen(v=>!v)}>
+    <button type="button" className="mobile-nav-toggle" aria-label={mobileNavOpen?'Close navigation':'Open navigation'} aria-expanded={mobileNavOpen} onClick={toggleMobileNavigation}>
       <span></span><span></span><span></span>
     </button>
     {mobileNavOpen&&<button type="button" className="mobile-nav-backdrop" aria-label="Close navigation" onClick={()=>setMobileNavOpen(false)}/>}

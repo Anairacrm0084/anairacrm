@@ -17,6 +17,7 @@ const DEFAULT_SITE_SETTINGS={
   proofTitle:'From idea to execution.',proofText:'Creative work, digital products and business technology under one roof.',proofLink:'Explore our work →',
   focusKicker:'THE ANAiRA DIFFERENCE',focusTitle:'Not just a service. A complete business experience.',focusText:'We bring design, technology and production together so your brand looks premium everywhere — online, on paper and in the real world.',focusPill1:'Design',focusPill2:'Technology',focusPill3:'Production',focusPill4:'Brand Growth',focusCtaTitle:'SEE OUR WORK',focusCtaText:'Watch how we create brands',
   webImage:'/anaira-graphics/showcase/web.jpg',softwareImage:'/anaira-graphics/showcase/software.jpg',designImage:'/anaira-graphics/showcase/design.jpg',printImage:'/anaira-graphics/showcase/printing.jpg',
+  featuredImages:[],
   webChip1:'Business\nWebsites',webChip2:'Travel & Booking\nWebsites',webChip3:'E-commerce\nStores',webChip4:'Landing\nPages',
   softwareChip1:'CRM\nSystems',softwareChip2:'POS\nSystems',softwareChip3:'Hotel PMS\n& Booking',softwareChip4:'Custom\nSoftware',
   designChip1:'Logo\nDesign',designChip2:'Brand\nIdentity',designChip3:'Social Media\nCreatives',designChip4:'Posters &\nBrochures',
@@ -94,12 +95,22 @@ export async function POST(req){
   if(body.action==='save_settings'){
    const incoming=body.settings&&typeof body.settings==='object'?body.settings:{};
    const settings={...DEFAULT_SITE_SETTINGS};
-   Object.keys(DEFAULT_SITE_SETTINGS).forEach(k=>{if(typeof incoming[k]==='string')settings[k]=incoming[k].trim();});
-   const old=await s.from('anaira_it_agency_portfolio').select('id').eq('business_id',b.id).eq('data->>kind','site_settings').maybeSingle();
+   Object.keys(DEFAULT_SITE_SETTINGS).forEach(k=>{
+    if(k==='featuredImages') return;
+    if(typeof incoming[k]==='string') settings[k]=incoming[k].trim();
+   });
+   settings.featuredImages=Array.isArray(incoming.featuredImages)
+    ? incoming.featuredImages.map((x,index)=>({url:String(x?.url||'').trim(),title:String(x?.title||'').trim(),alt:String(x?.alt||x?.title||`Featured work ${index+1}`).trim()})).filter(x=>x.url)
+    : [];
+   const old=await s.from('anaira_it_agency_portfolio').select('id,data').eq('business_id',b.id).eq('data->>kind','site_settings').maybeSingle();
    if(old.error)throw old.error;
    const payload={business_id:b.id,title:'Anaira Graphics Landing Settings',status:'active',data:{kind:'site_settings',settings},sort_order:1,updated_at:new Date().toISOString()};
    const r=old.data?await s.from('anaira_it_agency_portfolio').update(payload).eq('id',old.data.id).eq('business_id',b.id):await s.from('anaira_it_agency_portfolio').insert(payload);
    if(r.error)throw r.error;
+   const oldFeatured=Array.isArray(old.data?.data?.settings?.featuredImages)?old.data.data.settings.featuredImages.map(x=>x?.url).filter(Boolean):[];
+   const newFeatured=settings.featuredImages.map(x=>x.url);
+   const removedFeatured=oldFeatured.filter(url=>!newFeatured.includes(url));
+   if(removedFeatured.length) await removeUrls(s,removedFeatured);
    return NextResponse.json({ok:true,settings});
   }
   if(body.action==='save'){
