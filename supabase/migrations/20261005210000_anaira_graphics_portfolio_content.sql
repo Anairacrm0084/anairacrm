@@ -1,0 +1,95 @@
+-- Anaira Graphics production portfolio/content seed
+-- Tenant: 737d5047-39f0-480b-8279-c7b1262f9e6c
+-- Idempotent: existing same-kind/title rows are preserved.
+BEGIN;
+-- Seed Anaira Graphics content for tenant 737d5047-39f0-480b-8279-c7b1262f9e6c
+WITH seed(kind,title,description,category,portfolio_group,type,tag,live_url,sort_order) AS (
+VALUES
+('service','Logo Design','Logo systems, marks, brand signatures and professional visual identities.','Graphics & Digital Design',NULL,NULL,'Branding',NULL,10),
+('service','Brand Identity','Complete visual identity systems including typography, colour direction and stationery.','Graphics & Digital Design',NULL,NULL,'Branding',NULL,20),
+('service','Social Media Design','Instagram, Facebook and campaign creatives built for consistency and attention.','Graphics & Digital Design',NULL,NULL,'Social Media',NULL,30),
+('service','Poster Design','Promotional, event and campaign posters for print and digital use.','Graphics & Digital Design',NULL,NULL,'Creative Design',NULL,40),
+('service','Banner Design','Web banners, promotional banners, flex artwork and campaign graphics.','Graphics & Digital Design',NULL,NULL,'Creative Design',NULL,50),
+('service','Brochure & Flyer Design','Professional brochures, flyers and promotional collateral.','Graphics & Digital Design',NULL,NULL,'Print Design',NULL,60),
+('service','Business Card Design','Professional business cards designed to match the brand identity.','Graphics & Digital Design',NULL,NULL,'Print Design',NULL,70),
+('service','T-Shirt Design','Custom T-shirt artwork for brands, teams, events and campaigns.','Graphics & Digital Design',NULL,NULL,'Apparel',NULL,80),
+('service','Flex Printing','High-impact flex printing for promotions, events and businesses.','Digital Printing',NULL,NULL,'Printing',NULL,110),
+('service','Banner Printing','Outdoor and indoor promotional banner printing.','Digital Printing',NULL,NULL,'Printing',NULL,120),
+('service','Brochure & Flyer Printing','Production-ready brochures, flyers and promotional print material.','Digital Printing',NULL,NULL,'Printing',NULL,130),
+('service','Business Card Printing','Professional business card printing with brand-consistent finishing.','Digital Printing',NULL,NULL,'Printing',NULL,140),
+('service','Carry Bag Printing','Custom printed carry bags for businesses and promotions.','Digital Printing',NULL,NULL,'Printing',NULL,150),
+('service','T-Shirt Printing','Custom T-shirt printing for brands, teams and campaigns.','Digital Printing',NULL,NULL,'Printing',NULL,160),
+('service','Website Design','Premium responsive websites and landing pages for businesses.','Web Design & Development',NULL,NULL,'Web',NULL,210),
+('service','Website Development','Custom business websites, booking flows, portals and web applications.','Web Design & Development',NULL,NULL,'Development',NULL,220),
+('service','Booking Website Development','Hospitality and service booking experiences with real workflows.','Web Design & Development',NULL,NULL,'Booking',NULL,230),
+('service','Technical SEO','Technical SEO, metadata, schema, indexing and performance foundations.','SEO & Local SEO',NULL,NULL,'SEO',NULL,310),
+('service','Local SEO','Local search visibility, business identity and location-focused optimization.','SEO & Local SEO',NULL,NULL,'Local SEO',NULL,320),
+('service','Google Search Console','Search performance, indexing, queries, pages and technical monitoring.','SEO & Local SEO',NULL,NULL,'Search',NULL,330),
+('service','SEO Strategy','Search strategy, content planning and measurable organic growth.','SEO & Local SEO',NULL,NULL,'Strategy',NULL,340),
+('service','Social Media Marketing','Campaign planning, content direction and social growth support.','Social Media Marketing',NULL,NULL,'Marketing',NULL,410),
+('service','Facebook & Instagram Campaigns','Creative campaigns and promotional assets for social platforms.','Social Media Marketing',NULL,NULL,'Social',NULL,420),
+('service','Campaign Creatives','Ad creatives, launch graphics and promotional campaign systems.','Social Media Marketing',NULL,NULL,'Creative',NULL,430),
+('service','Social Media Management','Content support, creative production and ongoing social communication.','Social Media Marketing',NULL,NULL,'Management',NULL,440),
+('service','Business Software Development','Custom business software, dashboards, workflows and automation.','Software & App Development',NULL,NULL,'Software',NULL,510),
+('service','CRM Development','Customer, lead, communication and relationship management systems.','Software & App Development',NULL,NULL,'CRM',NULL,520),
+('service','POS Development','Restaurant and retail POS systems with operational workflows.','Software & App Development',NULL,NULL,'POS',NULL,530),
+('service','SaaS Development','Multi-tenant SaaS products and business platforms.','Software & App Development',NULL,NULL,'SaaS',NULL,540),
+('service','App Development','Custom mobile and application solutions for business use cases.','Software & App Development',NULL,NULL,'Apps',NULL,550),
+('service','Glow Sign Boards','Branded illuminated signage for shops, offices and businesses.','Signage & Display',NULL,NULL,'Signage',NULL,610),
+('service','LED Display Boards','LED display and digital signage solutions.','Signage & Display',NULL,NULL,'LED',NULL,620),
+('service','Acrylic Letter Cutting','Premium acrylic lettering and branded display work.','Signage & Display',NULL,NULL,'Acrylic',NULL,630),
+('service','Neon Boards','Decorative and branded neon signage.','Signage & Display',NULL,NULL,'Neon',NULL,640),
+('service','Hoarding & Outdoor Display','Large-format outdoor branding and display solutions.','Signage & Display',NULL,NULL,'Outdoor',NULL,650),
+('service','LED / Screen Display Solutions','Display-screen solutions for business, promotion and events.','Signage & Display',NULL,NULL,'Display',NULL,660),
+
+('portfolio','MK Trip Expert','WordPress travel website and digital travel experience.','', 'Websites & Web Projects','website','Travel / WordPress','',1010),
+('portfolio','Mudhouse','Hotel and booking website project.','', 'Websites & Web Projects','website','Hospitality / Booking','',1020),
+('portfolio','Hotel Kullu Valley','Hospitality website and digital system.','', 'Websites & Web Projects','website','Hospitality','',1030),
+('portfolio','Chai Chaat Chapati','Restaurant digital website/project.','', 'Websites & Web Projects','website','Restaurant','',1040),
+('portfolio','The Mountain Heart','100% Veg Dhaba & Guest House digital project.','', 'Websites & Web Projects','website','Hospitality','',1050),
+('portfolio','Melbourne Master Cabinet','Business website and digital project.','', 'Websites & Web Projects','website','Business','',1060),
+('portfolio','Raghunath Hospital','Healthcare website and digital project.','', 'Websites & Web Projects','website','Healthcare','',1070),
+('portfolio','Prasoon Agro','Agriculture/business website project.','', 'Websites & Web Projects','website','Business / Agriculture','',1080),
+('portfolio','HOTPLOT','Custom digital platform delivered for a client.','', 'Client Software & Platforms','software','Client Platform','',1090),
+('portfolio','Sofson','Custom software solution delivered for a client.','', 'Client Software & Platforms','software','Client Software','',1100),
+('portfolio','Anaira Graphics & Digital Solution','Own business website, brand and digital presence.','', 'Websites & Web Projects','website','Brand / Digital','',1110),
+('portfolio','Anaira POS','Restaurant POS and operations platform.','', 'Anaira Products & SaaS','software','POS / Restaurant','https://www.anairapos.in/',2010),
+('portfolio','Anaira Hospitality','Hospitality management platform.','', 'Anaira Products & SaaS','software','Hospitality SaaS','',2020),
+('portfolio','Anaira CRM','Universal business CRM and customer 360 platform.','', 'Anaira Products & SaaS','software','CRM / SaaS','',2030),
+('portfolio','Anaira Hotel PMS / HMS','Hotel property, guest and stay management system.','', 'Anaira Products & SaaS','software','PMS / HMS','',2040),
+('portfolio','Anaira Booking Engine','Booking, availability, rate and checkout engine.','', 'Anaira Products & SaaS','software','Booking / SaaS','',2050),
+('portfolio','Anaira Marketplace','Business marketplace platform.','', 'Anaira Products & SaaS','software','Marketplace','',2060),
+('portfolio','Anaira Food Marketplace / Food Delivery','Restaurant ordering and food delivery ecosystem.','', 'Anaira Products & SaaS','software','Food Tech','',2070),
+('portfolio','Restaurant Management System','Restaurant operations and management platform.','', 'Anaira Products & SaaS','software','Restaurant SaaS','',2080),
+('portfolio','Hotel Management System','Hotel operations and management platform.','', 'Anaira Products & SaaS','software','Hospitality SaaS','',2090),
+('portfolio','Restaurant Reservation System','Restaurant reservation workflow.','', 'Anaira Products & SaaS','software','Reservation','',2100),
+('portfolio','Hotel Booking + Rate / Availability Engine','Rates, availability, inventory and booking workflow.','', 'Anaira Products & SaaS','software','Revenue / Booking','',2110),
+('portfolio','Channel / OTA Manager','Distribution, channel and room/rate mapping workflows.','', 'Anaira Products & SaaS','software','Distribution','',2120),
+('portfolio','Anaira SEO System','Technical SEO, indexing and search-performance platform.','', 'Anaira Products & SaaS','software','SEO / SaaS','',2130),
+('portfolio','AI Review Automation / AI Review CRM','Review sync, AI classification, reply workflow and CRM.','', 'Anaira Products & SaaS','software','AI / CRM','',2140),
+('portfolio','Customer 360 CRM','Unified customer relationship and history platform.','', 'Anaira Products & SaaS','software','CRM','',2150),
+('portfolio','Lead CRM','Lead capture, pipeline and follow-up workflows.','', 'Anaira Products & SaaS','software','CRM','',2160),
+('portfolio','Loyalty System','Customer loyalty and lifecycle workflows.','', 'Anaira Products & SaaS','software','CRM / Loyalty','',2170),
+('portfolio','Marketing / WhatsApp CRM','Marketing, messaging and customer engagement workflows.','', 'Anaira Products & SaaS','software','Marketing / CRM','',2180),
+('portfolio','Revenue Management / Pricing Engine','Dynamic hospitality pricing and revenue rules.','', 'Anaira Products & SaaS','software','Revenue Management','',2190),
+('portfolio','Anaira Business OS / Universal Business Engine','Universal business workspace and vertical business engine.','', 'Anaira Products & SaaS','software','Business OS','',2200),
+('portfolio','Anaira Hospitality Booking Ecosystem','Hotel, camp, homestay, cottage and guest-house booking ecosystem.','', 'Anaira Products & SaaS','software','Hospitality / Booking','',2210)
+)
+INSERT INTO public.anaira_it_agency_portfolio (business_id,title,status,data,sort_order)
+SELECT '737d5047-39f0-480b-8279-c7b1262f9e6c'::uuid,
+       title,'active',
+       jsonb_strip_nulls(jsonb_build_object(
+         'kind',kind,
+         'description',description,
+         'category',NULLIF(category,''),
+         'portfolio_group',portfolio_group,
+         'type',type,
+         'tag',tag,
+         'live_url',NULLIF(live_url,''),
+         'alt_text',title
+       )),
+       sort_order
+FROM seed s
+WHERE NOT EXISTS (SELECT 1 FROM public.anaira_it_agency_portfolio p WHERE p.business_id='737d5047-39f0-480b-8279-c7b1262f9e6c'::uuid AND p.title=s.title AND p.data->>'kind'=s.kind);
+
+COMMIT;

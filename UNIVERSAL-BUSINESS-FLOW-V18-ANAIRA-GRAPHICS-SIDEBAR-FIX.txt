@@ -1,0 +1,13 @@
+Anaira Graphics Sidebar Integration
+===================================
+1. Added tenant-admin-only ANAIRA GRAPHICS sidebar group for business ID:
+   737d5047-39f0-480b-8279-c7b1262f9e6c
+2. Added:
+   - Anaira Graphics Settings -> /anaira-graphics/settings
+   - Services & Projects -> /anaira-graphics/settings?tab=services
+   - Portfolio / All Projects -> /anaira-graphics/settings?tab=all
+   - Front Landing Page -> /business/it_agency/landing?business=737d5047-39f0-480b-8279-c7b1262f9e6c
+3. Other IT Agency tenants do not receive this group.
+4. Added query-tab support to Anaira Graphics Settings so sidebar shortcuts open the correct tab.
+5. No universal IT Agency landing/menu routes were replaced.
+6. Node syntax check: all 724 .js files pass.

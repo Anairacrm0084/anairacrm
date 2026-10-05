@@ -3,7 +3,7 @@ import {supabaseAdmin} from '../../../../lib/supabaseAdmin';
 
 async function access(req, businessId, requirePrivate=false){
   const admin=supabaseAdmin();
-  const {data:business,error:be}=await admin.from('restaurants').select('id,name,business_type,phone,email,address,city,state,country,website,description').eq('id',businessId).maybeSingle();
+  const {data:business,error:be}=await admin.from('restaurants').select('id,name,business_type,phone,email,whatsapp,address,city,state,country,postal_code,landmark,website,description,logo,cover_image,gst,gst_enabled,gst_rate').eq('id',businessId).maybeSingle();
   if(be) throw be;
   if(!business) return {admin,business:null,allowed:false};
   const {data:landing,error:le}=await admin.from('anaira_business_landing_pages').select('*').eq('business_id',businessId).maybeSingle();

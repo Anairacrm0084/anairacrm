@@ -13,7 +13,7 @@ export const COMMON_SECTIONS = [
 const F = (key,label,type='text',extra={}) => ({key,label,type,...extra});
 const IMAGE = (key='image_url',label='Image') => F(key,label,'image');
 const GALLERY = F('gallery','Gallery Images','gallery');
-const COMMON_PROFILE = [F('name','Business Name'),F('owner_name','Owner / Contact'),F('phone','Phone'),F('email','Email'),F('website','Website'),F('address','Address','textarea'),F('city','City'),F('state','State'),F('country','Country','text',{default:'India'}),F('description','About Business','textarea'),F('hours','Working Hours','textarea')];
+const COMMON_PROFILE = [F('name','Business Name'),F('owner_name','Owner / Contact'),F('phone','Phone'),F('email','Email'),F('website','Website'),F('address','Address','textarea'),F('city','City'),F('state','State'),F('country','Country','text',{default:'India'}),F('description','About Business','textarea'),F('opening_time','Opening Time'),F('closing_time','Closing Time')];
 
 const schemas = {
  barber_shop:{primary:'Services',primaryIcon:'💈',entity:'Service',fields:[F('name','Service Name'),IMAGE(),F('category','Category'),F('description','Description','textarea'),F('price','Price','number'),F('duration_minutes','Duration (min)','number'),F('buffer_minutes','Buffer (min)','number'),F('commission_percent','Commission %','number'),F('online_booking','Online Booking','boolean')] ,secondary:{team:['name','role','photo_url','phone','email','commission_percent','bio'],resources:['name','resource_type','capacity'],products:['name','brand','sku','image_url','sale_price','stock_qty','reorder_level'],memberships:['name','price','billing_interval','benefits','image_url'],packages:['name','price','expiry_days','included_services','image_url']}},

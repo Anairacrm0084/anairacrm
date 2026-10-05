@@ -533,5 +533,5 @@ export const DOMAIN_TABLES = {
     reports: 'anaira_other_reports',
   },
 };
-export function domainTable(type,moduleKey){return DOMAIN_TABLES[type]?.[moduleKey] || `anaira_domain_${type||'other'}`;}
+export function domainTable(type,moduleKey){ if(type==='it_agency') return 'anaira_business_records'; return DOMAIN_TABLES[type]?.[moduleKey] || `anaira_domain_${type||'other'}`;}
 export function workflowStatus(moduleKey){ const k=String(moduleKey||''); if(['appointments','bookings','walkins','waitlist','visits','jobs','job_cards'].includes(k)) return ['pending','confirmed','in_progress','completed','cancelled','no_show']; if(['orders','sales','payments','invoices','billing','donations','subscriptions','pos'].includes(k)) return ['draft','pending','paid','partially_paid','refunded','cancelled']; if(['projects','shipments','tasks','cases','matters','repairs','returns'].includes(k)) return ['open','in_progress','on_hold','completed','cancelled']; if(['leads','enquiries'].includes(k)) return ['new','contacted','qualified','converted','lost']; return ['active','inactive','archived']; }

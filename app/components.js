@@ -277,8 +277,40 @@ export function AppShell({children, active}) {
       // profile, menu/store, POS or reservation controls.
       const restaurantAdded=ctx.plugins['restaurant-management']===true || ctx.plugins['restaurant-core']===true || ctx.plugins['restaurant-store']===true || ctx.plugins['anaira-pos']===true || ctx.plugins['restaurant-reservation']===true || ctx.plugins['food-delivery']===true;
       const restaurantEnabled=restaurantAdded;
+      const isAnairaGraphics = ctx.restaurantId === '737d5047-39f0-480b-8279-c7b1262f9e6c' && ctx.businessType === 'it_agency';
       const businessCfg = BUSINESS_TYPE_MENU[ctx.businessType] || businessTypeMenuFallback(ctx.businessType);
-      const businessGroup = businessCfg ? {title: businessCfg.title.toUpperCase(), items: businessCfg.items.map(x=>[x[0],x[1],(x[2].startsWith('/business/') && ctx.restaurantId) ? `${x[2]}${x[2].includes('?')?'&':'?'}business=${ctx.restaurantId}` : x[2],x[3],x[4]])} : null;
+
+      // Anaira Graphics is a tenant-specific IT Agency implementation.
+      // Do not show the generic IT / Agency catalog/setup/landing menu for this
+      // tenant because those functions are already represented by the dedicated
+      // Anaira Graphics CMS. Keep only the operational CRM/work items below.
+      const businessGroup = (businessCfg && !isAnairaGraphics) ? {
+        title: businessCfg.title.toUpperCase(),
+        items: businessCfg.items.map(x=>[
+          x[0],
+          x[1],
+          (x[2].startsWith('/business/') && ctx.restaurantId)
+            ? `${x[2]}${x[2].includes('?')?'&':'?'}business=${ctx.restaurantId}`
+            : x[2],
+          x[3],
+          x[4]
+        ])
+      } : null;
+
+      const anaIraGraphicsGroup = isAnairaGraphics ? {title:'ANAIRA GRAPHICS',items:[
+        ['🎨','Anaira Graphics Settings','/anaira-graphics/settings','business.settings'],
+        ['🛠','Services & Projects','/anaira-graphics/settings?tab=services','business.settings'],
+        ['▣','Portfolio / All Projects','/anaira-graphics/settings?tab=all','business.settings'],
+        ['↗','Front Landing Page','/business/it_agency/landing?business=737d5047-39f0-480b-8279-c7b1262f9e6c','business.settings']
+      ]} : null;
+
+      const anaIraGraphicsOperationsGroup = isAnairaGraphics ? {title:'IT AGENCY OPERATIONS',items:[
+        ['♙','Team / Staff','/business/it_agency/setup','business.settings'],
+        ['◆','Leads','/leads','lead.view','crm'],
+        ['✓','Tasks','/my-work','task.view'],
+        ['◉','Clients','/customer-360','customer.view','crm'],
+        ['₹','Invoices','/corporate','corporate.view','crm']
+      ]} : null;
       const restaurantGroup=restaurantEnabled?{title:'RESTAURANT MANAGEMENT',items:[
         ['♨','Restaurant Setup','/restaurant-setup','business.settings','restaurant-store'],
         ['◇','My Restaurant Store','/store-builder?kind=restaurant','store.view','restaurant-store'],
@@ -286,7 +318,16 @@ export function AppShell({children, active}) {
         ['◫','Restaurant Reservations','/reservation','reservation.view','restaurant-reservation'],
         ['◉','Food Delivery','/delivery','delivery.order.view','food-delivery']
       ]}:null;
-      return normalizeGroups([...mgGroups,...revenueGroups,...(businessGroup?[businessGroup]:[]),...(restaurantGroup?[restaurantGroup]:[]),...base,dynamicOps]);
+      return normalizeGroups([
+        ...mgGroups,
+        ...revenueGroups,
+        ...(anaIraGraphicsGroup?[anaIraGraphicsGroup]:[]),
+        ...(anaIraGraphicsOperationsGroup?[anaIraGraphicsOperationsGroup]:[]),
+        ...(businessGroup?[businessGroup]:[]),
+        ...(restaurantGroup?[restaurantGroup]:[]),
+        ...base,
+        dynamicOps
+      ]);
     }
     if(ctx.role==='staff' && ctx.profileKey && PROFILE_GROUPS[ctx.profileKey]){
       const base=PROFILE_GROUPS[ctx.profileKey].map(stripStaticHospitalityItems);
