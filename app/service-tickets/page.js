@@ -1,3 +1,2 @@
-import ModulePage from '../ModulePage';
-import {pages} from '../pageConfigs';
-export default function Page(){ return <ModulePage config={{...pages['service-tickets'],dataSource:'service-tickets'}} /> }
+import CrmEnterprisePage from '../CrmEnterprisePage';
+export default function Page(){return <CrmEnterprisePage module='service' route='/service-tickets'/>}

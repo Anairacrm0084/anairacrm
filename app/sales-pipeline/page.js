@@ -1,3 +1,2 @@
-import ModulePage from '../ModulePage';
-import {pages} from '../pageConfigs';
-export default function Page(){ return <ModulePage config={{...pages['sales-pipeline'],dataSource:'sales-pipeline'}} /> }
+import CrmEnterprisePage from '../CrmEnterprisePage';
+export default function Page(){return <CrmEnterprisePage module='pipeline' route='/sales-pipeline'/>}

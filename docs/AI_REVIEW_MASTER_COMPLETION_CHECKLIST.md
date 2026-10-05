@@ -1,6 +1,20 @@
-# Anaira AI Review — Master A-to-Z Completion Checklist
+# Anaira AI Review — Master A-to-Z Multi-Business Completion Checklist
 
-This is the locked checklist for AI Review. An item is not considered complete merely because a UI control exists; it must have a real source implementation, tenant-safe database behavior, error handling, and production verification.
+This is the locked checklist for AI Review across hotels, restaurants, retail shops, salons, barber shops, clinics, professional services, local services and other multi-location businesses. An item is not considered complete merely because a UI control exists; it must have a real source implementation, tenant-safe database behavior, error handling, and production verification.
+
+## 0. Multi-Business / Multi-Location Foundation
+- business vertical registry
+- tenant business profile
+- multi-location source registry
+- hotel / restaurant / cafe / bakery
+- salon / barber / spa / wellness
+- clinic / dentist / doctor / hospital / pharmacy
+- retail / grocery / fashion / jewellery / electronics / furniture
+- automotive / garage / real estate / travel
+- education / legal / accounting / agency / professional services
+- contractor / home services / pet services / photography / events / entertainment / coworking / repair / cleaning / logistics
+- generic completed-interaction review request event
+- vertical-aware AI context and templates
 
 ## 1. Google Business Profile
 - OAuth 2.0 with `business.manage`
@@ -98,8 +112,13 @@ This is the locked checklist for AI Review. An item is not considered complete m
 - channel/trigger
 
 ## 7. Review Requests
+- completed customer interaction trigger
 - hotel stay trigger
 - restaurant visit trigger
+- appointment / consultation trigger
+- purchase / order trigger
+- service completion trigger
+- generic vertical trigger
 - consent verification
 - Google review URL
 - queued job

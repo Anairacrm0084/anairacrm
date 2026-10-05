@@ -1,0 +1,1 @@
+V16: physical business/module tables for all 31 business types; tenant RLS; server domain CRUD API; workflow transition audit; BusinessModule wired to typed physical module tables; preserves Salon landing/RLS fixes from V15.

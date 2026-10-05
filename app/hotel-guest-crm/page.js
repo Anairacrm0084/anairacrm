@@ -1,2 +1,2 @@
-import PluginPage from '../PluginPage';
-export default function Page(){return <PluginPage pluginKey='hotel_guest_crm'/>}
+import HotelGuestCRM from './_components/HotelGuestCRM';
+export default function Page(){return <HotelGuestCRM view="dashboard"/>}

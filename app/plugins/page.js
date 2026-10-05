@@ -4,6 +4,16 @@ import {AppShell,Header,Section,Pill} from '../components';
 import {supabase} from '../../lib/supabase';
 import {pluginCatalog} from '../pluginCatalog';
 import {pluginRegistry} from '../pluginRegistry';
+const integrationLinks={
+ 'hotel-booking':'/super-admin/integrations?focus=hotel-booking',
+ 'channel-manager':'/super-admin/integrations?focus=channel-manager',
+ 'anaira-pos':'/super-admin/integrations?focus=anaira-pos',
+ 'restaurant-store':'/super-admin/integrations?focus=restaurant-marketplace',
+ 'food-delivery':'/super-admin/integrations?focus=restaurant-marketplace',
+ 'restaurant-reservation':'/super-admin/integrations?focus=restaurant-marketplace',
+ 'hotel_guest_crm':'/super-admin/integrations?focus=hotel-guest-crm',
+ 'crm':'/super-admin/integrations?focus=hotel-guest-crm',
+};
 
 export default function Plugins(){
  const [session,setSession]=useState(undefined),[profile,setProfile]=useState(null),[propertyId,setPropertyId]=useState(''),[properties,setProperties]=useState([]),[active,setActive]=useState({}),[err,setErr]=useState(''),[busy,setBusy]=useState('');
@@ -72,11 +82,12 @@ export default function Plugins(){
            <button className={'btn '+(enabled?'danger':'primary')} onClick={()=>toggle(p)} disabled={!propertyId||!!busy}>
              {busy===p.key?'Saving…':enabled?'Deactivate':'Activate'}
            </button>
-           <a className="btn" href={`/plugins/${p.key}/settings`}>Open / Configure</a>
+           <a className="btn" href={`/plugins/${p.key}/settings`}>Open / Configure</a>{integrationLinks[p.key]&&<a className="btn" href={integrationLinks[p.key]}>Integration</a>}
          </div>
        </div>
      })}
    </div>
+   <Section title="Product Integration Map" meta="First-party control plane"><div className="notice">Plugin activation controls whether the tenant can use a product. Product-to-product connections, marketplace publication, POS connections and external distribution belong to <a href="/super-admin/integrations"><b>Universal Integrations</b></a>. They are intentionally separate from plugin-local settings so a plugin can be enabled without silently creating a live external connection.</div></Section>
    <Section title="Activation Contract" meta="Tenant isolation">
      <div className="notice">A plugin becomes operational for a property only after Super Admin activates it here. Deactivation preserves existing records but removes the plugin from tenant operational access. Plugin permissions and RLS remain the backend enforcement layer.</div>
    </Section>

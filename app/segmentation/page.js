@@ -1,3 +1,2 @@
-import ModulePage from '../ModulePage';
-import {pages} from '../pageConfigs';
-export default function Page(){ return <ModulePage config={{...pages['segmentation'],dataSource:'segmentation'}} /> }
+import {SegmentationCRM} from '../CrmDedicatedPages';
+export default function Page(){return <SegmentationCRM/>}

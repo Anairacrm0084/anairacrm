@@ -9,10 +9,10 @@ export const pluginCatalog = [
   },
   {
     "key": "hotel-booking",
-    "name": "Hotel Booking Engine",
+    "name": "Anaira Booking Engine",
     "category": "Hotel",
     "description": "Direct booking, availability, rate plans, add-ons, payments and confirmations.",
-    "route": "/booking",
+    "route": "/booking-engine",
     "core": false
   },
   {
@@ -72,6 +72,14 @@ export const pluginCatalog = [
     "core": false
   },
   {
+    "key": "marketplace",
+    "name": "Anaira Marketplace",
+    "category": "Commerce",
+    "description": "First-party marketplace orchestration for hotel and restaurant discovery, booking and ordering surfaces.",
+    "route": "/marketplace",
+    "core": true
+  },
+  {
     "key": "seo-system",
     "name": "Anaira SEO System",
     "category": "CRM / Marketing",
@@ -83,7 +91,7 @@ export const pluginCatalog = [
     "key": "ai-review-system",
     "name": "Anaira AI Review Automation",
     "category": "CRM / Reputation",
-    "description": "Review ingestion, AI replies, requests, recovery and reputation analytics.",
+    "description": "Generic multi-business review ingestion, AI replies, requests, recovery and reputation analytics for hospitality, retail, salons, clinics, professionals and local services.",
     "route": "/ai-reviews",
     "core": false
   },

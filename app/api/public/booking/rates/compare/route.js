@@ -1,0 +1,7 @@
+import {NextResponse} from 'next/server';
+import {enforceRateLimit} from '../../../../../../lib/server/rateLimit.js';
+import {adminDb} from '../../../../../../lib/server/provider';
+export const runtime='nodejs';
+export async function POST(req){
+ try{
+  await enforceRateLimit(req,{scope:'rates-compare',limit:30,windowSeconds:60});const db=adminDb();const b=await req.json();for(const k of ['hotel_id','room_type_id','check_in','check_out'])if(!b?.[k])return NextResponse.json({ok:false,error:`${k} is required`},{status:400});const {data:plans,error}=await db.from('hms_rate_plans').select('id,name,code,board_type,rate,refundable,cancellation_policy,deposit_percent,pricing_mode,occupancy,extra_adult,extra_child,min_stay,max_stay').eq('restaurant_id',b.hotel_id).eq('room_type_id',b.room_type_id).eq('active',true).order('rate',{ascending:true});if(error)throw error;const quotes=[];for(const p of(plans||[])){const {data:q,error:e}=await db.rpc('anaira_calculate_hotel_premium_quote',{p_tenant_id:b.hotel_id,p_room_type_id:b.room_type_id,p_rate_plan_id:p.id,p_check_in:b.check_in,p_check_out:b.check_out,p_adults:Math.max(1,Number(b.adults||2)),p_children:Math.max(0,Number(b.children||0)),p_coupon_code:b.coupon_code||null,p_addons:Array.isArray(b.addons)?b.addons:[]});if(!e)quotes.push({...q,rate_plan:{...p}})}return NextResponse.json({ok:true,room_type_id:b.room_type_id,quotes});}catch(e){return NextResponse.json({ok:false,error:e?.message||'Rate comparison failed'},{status:400})}}

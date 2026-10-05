@@ -1,4 +1,5 @@
 import {NextResponse} from 'next/server';
+import {enforceRateLimit} from '../../../../../lib/server/rateLimit.js';
 import {supabase} from '../../../../../lib/supabase';
 
 export const runtime='nodejs';
@@ -10,6 +11,7 @@ export async function OPTIONS(){return cors({ok:true});}
 
 export async function GET(req){
  try{
+  await enforceRateLimit(req,{scope:'public-booking:search',limit:120,windowSeconds:60});
   const u=new URL(req.url);
   const checkIn=u.searchParams.get('check_in');
   const checkOut=u.searchParams.get('check_out');

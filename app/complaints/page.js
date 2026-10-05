@@ -1,3 +1,2 @@
-import ModulePage from '../ModulePage';
-import {pages} from '../pageConfigs';
-export default function Page(){ return <ModulePage config={{...pages['complaints'],dataSource:'complaints'}} /> }
+import {ComplaintManagementCRM} from '../CrmDedicatedPages';
+export default function Page(){return <ComplaintManagementCRM/>}

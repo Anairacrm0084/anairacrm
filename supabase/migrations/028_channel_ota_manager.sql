@@ -1,7 +1,7 @@
 -- Channel / OTA manager. Provider adapters are intentionally separate from PMS ownership.
 create table if not exists public.ota_channels (
  id uuid primary key default gen_random_uuid(), restaurant_id uuid not null references public.restaurants(id) on delete cascade,
- name text not null, provider text not null, status text not null default 'disconnected', credentials_ref text, last_sync_at timestamptz,
+ name text not null, provider text not null, platform_id uuid, status text not null default 'disconnected', credentials_ref text, last_sync_at timestamptz,
  settings jsonb not null default '{}'::jsonb, created_at timestamptz not null default now(), unique(restaurant_id,provider)
 );
 create table if not exists public.ota_room_mappings (

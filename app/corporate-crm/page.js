@@ -1,2 +1,2 @@
-import PluginPage from '../PluginPage';
-export default function Page(){return <PluginPage pluginKey='corporate_crm'/>}
+import CrmEnterprisePage from '../CrmEnterprisePage';
+export default function Page(){return <CrmEnterprisePage module='corporate' route='/corporate-crm'/>}

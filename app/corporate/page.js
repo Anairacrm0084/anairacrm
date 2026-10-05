@@ -1,3 +1,2 @@
-import ModulePage from '../ModulePage';
-import {pages} from '../pageConfigs';
-export default function Page(){ return <ModulePage config={{...pages['corporate'],dataSource:'corporate'}} /> }
+import {CorporateCRM} from '../CrmDedicatedPages';
+export default function Page(){return <CorporateCRM/>}

@@ -1,3 +1,2 @@
-import ModulePage from '../ModulePage';
-import {pages} from '../pageConfigs';
-export default function Page(){ return <ModulePage config={{...pages['restaurant'],dataSource:'restaurant'}} /> }
+import RestaurantCRM from '../restaurant-crm/page';
+export default function Page(){return <RestaurantCRM/>}

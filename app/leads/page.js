@@ -1,3 +1,2 @@
-import ModulePage from '../ModulePage';
-import {pages} from '../pageConfigs';
-export default function Page(){ return <ModulePage config={{...pages['leads'],dataSource:'leads'}} /> }
+import LeadsSalesWorkspace from '../LeadsSalesWorkspace';
+export default function Page(){return <LeadsSalesWorkspace/>}

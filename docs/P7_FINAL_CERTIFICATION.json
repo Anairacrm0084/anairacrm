@@ -1,6 +1,6 @@
 {
   "phase": "P7",
-  "generated_at": "2026-09-28T22:30:19.038Z",
+  "generated_at": "2026-10-04T10:02:45.562Z",
   "certified": false,
   "status": "RELEASE CANDIDATE / NOT PRODUCTION CERTIFIED",
   "checks": [
@@ -63,6 +63,11 @@
       "name": "package-lock",
       "status": "BLOCKED",
       "evidence": "Reproducible install requires lockfile."
+    },
+    {
+      "name": "relative imports",
+      "status": "PASS",
+      "evidence": ""
     },
     {
       "name": "production build",

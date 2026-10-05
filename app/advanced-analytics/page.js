@@ -1,2 +1,2 @@
-import PluginPage from '../PluginPage';
-export default function Page(){return <PluginPage pluginKey='advanced_analytics'/>}
+import CrmEnterprisePage from '../CrmEnterprisePage';
+export default function Page(){return <CrmEnterprisePage module='advancedAnalytics' route='/advanced-analytics'/>}

@@ -1,3 +1,2 @@
-import ModulePage from '../ModulePage';
-import {pages} from '../pageConfigs';
-export default function Page(){ return <ModulePage config={{...pages['identity-resolution'],dataSource:'identity-resolution'}} /> }
+import CrmEnterprisePage from '../CrmEnterprisePage';
+export default function Page(){return <CrmEnterprisePage module='identity' route='/identity-resolution'/>}

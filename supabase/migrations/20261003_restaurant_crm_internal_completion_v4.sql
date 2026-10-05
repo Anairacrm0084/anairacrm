@@ -1,0 +1,5 @@
+-- Restaurant CRM internal completion v4
+-- Live-applied to Supabase project bhptqdoteucuymmdzsmg.
+-- Adds customer-property relationship index, identity candidates/merge wrapper,
+-- segment rule action API, cross-sell rule/candidate engine, and loyalty expiry run tracking.
+-- Source-event triggers are in 20261003_restaurant_crm_event_sync_triggers_v1.sql.

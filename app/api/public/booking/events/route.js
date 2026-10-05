@@ -1,0 +1,4 @@
+import {NextResponse} from 'next/server';
+import {supabase} from '../../../../../lib/supabase';
+export const runtime='nodejs';
+export async function POST(req){try{const b=await req.json();if(!b?.restaurant_id||!b?.session_id||!b?.event_name)return NextResponse.json({ok:false,error:'restaurant_id, session_id and event_name are required'},{status:400});const {error}=await supabase.from('booking_conversion_events').insert({restaurant_id:b.restaurant_id,session_id:b.session_id,event_name:b.event_name,booking_id:b.booking_id||null,property_id:b.property_id||b.restaurant_id,room_type_id:b.room_type_id||null,rate_plan_id:b.rate_plan_id||null,value:b.value??null,currency:b.currency||'INR',metadata:b.metadata||{}});if(error)throw error;return NextResponse.json({ok:true});}catch(e){return NextResponse.json({ok:false,error:e.message},{status:400})}}

@@ -1,3 +1,4 @@
+import {enforceRateLimit} from '../../../../lib/server/rateLimit.js';
 import {createHash, randomInt} from 'crypto';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
 
@@ -32,7 +33,9 @@ async function sendSms(to, otp){
 }
 
 export async function POST(req){
-  try{
+ try{
+  await enforceRateLimit(req,{scope:'otp',limit:5,windowSeconds:60});
+  
     const body=await req.json();
     const tenantId=String(body.tenant_id||'').trim(), propertyType=body.property_type==='camp'?'camp':'hotel', channel=body.channel==='email'?'email':body.channel==='phone'?'phone':null;
     if(!tenantId||!channel) return appError('tenant_id and channel are required.');

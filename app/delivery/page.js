@@ -1,2 +1,23 @@
-import PluginPage from '../PluginPage';
-export default function Page(){return <PluginPage pluginKey="food-delivery"/>}
+'use client';
+import {useEffect,useMemo,useState} from 'react';
+import {supabase} from '../../lib/supabase';
+import {AppShell,Header,Section,Table,Pill} from '../components';
+import {useTenantProperty,ensureSelected} from '../hotel-management/setup-components';
+
+const STATUS_FLOW={placed:['accepted','cancelled','rejected'],accepted:['preparing','cancelled'],preparing:['ready','cancelled'],ready:['rider_assigned','cancelled'],rider_assigned:['picked_up'],picked_up:['out_for_delivery'],out_for_delivery:['delivered','failed_delivery'],failed_delivery:['out_for_delivery','cancelled'],delivered:[],cancelled:[],rejected:[]};
+export default function Delivery(){
+ const ctx=useTenantProperty(); const [rid,setRid]=useState(null); const id=ensureSelected(ctx,rid);
+ const [orders,setOrders]=useState([]),[riders,setRiders]=useState([]),[filter,setFilter]=useState('all'),[busy,setBusy]=useState(''),[msg,setMsg]=useState('');
+ async function load(){if(!id)return; const [o,r]=await Promise.all([
+  supabase.from('delivery_orders').select('*').eq('restaurant_id',id).order('placed_at',{ascending:false}).limit(200),
+  supabase.from('delivery_riders').select('*').eq('restaurant_id',id).order('name')
+ ]); if(o.error)setMsg(o.error.message); else setOrders(o.data||[]); if(r.error)setMsg(r.error.message); else setRiders(r.data||[]);}
+ useEffect(()=>{load()},[id]);
+ const visible=useMemo(()=>filter==='all'?orders:orders.filter(x=>x.status===filter),[orders,filter]);
+ async function transition(order,next,riderId=null){setBusy(order.id+next);setMsg('');const {data,error}=await supabase.rpc('anaira_delivery_transition_safe',{p_order_id:order.id,p_next_status:next,p_rider_id:riderId||null});if(error)setMsg(error.message);else{setMsg(`Order ${order.order_code}: ${data?.status||next}`);await load()}setBusy('');}
+ async function assign(order){const rider=riders.find(x=>x.status==='available'&&x.active)||riders.find(x=>x.status==='idle'&&x.active);if(!rider)return setMsg('No active available rider. Add/activate a rider first.');await transition(order,'rider_assigned',rider.id);}
+ async function saveRider(e){e.preventDefault();const f=new FormData(e.currentTarget);const payload={restaurant_id:id,name:String(f.get('name')||'').trim(),phone:String(f.get('phone')||'').trim()||null,vehicle_type:String(f.get('vehicle_type')||'bike'),status:'available',active:true};if(!payload.name)return;const {error}=await supabase.from('delivery_riders').insert(payload);setMsg(error?.message||'Rider created and available.');if(!error){e.currentTarget.reset();load()}}
+ return <AppShell active="Delivery"><Header eyebrow="ANAIRA DELIVERY OPERATIONS" title="Delivery Command Center" subtitle="Real order state machine, rider assignment, dispatch and settlement-ready lifecycle." actions={ctx.super?<select value={rid||''} onChange={e=>{setRid(e.target.value);ctx.selectProperty(e.target.value)}}><option value="">Select property</option>{ctx.properties.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>:null}/>
+ <Section title="Live dispatch" meta={`${visible.length} orders`}><div className="filters"><select value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">All statuses</option>{Object.keys(STATUS_FLOW).map(s=><option key={s} value={s}>{s}</option>)}</select><button className="btn" onClick={load}>Refresh</button></div>{msg&&<div className="notice">{msg}</div>}<Table columns={['Order','Customer','Amount','Status','Rider','Next action']} rows={visible.map(o=>{const next=STATUS_FLOW[o.status]||[];const rider=riders.find(r=>r.id===o.rider_id);return [<><b>{o.order_code}</b><br/><small>{new Date(o.placed_at).toLocaleString()}</small></>,<>{o.customer_name||'Guest'}<br/><small>{o.customer_phone||''}</small></>,`₹${Number(o.total_amount||0).toFixed(2)}`,<Pill>{o.status}</Pill>,rider?.name||'—',<div style={{display:'flex',gap:6,flexWrap:'wrap'}}>{next.includes('rider_assigned')&&<button className="btn" disabled={!!busy} onClick={()=>assign(o)}>Assign rider</button>}{next.filter(x=>x!=='rider_assigned').map(n=><button key={n} className="btn" disabled={!!busy} onClick={()=>transition(o,n)}>{n.replaceAll('_',' ')}</button>)}</div>]})}/></Section>
+ <Section title="Rider master" meta="Availability is operational state"><form onSubmit={saveRider} className="form-grid"><label>Name<input name="name" required/></label><label>Phone<input name="phone"/></label><label>Vehicle<select name="vehicle_type"><option>bike</option><option>scooter</option><option>car</option><option>cycle</option></select></label><button className="btn primary" type="submit">Add available rider</button></form><Table columns={['Rider','Phone','Vehicle','Status','Active']} rows={riders.map(r=>[r.name,r.phone||'—',r.vehicle_type||'—',<Pill>{r.status}</Pill>,r.active?'Yes':'No'])}/></Section></AppShell>
+}

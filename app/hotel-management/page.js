@@ -30,7 +30,7 @@ export default function PMSPage(){
       supabase.from('hms_guests').select('id,full_name,phone,email').eq('restaurant_id',rid),
       supabase.from('hms_room_types').select('id,name,code,hospitality_type').eq('restaurant_id',rid).eq('hospitality_type',type),
       supabase.from('hms_rate_plans').select('id,name,code,hospitality_type').eq('restaurant_id',rid).eq('hospitality_type',type),
-      supabase.from('hms_booking_payment_submissions').select('id,reservation_id,payment_method,amount,reference,proof_url,status,submitted_at,verified_at').eq('restaurant_id',rid).order('created_at',{ascending:false}).limit(200)
+      supabase.from('anaira_hotel_payment_submissions').select('id,reservation_id,method,note,receipt_path,status,created_at,updated_at').eq('tenant_id',rid).order('created_at',{ascending:false}).limit(200)
     ]);
     const bad=[rq,rs,gq,tq,rpq,pq].find(x=>x.error);
     if(bad)setError(bad.error.message);
@@ -73,7 +73,7 @@ export default function PMSPage(){
       roomId=prompt(action==='check_in'?'Room ID for check-in':'Target room ID',roomId||'')||null;
       if(!roomId){setBusy('');return;}
     }
-    const {data,error:e}=await supabase.rpc('anaira_phase13_pms_transition',{p_restaurant_id:restaurantId,p_reservation_id:r.id,p_action:action,p_room_id:roomId,p_notes:null});
+    const {data,error:e}=await supabase.rpc('anaira_hms_reservation_transition',{p_restaurant_id:restaurantId,p_reservation_id:r.id,p_action:action,p_room_id:roomId,p_notes:null});
     if(e)setError(e.message);else if(data?.ok)await load(restaurantId);else setError('Reservation transition was not accepted.');
     setBusy('');
   }
@@ -90,7 +90,7 @@ export default function PMSPage(){
   if(!session)return <AppShell><div className="notice">Connecting to PMS…</div></AppShell>;
 
   return <AppShell active="/hotel-management">
-    <Header eyebrow={`${meta.label.toUpperCase()} OPERATIONS`} title={`Anaira ${meta.label} Management System`} subtitle={`Front desk, reservations, ${meta.unit.toLowerCase()} assignment, payment review and stay lifecycle.`} actions={<button className="btn" onClick={()=>load(restaurantId)}>Refresh</button>}/>
+    <Header eyebrow={`${meta.label.toUpperCase()} OPERATIONS`} title={`Anaira ${meta.label} Management System`} subtitle={`Front desk, reservations, ${meta.unit.toLowerCase()} assignment, payment review and stay lifecycle.`} actions={<div style={{display:"flex",gap:6,flexWrap:"wrap"}}><a className="btn" href={`/hotel-management/room-rate-mapping?type=${hospitalityType}`}>Room / Rate Mapping</a><a className="btn" href={`/revenue-management?type=${hospitalityType}`}>Yield Management</a><a className="btn" href={`/hotel-management/booking-source?type=${hospitalityType}`}>Booking Source</a><button className="btn" onClick={()=>load(restaurantId)}>Refresh</button></div>}/>
     {error&&<div className="notice error">{error}</div>}
     <div className="grid kpis">
       <div className="kpi"><span>Arrivals</span><b>{arrivals.length}</b><small>Today</small></div>
@@ -110,7 +110,7 @@ export default function PMSPage(){
           <div>{rate?.name||'—'}<small style={{display:'block'}}>{rate?.code||''}</small><small style={{display:'block',color:'#777'}}>₹{Number(r.rate||0).toLocaleString('en-IN')}/night</small></div>,
           <div>{r.check_in} → {r.check_out}<small style={{display:'block'}}>{r.adults||0} adults · {r.children||0} children</small></div>,
           <Pill>{r.status}</Pill>,
-          <div><Pill>{paymentLabel}</Pill><small style={{display:'block'}}>{r.payment_method||'—'}</small><small style={{display:'block'}}>Paid: {fmtMoney(r.paid_amount)} · Balance: {fmtMoney(r.balance_amount)}</small>{ps?.proof_url&&<a href={ps.proof_url} target="_blank" rel="noreferrer" style={{fontSize:11}}>Receipt</a>}</div>,
+          <div><Pill>{paymentLabel}</Pill><small style={{display:'block'}}>{r.payment_method||'—'}</small><small style={{display:'block'}}>Paid: {fmtMoney(r.paid_amount)} · Balance: {fmtMoney(r.balance_amount)}</small>{ps?.receipt_path&&<a href={ps.proof_url} target="_blank" rel="noreferrer" style={{fontSize:11}}>Receipt</a>}</div>,
           fmtMoney(r.total_amount),
           <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
             {r.payment_status==='submitted'&&<button className="btn" disabled={!!busy} onClick={()=>verifyPayment(r)}>{busy===r.id+'verify'?'…':'Verify Payment'}</button>}

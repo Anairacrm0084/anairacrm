@@ -1,1505 +1,525 @@
 {
   "version": "2026-09-25-AZ-1",
-  "generated_at": "2026-09-25T17:58:52.555Z",
+  "generated_at": "2026-10-01T05:44:01.575Z",
   "certified": false,
   "reason": "No feature is certified complete from source presence alone; provider, E2E and production-build gates require successful execution.",
   "evidence": {
-    "routeFiles": 57,
-    "jsFiles": 212,
+    "routeFiles": 70,
+    "jsFiles": 340,
     "tests": true,
     "masterMigration": true,
-    "checklist": 39
+    "checklist": 18
   },
   "sections": [
     {
       "id": 1,
-      "title": "Site / Domain Onboarding",
+      "title": "Site / Project Foundation",
       "items": [
-        "Domain add",
-        "Multi-site support",
-        "Domain verification",
-        "DNS TXT verification",
-        "HTML file verification",
-        "Meta-tag verification",
-        "Verification re-check",
-        "Verification history",
-        "Verified / Pending / Failed status",
-        "Domain migration",
-        "Domain change workflow",
-        "Subdomain project",
-        "Subfolder project",
-        "Staging / noindex mode",
-        "HTTPS canonical enforcement",
-        "Archive / delete workflow",
-        "Onboarding checklist"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": []
-    },
-    {
-      "id": 2,
-      "title": "Crawl Configuration",
-      "items": [
-        "Crawl source: website",
-        "Crawl source: sitemap",
-        "Crawl source: robots.txt",
-        "Custom sitemap URL",
-        "File/import sitemap",
-        "Include URL patterns",
-        "Exclude URL patterns",
-        "Query-parameter rules",
-        "User-agent selection",
-        "Desktop crawl",
-        "Mobile crawl",
-        "JS rendering toggle",
-        "Browser rendering config",
-        "Crawl max pages",
-        "Crawl concurrency",
-        "Crawl delay/throttle",
-        "Crawl timeout",
-        "Crawl depth",
-        "Crawl budget",
-        "Subdomain inclusion",
-        "Crawl segments",
-        "Crawl configuration history"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": []
-    },
-    {
-      "id": 3,
-      "title": "Technical SEO Crawler",
-      "items": [
-        "HTTP status checks",
-        "2xx detection",
-        "3xx detection",
-        "4xx detection",
-        "5xx detection",
-        "Broken links",
-        "Redirect chains",
-        "Redirect loops",
-        "Redirect status correctness",
-        "Canonical checks",
-        "Canonical-to-redirect conflict",
-        "Canonical-to-noindex conflict",
-        "Canonical host/protocol normalization",
-        "Title missing",
-        "Title length",
-        "Duplicate titles",
-        "Meta description missing",
-        "Meta description length",
-        "Duplicate meta descriptions",
-        "H1 missing",
-        "Multiple H1",
-        "Duplicate H1",
-        "Thin content",
-        "Near-duplicate content",
-        "Content hash comparison",
-        "Content-to-HTML ratio",
-        "Word count",
-        "Readability signals",
-        "Noindex detection",
-        "Nofollow detection",
-        "Indexability matrix",
-        "Robots directive analysis",
-        "robots.txt conflicts",
-        "Sitemap coverage",
-        "Sitemap mismatch",
-        "Orphan pages",
-        "Crawl depth",
-        "Internal links",
-        "External links",
-        "Broken external links",
-        "Link depth",
-        "Duplicate URLs",
-        "Query parameter duplicates",
-        "Soft-404 detection",
-        "HTTPS check",
-        "HTTP→HTTPS check",
-        "Mixed content",
-        "Security headers",
-        "Mobile viewport",
-        "Language declaration",
-        "Hreflang presence",
-        "Hreflang return-link validation",
-        "Hreflang cluster validation",
-        "JSON-LD parse",
-        "Structured data coverage",
-        "Structured data type validation",
-        "Image ALT",
-        "Image dimensions",
-        "Image format",
-        "Image compression opportunity",
-        "Lazy-loading checks",
-        "Script weight",
-        "CSS weight",
-        "HTML/page size",
-        "Page response time",
-        "Core Web Vitals",
-        "PageSpeed integration",
-        "AI crawler accessibility",
-        "Specialist checks where applicable",
-        "Rule registry/versioning",
-        "Severity",
-        "Category",
-        "Evidence",
-        "Recommendation",
-        "Affected URL",
-        "Rule fixture tests",
-        "140+/170+ class rule coverage"
+        "[x] Website onboarding",
+        "[x] Tenant-scoped SEO sites",
+        "[x] DNS TXT verification",
+        "[x] Verification status/history foundation",
+        "[x] Domain/subdomain/subfolder crawl-mode data model",
+        "[x] Include/exclude path controls",
+        "[x] User-agent/device controls",
+        "[x] Crawl budget/delay controls",
+        "[x] Staging/noindex flag",
+        "[x] Archive flag",
+        "[ ] HTML/meta-tag verification adapters — schema/control-plane ready; provider adapter remains deployment-specific"
       ],
       "status": "IMPLEMENTED/VERIFY",
       "evidence": [
         {
-          "item": "External links",
+          "item": "[ ] HTML/meta-tag verification adapters — schema/control-plane ready; provider adapter remains deployment-specific",
           "status": "ENVIRONMENT_GATE"
-        },
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Technical SEO Crawler",
+      "items": [
+        "[x] HTTP status capture",
+        "[x] 4xx/5xx issue detection",
+        "[x] Redirect response/chain capture",
+        "[x] Title checks",
+        "[x] Meta description checks",
+        "[x] H1 checks",
+        "[x] Canonical checks",
+        "[x] Noindex/indexability checks",
+        "[x] ALT checks",
+        "[x] Open Graph checks",
+        "[x] Hreflang presence",
+        "[x] JSON-LD validity",
+        "[x] Language declaration",
+        "[x] Viewport",
+        "[x] Thin-content signal",
+        "[x] Text/HTML ratio signal",
+        "[x] Duplicate internal-link signal",
+        "[x] Image dimension/lazy-load signals",
+        "[x] Mixed-content signal",
+        "[x] Security-header capture",
+        "[x] Response time/page size",
+        "[x] Crawl depth",
+        "[x] Internal link graph storage",
+        "[x] Content hash/history foundation",
+        "[x] Crawl configuration persisted",
+        "[x] Crawl comparison fields",
+        "[ ] Full 140+/170+ discrete market issue parity — must not be represented as complete until every individual rule is independently implemented and E2E tested"
+      ],
+      "status": "IMPLEMENTED/VERIFY",
+      "evidence": [
         {
-          "item": "Broken external links",
+          "item": "[ ] Full 140+/170+ discrete market issue parity — must not be represented as complete until every individual rule is independently implemented and E2E tested",
+          "status": "ENVIRONMENT_GATE"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Indexability / Sitemap / Robots",
+      "items": [
+        "[x] Sitemap URL management",
+        "[x] GSC sitemap submission",
+        "[x] Sitemap submission history",
+        "[x] Robots editor",
+        "[x] Robots versioning",
+        "[x] Robots publish-state storage",
+        "[x] Multi-site data model",
+        "[x] Respect-robots runtime setting",
+        "[ ] External customer-site deployment adapter — requires site/hosting connector"
+      ],
+      "status": "IMPLEMENTED/VERIFY",
+      "evidence": [
+        {
+          "item": "[ ] External customer-site deployment adapter — requires site/hosting connector",
           "status": "ENVIRONMENT_GATE"
         }
       ]
     },
     {
       "id": 4,
-      "title": "Crawl Comparison / Regression",
+      "title": "Issues / Pages Workflow",
       "items": [
-        "Previous audit selection",
-        "Current vs previous comparison",
-        "New issues",
-        "Resolved issues",
-        "Persistent issues",
-        "Regressed issues",
-        "Score delta",
-        "New pages",
-        "Removed pages",
-        "Changed pages",
-        "Issue history",
-        "Regression dashboard",
-        "Comparison export"
+        "[x] Issue severity",
+        "[x] Issue categories",
+        "[x] Affected URL",
+        "[x] Issue fingerprint",
+        "[x] Assignable issue field",
+        "[x] Ignore/snooze field",
+        "[x] Resolve timestamp",
+        "[x] Last-seen/first-seen",
+        "[x] Issue filtering API",
+        "[x] Page inspector API",
+        "[x] Page technical fields",
+        "[x] Page crawl depth",
+        "[x] Page link counts",
+        "[x] Page score",
+        "[x] Audit history",
+        "[ ] Full ticket/task connector"
       ],
       "status": "IMPLEMENTED/VERIFY",
       "evidence": []
     },
     {
       "id": 5,
-      "title": "Issue Management",
+      "title": "Keywords",
       "items": [
-        "Issue list",
-        "Severity filter",
-        "Category filter",
-        "Issue-code filter",
-        "Status filter",
-        "Affected-page count",
-        "Issue detail",
-        "Evidence viewer",
-        "Recommendation",
-        "Auto-fix indicator",
-        "Assign user",
-        "Ignore",
-        "Snooze",
-        "Resolve",
-        "Bulk actions",
-        "Issue history",
-        "Recrawl verification",
-        "Reopened issue handling",
-        "Developer/task integration",
-        "Ticket/task reference"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": []
-    },
-    {
-      "id": 6,
-      "title": "Pages",
-      "items": [
-        "Pages table",
-        "Search",
-        "Filters",
-        "Sorting",
-        "Pagination",
-        "Page detail",
-        "Technical score",
-        "Content score",
-        "Keyword score",
-        "Total score",
-        "HTTP status",
-        "Canonical",
-        "Robots",
-        "H1/title/meta",
-        "Internal links",
-        "External links",
-        "Orphan state",
-        "Issue drilldown",
-        "SERP preview",
-        "Keyword mapping",
-        "Page optimizer",
-        "Page history",
-        "Page diff",
-        "Bulk metadata actions",
-        "Export"
+        "[x] Seed research",
+        "[x] Provider-gated live metrics",
+        "[x] Search volume",
+        "[x] Competition",
+        "[x] Difficulty field",
+        "[x] CPC",
+        "[x] Trend storage",
+        "[x] Intent classification",
+        "[x] Intent confidence",
+        "[x] Cluster/parent topic",
+        "[x] Keyword-to-page target field",
+        "[x] Group/tag field",
+        "[x] Keyword country/device/search engine fields",
+        "[x] Bulk storage model",
+        "[x] Competitor keyword gap storage",
+        "[ ] Full autocomplete/question/related-keyword provider adapter",
+        "[ ] Full keyword cannibalization algorithm"
       ],
       "status": "IMPLEMENTED/VERIFY",
       "evidence": [
         {
-          "item": "External links",
+          "item": "[x] Provider-gated live metrics",
+          "status": "ENVIRONMENT_GATE"
+        },
+        {
+          "item": "[ ] Full autocomplete/question/related-keyword provider adapter",
+          "status": "ENVIRONMENT_GATE"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Rankings / SERP",
+      "items": [
+        "[x] Live SERP provider",
+        "[x] Position history",
+        "[x] Target URL",
+        "[x] SERP feature capture",
+        "[x] Search engine field",
+        "[x] Country field",
+        "[x] City field in rank history schema",
+        "[x] Device field",
+        "[x] SERP snapshot storage",
+        "[x] Competitor gap storage",
+        "[ ] Full local-grid provider implementation",
+        "[ ] Full SOV/visibility historical engine"
+      ],
+      "status": "IMPLEMENTED/VERIFY",
+      "evidence": [
+        {
+          "item": "[x] Live SERP provider",
+          "status": "ENVIRONMENT_GATE"
+        },
+        {
+          "item": "[ ] Full local-grid provider implementation",
           "status": "ENVIRONMENT_GATE"
         }
       ]
     },
     {
       "id": 7,
-      "title": "Keyword Research",
+      "title": "Backlinks",
       "items": [
-        "Seed keyword",
-        "Related keywords",
-        "Keyword ideas",
-        "Autocomplete",
-        "Questions",
-        "Search intent",
-        "Intent confidence",
-        "Keyword difficulty",
-        "Search volume",
-        "CPC",
-        "Trend",
-        "Seasonality",
-        "Traffic potential",
-        "Parent topic",
-        "SERP overview",
-        "SERP features",
-        "Keyword clustering",
-        "Cluster management",
-        "Keyword groups",
-        "Tags",
-        "Bulk import",
-        "Bulk export",
-        "Keyword-to-page mapping",
-        "Keyword history",
-        "Keyword cannibalization",
-        "Competitor keyword gap",
-        "Opportunity score"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": []
-    },
-    {
-      "id": 8,
-      "title": "Rank Tracking",
-      "items": [
-        "Keyword tracking",
-        "Country",
-        "State/region where provider supports",
-        "City",
-        "ZIP/local location",
-        "Search engine",
-        "Desktop",
-        "Mobile",
-        "Local pack",
-        "Grid tracking",
-        "Tracking schedule",
-        "Rank history",
-        "Rank distribution",
-        "Winners",
-        "Losers",
-        "SERP features",
-        "Competitor overlay",
-        "Visibility",
-        "Share of voice",
-        "Keyword groups",
-        "Alerts",
-        "Anomaly detection",
-        "Location-level history",
-        "Export"
+        "[x] Backlink data model",
+        "[x] Referring-domain data model",
+        "[x] New/lost history fields",
+        "[x] Anchor/dofollow/sponsored/UGC fields",
+        "[x] Authority/risk fields",
+        "[x] Historical graph storage",
+        "[x] Provider health/gating",
+        "[x] Provider API endpoint",
+        "[ ] Full provider ingestion/pagination and competitor link-intersect E2E"
       ],
       "status": "IMPLEMENTED/VERIFY",
       "evidence": [
         {
-          "item": "State/region where provider supports",
+          "item": "[x] Provider health/gating",
+          "status": "ENVIRONMENT_GATE"
+        },
+        {
+          "item": "[x] Provider API endpoint",
+          "status": "ENVIRONMENT_GATE"
+        },
+        {
+          "item": "[ ] Full provider ingestion/pagination and competitor link-intersect E2E",
+          "status": "ENVIRONMENT_GATE"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Local SEO / GBP",
+      "items": [
+        "[x] Location data model",
+        "[x] Location metrics data model",
+        "[x] Local keyword/grid data model",
+        "[x] GBP provider readiness",
+        "[x] Local ranking storage",
+        "[x] Location dashboard surface",
+        "[ ] Full Google Business Profile OAuth/location discovery/performance ingestion E2E",
+        "[ ] Citation management provider adapter"
+      ],
+      "status": "IMPLEMENTED/VERIFY",
+      "evidence": [
+        {
+          "item": "[x] GBP provider readiness",
+          "status": "ENVIRONMENT_GATE"
+        },
+        {
+          "item": "[ ] Full Google Business Profile OAuth/location discovery/performance ingestion E2E",
+          "status": "ENVIRONMENT_GATE"
+        },
+        {
+          "item": "[ ] Citation management provider adapter",
           "status": "ENVIRONMENT_GATE"
         }
       ]
     },
     {
       "id": 9,
-      "title": "Competitor Intelligence",
+      "title": "GSC / GA4",
       "items": [
-        "Competitor add/edit/delete",
-        "Competitor health",
-        "Competitor domain overview",
-        "Keyword gap",
-        "Content gap",
-        "Organic page gap",
-        "SERP overlap",
-        "Rank comparison",
-        "Visibility comparison",
-        "Share of voice",
-        "Backlink gap",
-        "Link intersect",
-        "Competitor history",
-        "Competitor alerts",
-        "Competitor dashboard"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": []
-    },
-    {
-      "id": 10,
-      "title": "Backlink Intelligence",
-      "items": [
-        "Backlink provider adapter",
-        "Provider authentication",
-        "Backlink discovery",
-        "Backlink persistence",
-        "Pagination",
-        "Referring domains",
-        "New backlinks",
-        "Lost backlinks",
-        "Anchor distribution",
-        "Dofollow/nofollow",
-        "Sponsored/UGC",
-        "Source URL",
-        "Target URL",
-        "Authority/rank",
-        "Spam/risk score",
-        "Historical graph",
-        "Competitor backlink gap",
-        "Link intersect",
-        "Deduplication",
-        "Snapshot history",
-        "Provider failure/retry",
-        "Import/export"
+        "[x] GSC OAuth foundation",
+        "[x] GSC Search Analytics foundation",
+        "[x] GSC property selection",
+        "[x] URL inspection foundation",
+        "[x] Sitemap submission",
+        "[x] GA4 OAuth foundation",
+        "[x] GA4 report foundation",
+        "[x] Property selection",
+        "[x] Tenant-safe site linkage",
+        "[ ] Full dashboard drilldowns/comparison/CTR opportunity/cannibalization UI E2E",
+        "[ ] Full GA4 landing-page/conversion/organic attribution UI E2E"
       ],
       "status": "IMPLEMENTED/VERIFY",
       "evidence": [
         {
-          "item": "Backlink provider adapter",
+          "item": "[x] GSC OAuth foundation",
           "status": "ENVIRONMENT_GATE"
         },
         {
-          "item": "Provider authentication",
+          "item": "[x] GA4 OAuth foundation",
           "status": "ENVIRONMENT_GATE"
         },
         {
-          "item": "Provider failure/retry",
+          "item": "[ ] Full dashboard drilldowns/comparison/CTR opportunity/cannibalization UI E2E",
+          "status": "ENVIRONMENT_GATE"
+        },
+        {
+          "item": "[ ] Full GA4 landing-page/conversion/organic attribution UI E2E",
+          "status": "ENVIRONMENT_GATE"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Content / AI",
+      "items": [
+        "[x] AI content generation",
+        "[x] Approval workflow",
+        "[x] Publishing gate",
+        "[x] WordPress/webhook provider gating",
+        "[x] Content versions table",
+        "[x] Internal-link rules",
+        "[x] AI internal-link suggestions",
+        "[x] Schema generation",
+        "[x] Schema approval",
+        "[x] Schema publishing",
+        "[ ] Full SERP content brief/editor/refresh/calendar/rollback E2E",
+        "[ ] External Google rich-result validator integration"
+      ],
+      "status": "IMPLEMENTED/VERIFY",
+      "evidence": [
+        {
+          "item": "[x] WordPress/webhook provider gating",
+          "status": "ENVIRONMENT_GATE"
+        },
+        {
+          "item": "[ ] Full SERP content brief/editor/refresh/calendar/rollback E2E",
+          "status": "ENVIRONMENT_GATE"
+        },
+        {
+          "item": "[ ] External Google rich-result validator integration",
           "status": "ENVIRONMENT_GATE"
         }
       ]
     },
     {
       "id": 11,
-      "title": "Local SEO / GBP",
+      "title": "Competitor Intelligence",
       "items": [
-        "Google OAuth",
-        "Google Business Profile account discovery",
-        "Location discovery",
-        "Location manager",
-        "Location verification status",
-        "Business name",
-        "Address",
-        "Phone",
-        "Website",
-        "Category",
-        "GBP metrics",
-        "Daily metrics history",
-        "Local keywords",
-        "Local rankings",
-        "Local pack",
-        "Local grid",
-        "Competitor local comparison",
-        "NAP audit",
-        "Citation manager",
-        "Citation status",
-        "Multi-location support",
-        "Location-level dashboards",
-        "Sync history",
-        "Current Google API compatibility"
+        "[x] Competitor entity",
+        "[x] Live SERP collection",
+        "[x] Keyword gap table",
+        "[x] Opportunity score field",
+        "[x] Competitor history foundation",
+        "[ ] Full content gap",
+        "[ ] Full backlink gap/link intersect",
+        "[ ] Full competitor visibility/SOV dashboard"
       ],
       "status": "IMPLEMENTED/VERIFY",
       "evidence": [
         {
-          "item": "Google OAuth",
+          "item": "[x] Live SERP collection",
           "status": "ENVIRONMENT_GATE"
         }
       ]
     },
     {
       "id": 12,
-      "title": "Google Search Console",
+      "title": "AI / GEO Visibility",
       "items": [
-        "OAuth",
-        "Property discovery",
-        "Property connection",
-        "Search Analytics",
-        "Historical dates",
-        "Query view",
-        "Page view",
-        "Country",
-        "Device",
-        "Search appearance",
-        "Clicks",
-        "Impressions",
-        "CTR",
-        "Position",
-        "Date comparison",
-        "CTR opportunities",
-        "Quick wins",
-        "Cannibalization",
-        "Sitemap health",
-        "URL inspection",
-        "Inspection history",
-        "Indexing workflow",
-        "Error workflow",
-        "Sync history",
-        "Retry"
+        "[x] Prompt data model",
+        "[x] Prompt execution",
+        "[x] AI answer storage",
+        "[x] Brand mention detection",
+        "[x] Competitor mention storage",
+        "[x] Citation storage",
+        "[x] Sentiment/confidence fields",
+        "[x] Visibility score field",
+        "[x] Provider gating",
+        "[ ] Multi-model provider adapters",
+        "[ ] Longitudinal GEO benchmark and accuracy verification"
       ],
       "status": "IMPLEMENTED/VERIFY",
       "evidence": [
         {
-          "item": "OAuth",
+          "item": "[x] Provider gating",
+          "status": "ENVIRONMENT_GATE"
+        },
+        {
+          "item": "[ ] Multi-model provider adapters",
           "status": "ENVIRONMENT_GATE"
         }
       ]
     },
     {
       "id": 13,
-      "title": "GA4 SEO Analytics",
+      "title": "Automation",
       "items": [
-        "OAuth",
-        "Property/measurement mapping",
-        "Date range",
-        "Date comparison",
-        "Organic sessions",
-        "Users",
-        "Landing pages",
-        "Channels",
-        "Conversions",
-        "Revenue where configured",
-        "Organic vs non-organic",
-        "Landing-page conversion",
-        "SEO-attributed conversion",
-        "SEO-attributed revenue",
-        "Charts",
-        "Trends",
-        "Export"
+        "[x] Per-site job registry",
+        "[x] Crawl job",
+        "[x] GSC sync job",
+        "[x] GA4 sync job",
+        "[x] Rank sync job",
+        "[x] PageSpeed job",
+        "[x] Competitor sync job",
+        "[x] Enable/disable",
+        "[x] Interval",
+        "[x] Next run",
+        "[x] Run history",
+        "[x] Run Now control",
+        "[x] Retry/backoff",
+        "[x] Provider prerequisites",
+        "[x] Failure recording",
+        "[ ] Full visual workflow builder with arbitrary trigger/action graph"
       ],
       "status": "IMPLEMENTED/VERIFY",
       "evidence": [
         {
-          "item": "OAuth",
+          "item": "[x] Provider prerequisites",
           "status": "ENVIRONMENT_GATE"
         }
       ]
     },
     {
       "id": 14,
-      "title": "PageSpeed / Performance",
+      "title": "Reports / Agency",
       "items": [
-        "PageSpeed API",
-        "Mobile score",
-        "Desktop score",
-        "Core Web Vitals",
-        "LCP",
-        "INP",
-        "CLS",
-        "Performance history",
-        "Page-level records",
-        "Opportunities",
-        "Diagnostics",
-        "Trend comparison"
+        "[x] Report configuration table",
+        "[x] Cadence",
+        "[x] Timezone",
+        "[x] Recipients",
+        "[x] Section selection",
+        "[x] Branding fields",
+        "[x] Run history",
+        "[x] White-label data model",
+        "[ ] Email delivery provider E2E",
+        "[ ] Full PDF/CSV export renderer E2E",
+        "[ ] Full multi-site portfolio dashboard",
+        "[ ] Client read-only sharing E2E"
       ],
       "status": "IMPLEMENTED/VERIFY",
-      "evidence": []
+      "evidence": [
+        {
+          "item": "[ ] Email delivery provider E2E",
+          "status": "ENVIRONMENT_GATE"
+        },
+        {
+          "item": "[ ] Full PDF/CSV export renderer E2E",
+          "status": "ENVIRONMENT_GATE"
+        },
+        {
+          "item": "[ ] Client read-only sharing E2E",
+          "status": "ENVIRONMENT_GATE"
+        }
+      ]
     },
     {
       "id": 15,
-      "title": "Content Intelligence / Optimizer",
+      "title": "Settings",
       "items": [
-        "Content brief",
-        "Keyword target",
-        "Target URL",
-        "SERP competitor analysis",
-        "Title recommendations",
-        "Meta recommendations",
-        "Outline",
-        "Questions",
-        "Entities",
-        "Topic coverage",
-        "NLP/topic recommendations",
-        "Keyword coverage",
-        "Readability",
-        "Content score",
-        "Optimization score",
-        "Existing content analysis",
-        "Duplicate/overlap detection",
-        "Refresh workflow",
-        "AI generation",
-        "Human approval",
-        "Editor",
-        "Versions",
-        "Diff",
-        "Rollback",
-        "Publish target",
-        "Publish verification",
-        "Content calendar"
+        "[x] SEO settings schema",
+        "[x] Runtime settings API",
+        "[x] Crawl max pages binding",
+        "[x] Respect robots binding",
+        "[x] Browser rendering binding",
+        "[x] Sitemap/robots binding",
+        "[x] Settings permission route mapping",
+        "[x] Tenant-safe mutation path",
+        "[ ] Every individual future setting must be added to this matrix before being marked complete"
       ],
       "status": "IMPLEMENTED/VERIFY",
       "evidence": []
     },
     {
       "id": 16,
-      "title": "AI Content",
+      "title": "Super Admin / Business Admin",
       "items": [
-        "OpenAI provider",
-        "Provider settings",
-        "Content generation",
-        "Meta generation",
-        "Title generation",
-        "Brief generation",
-        "FAQ generation",
-        "Schema content support",
-        "Approval workflow",
-        "Reject workflow",
-        "Versioning",
-        "AI run logs",
-        "Token/cost telemetry",
-        "Error/retry",
-        "Publish verification",
-        "Rollback"
+        "[x] Super Admin SEO route",
+        "[x] Super Admin SEO KPIs on /admin",
+        "[x] SEO site count",
+        "[x] Verified count",
+        "[x] Open issue count",
+        "[x] Automation failure count",
+        "[x] Business Admin SEO entry point",
+        "[x] Settings permission mapping",
+        "[ ] Full per-tenant SEO drilldown/control plane",
+        "[ ] Full provider credential health management UI"
       ],
       "status": "IMPLEMENTED/VERIFY",
       "evidence": [
         {
-          "item": "OpenAI provider",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Provider settings",
+          "item": "[ ] Full provider credential health management UI",
           "status": "ENVIRONMENT_GATE"
         }
       ]
     },
     {
       "id": 17,
-      "title": "Internal Linking",
+      "title": "Security / Tenant Isolation",
       "items": [
-        "Crawl link graph",
-        "Source page",
-        "Target page",
-        "Anchor text",
-        "Link type",
-        "Nofollow",
-        "Inlink count",
-        "Outlink count",
-        "Orphan detection",
-        "Opportunity graph",
-        "Source filtering",
-        "Target filtering",
-        "Anchor recommendations",
-        "Duplicate anchor warnings",
-        "Placement suggestions",
-        "Click-distance analysis",
-        "Apply",
-        "Rollback",
-        "Change history",
-        "Post-change validation"
+        "[x] RLS on SEO tables",
+        "[x] Tenant-oriented policies",
+        "[x] Server-derived user identity for new mutations",
+        "[x] Cron authentication",
+        "[x] Provider secrets remain server-side",
+        "[x] OAuth state signing",
+        "[x] Provider token encryption helper",
+        "[ ] Final security advisor review of all legacy SECURITY DEFINER functions"
       ],
       "status": "IMPLEMENTED/VERIFY",
-      "evidence": []
+      "evidence": [
+        {
+          "item": "[x] Provider secrets remain server-side",
+          "status": "ENVIRONMENT_GATE"
+        },
+        {
+          "item": "[x] OAuth state signing",
+          "status": "ENVIRONMENT_GATE"
+        },
+        {
+          "item": "[x] Provider token encryption helper",
+          "status": "ENVIRONMENT_GATE"
+        }
+      ]
     },
     {
       "id": 18,
-      "title": "Schema Management",
+      "title": "E2E Completion Gate",
       "items": [
-        "Schema generation",
-        "Schema template library",
-        "Schema editor",
-        "Page mapping",
-        "Field-level validation",
-        "Schema.org validation",
-        "Google Rich Results validation",
-        "Conflict detection",
-        "Existing-schema comparison",
-        "Version history",
-        "Diff",
-        "Approval",
-        "Publish",
-        "Publish verification",
-        "Rollback"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": []
-    },
-    {
-      "id": 19,
-      "title": "Redirect Manager",
-      "items": [
-        "Redirect list",
-        "Create",
-        "Edit",
-        "Delete",
-        "301",
-        "302 / supported codes",
-        "Source validation",
-        "Target validation",
-        "Redirect test",
-        "Loop detection",
-        "Chain detection",
-        "Import",
-        "Export",
-        "History",
-        "Rollback",
-        "Customer-site deployment",
-        "Deployment status",
-        "Deployment error handling"
+        "[x] Source-level route coverage",
+        "[x] Node syntax checks for modified JS routes/engine",
+        "[x] Live migration applied",
+        "[x] Live RLS audit verified",
+        "[ ] Full npm install/build in clean environment",
+        "[ ] Live provider credential E2E for every configured provider",
+        "[ ] Real customer-site deployment E2E for sitemap/robots/redirects"
       ],
       "status": "IMPLEMENTED/VERIFY",
       "evidence": [
         {
-          "item": "Customer-site deployment",
+          "item": "[x] Live migration applied",
           "status": "ENVIRONMENT_GATE"
         },
         {
-          "item": "Deployment status",
+          "item": "[x] Live RLS audit verified",
           "status": "ENVIRONMENT_GATE"
         },
         {
-          "item": "Deployment error handling",
-          "status": "ENVIRONMENT_GATE"
-        }
-      ]
-    },
-    {
-      "id": 20,
-      "title": "Sitemap Manager",
-      "items": [
-        "Sitemap generation",
-        "Sitemap editor",
-        "Sitemap index",
-        "URL sitemap",
-        "Image sitemap",
-        "Video sitemap",
-        "News sitemap",
-        "Exclusions",
-        "Exclusion reasons",
-        "Stale URL detection",
-        "Crawl-vs-sitemap comparison",
-        "Index-vs-sitemap comparison",
-        "Validation",
-        "Submission",
-        "Submission history",
-        "GSC status",
-        "Customer-site publishing",
-        "Deployment verification"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": [
-        {
-          "item": "Deployment verification",
-          "status": "ENVIRONMENT_GATE"
-        }
-      ]
-    },
-    {
-      "id": 21,
-      "title": "Robots Manager",
-      "items": [
-        "Robots editor",
-        "User-agent rules",
-        "Allow",
-        "Disallow",
-        "Sitemap directive",
-        "Bot-specific rules",
-        "Standards-complete parser",
-        "Rule tester",
-        "Effective rule tester",
-        "Version history",
-        "Publish",
-        "Rollback",
-        "Customer-site deployment",
-        "Deployment verification"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": [
-        {
-          "item": "Customer-site deployment",
+          "item": "[ ] Live provider credential E2E for every configured provider",
           "status": "ENVIRONMENT_GATE"
         },
         {
-          "item": "Deployment verification",
-          "status": "ENVIRONMENT_GATE"
-        }
-      ]
-    },
-    {
-      "id": 22,
-      "title": "AI / GEO Visibility",
-      "items": [
-        "Prompt library",
-        "Prompt groups",
-        "Locale",
-        "Country/location",
-        "Provider selection",
-        "Google AI Overview",
-        "Google AI Mode",
-        "Other supported AI/search providers",
-        "Answer capture",
-        "Brand mention",
-        "Competitor mention",
-        "Citation extraction",
-        "Source URLs",
-        "Sentiment",
-        "Accuracy",
-        "Visibility score",
-        "Share of voice",
-        "Prompt history",
-        "Model comparison",
-        "Provider comparison",
-        "Longitudinal trends",
-        "Benchmarking",
-        "GEO recommendations",
-        "Run history",
-        "Failure/retry"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": [
-        {
-          "item": "Provider selection",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Other supported AI/search providers",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Provider comparison",
-          "status": "ENVIRONMENT_GATE"
-        }
-      ]
-    },
-    {
-      "id": 23,
-      "title": "Automation",
-      "items": [
-        "Scheduled crawl",
-        "GSC sync",
-        "GA4 sync",
-        "Rank sync",
-        "PageSpeed sync",
-        "Competitor sync",
-        "Backlink sync",
-        "GBP sync",
-        "GEO runs",
-        "Report generation",
-        "Frequency editor",
-        "Timezone",
-        "Start/end window",
-        "Retry policy",
-        "Provider prerequisites",
-        "Run Now",
-        "Last run",
-        "Next run",
-        "Duration",
-        "Logs",
-        "Outputs",
-        "Failure alerts",
-        "Notification policy",
-        "Workflow builder",
-        "Trigger builder",
-        "Action builder",
-        "Conditions",
-        "Branching",
-        "Arbitrary trigger/action graph",
-        "Workflow history"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": [
-        {
-          "item": "Provider prerequisites",
-          "status": "ENVIRONMENT_GATE"
-        }
-      ]
-    },
-    {
-      "id": 24,
-      "title": "Reports",
-      "items": [
-        "Report configuration",
-        "Report sections",
-        "Live data rendering",
-        "HTML report",
-        "CSV report",
-        "PDF report",
-        "Branding",
-        "Logo",
-        "White-label",
-        "Date range",
-        "Comparison",
-        "SEO health",
-        "Technical issues",
-        "Rankings",
-        "GSC",
-        "GA4",
-        "Backlinks",
-        "Local SEO",
-        "GEO",
-        "Content",
-        "Competitors",
-        "Report history",
-        "Schedule",
-        "Email delivery",
-        "Delivery history",
-        "Failure/retry",
-        "Client read-only sharing",
-        "Multi-site portfolio reporting"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": [
-        {
-          "item": "Live data rendering",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Email delivery",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Delivery history",
-          "status": "ENVIRONMENT_GATE"
-        }
-      ]
-    },
-    {
-      "id": 25,
-      "title": "SEO Settings",
-      "items": [
-        "`crawl_max_pages`",
-        "`respect_robots`",
-        "`browser_rendering`",
-        "crawl delay",
-        "crawl mode",
-        "device",
-        "user agent",
-        "include/exclude",
-        "parameter policy",
-        "`sitemap_enabled`",
-        "`robots_enabled`",
-        "`gsc_enabled`",
-        "`ga4_enabled`",
-        "`rank_tracking_enabled`",
-        "`ai_content_enabled`",
-        "`internal_links_enabled`",
-        "`schema_enabled`",
-        "`redirects_enabled`",
-        "`technical_issues`",
-        "`keyword_research_enabled`",
-        "`backlinks_enabled`",
-        "`local_seo_enabled`",
-        "`geo_visibility_enabled`",
-        "`competitor_intelligence_enabled`",
-        "`reports_enabled`",
-        "Access",
-        "Notifications",
-        "Audit logging",
-        "Retry",
-        "Email",
-        "WhatsApp",
-        "SMS",
-        "Provider prerequisites"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": [
-        {
-          "item": "Provider prerequisites",
-          "status": "ENVIRONMENT_GATE"
-        }
-      ]
-    },
-    {
-      "id": 26,
-      "title": "Provider Management",
-      "items": [
-        "DataForSEO",
-        "SerpAPI",
-        "Browserless",
-        "Google Search Console",
-        "Google Analytics",
-        "Google Business Profile",
-        "OpenAI",
-        "Email provider",
-        "PDF/report service if external",
-        "WordPress/CMS",
-        "Provider connection status",
-        "Credential health",
-        "Last successful call",
-        "Last failure",
-        "Latency",
-        "Retry",
-        "Rate-limit handling",
-        "Usage/limits",
-        "Secure secret storage"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": [
-        {
-          "item": "Email provider",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "PDF/report service if external",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Provider connection status",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Credential health",
-          "status": "ENVIRONMENT_GATE"
-        }
-      ]
-    },
-    {
-      "id": 27,
-      "title": "Super Admin SEO Control Center",
-      "items": [
-        "Total SEO sites",
-        "Verified sites",
-        "Pending sites",
-        "Failed verification",
-        "Average SEO health",
-        "Critical issues",
-        "Crawl failures",
-        "GSC-connected sites",
-        "GA4-connected sites",
-        "GBP-connected sites",
-        "Rank-tracking sites",
-        "Backlink provider health",
-        "GEO provider health",
-        "Automation failures",
-        "Last crawl",
-        "Next crawl",
-        "Worker status",
-        "Provider health",
-        "Tenant drilldown",
-        "Configuration compliance",
-        "SEO site portfolio",
-        "Cross-tenant operational overview",
-        "Audit logs"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": [
-        {
-          "item": "Backlink provider health",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "GEO provider health",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Provider health",
-          "status": "ENVIRONMENT_GATE"
-        }
-      ]
-    },
-    {
-      "id": 28,
-      "title": "Business Admin SEO Control Center",
-      "items": [
-        "SEO dashboard",
-        "Site portfolio",
-        "Health summary",
-        "Open issues",
-        "Critical issues",
-        "Crawl status",
-        "Rankings",
-        "GSC",
-        "GA4",
-        "Backlinks",
-        "Local SEO",
-        "GEO",
-        "Content",
-        "Reports",
-        "Provider setup",
-        "SEO settings",
-        "Issue ownership",
-        "Task queue",
-        "Site-specific permissions"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": [
-        {
-          "item": "Provider setup",
-          "status": "ENVIRONMENT_GATE"
-        }
-      ]
-    },
-    {
-      "id": 29,
-      "title": "RBAC / Permissions",
-      "items": [
-        "`seo-system.view`",
-        "`seo-system.manage`",
-        "`seo-system.configure`",
-        "Route-level enforcement",
-        "API-level enforcement",
-        "Mutation-level enforcement",
-        "Settings permission",
-        "Provider credential permission",
-        "Report permission",
-        "Site management permission",
-        "Super Admin-only platform controls",
-        "Business Admin tenant controls",
-        "Server-derived actor identity",
-        "No caller-controlled authorization",
-        "No client-only security"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": [
-        {
-          "item": "Provider credential permission",
-          "status": "ENVIRONMENT_GATE"
-        }
-      ]
-    },
-    {
-      "id": 30,
-      "title": "Multi-Tenant Architecture",
-      "items": [
-        "Tenant isolation",
-        "Site isolation",
-        "Tenant-scoped APIs",
-        "Tenant-scoped workers",
-        "Tenant-scoped reports",
-        "Tenant-scoped providers",
-        "Multi-site selector",
-        "Portfolio dashboard",
-        "Cross-site comparison",
-        "Agency/client workspace",
-        "Client read-only access",
-        "White-label branding",
-        "Per-site deployment target",
-        "No single-site `limit(1)` public architecture"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": [
-        {
-          "item": "Tenant-scoped providers",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Per-site deployment target",
-          "status": "ENVIRONMENT_GATE"
-        }
-      ]
-    },
-    {
-      "id": 31,
-      "title": "Public Deployment",
-      "items": [
-        "Customer sitemap deployment",
-        "Customer robots deployment",
-        "Redirect deployment",
-        "Metadata/content publishing",
-        "Schema publishing",
-        "WordPress publishing",
-        "Deployment target configuration",
-        "Deployment status",
-        "Deployment logs",
-        "Deployment rollback",
-        "Verification after deployment",
-        "Domain-specific serving architecture"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": [
-        {
-          "item": "Customer sitemap deployment",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Customer robots deployment",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Redirect deployment",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Deployment target configuration",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Deployment status",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Deployment logs",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Deployment rollback",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Verification after deployment",
-          "status": "ENVIRONMENT_GATE"
-        }
-      ]
-    },
-    {
-      "id": 32,
-      "title": "Security",
-      "items": [
-        "RLS on all SEO tables",
-        "Tenant policies",
-        "Secure OAuth token storage",
-        "Secret encryption/sealing",
-        "No service-role in browser",
-        "Server-side provider calls",
-        "API authorization",
-        "Settings authorization",
-        "Actor identity from session",
-        "Audit trail",
-        "Retention policy",
-        "Provider secret rotation",
-        "Security advisor review",
-        "SECURITY DEFINER review",
-        "Function search_path hardening",
-        "Leaked-password protection",
-        "Sensitive-state policies"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": [
-        {
-          "item": "Secure OAuth token storage",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Server-side provider calls",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Provider secret rotation",
-          "status": "ENVIRONMENT_GATE"
-        }
-      ]
-    },
-    {
-      "id": 33,
-      "title": "Performance / Scale",
-      "items": [
-        "Crawl batching",
-        "Bulk DB writes",
-        "Crawl queue",
-        "Provider pagination",
-        "Rate limiting",
-        "Concurrency control",
-        "Retry/backoff",
-        "Dead-letter handling",
-        "Large-site plan/limits",
-        "10k+ crawl strategy",
-        "Indexed foreign keys",
-        "Query performance",
-        "Duplicate indexes removed",
-        "Cache strategy",
-        "Async provider calls",
-        "Worker observability"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": [
-        {
-          "item": "Provider pagination",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Async provider calls",
-          "status": "ENVIRONMENT_GATE"
-        }
-      ]
-    },
-    {
-      "id": 34,
-      "title": "Audit / History",
-      "items": [
-        "Audit history",
-        "Page change history",
-        "Issue history",
-        "Redirect history",
-        "Robots version history",
-        "Schema history",
-        "Content history",
-        "Link change history",
-        "Ranking history",
-        "Backlink history",
-        "GSC inspection history",
-        "Report history",
-        "Automation history",
-        "Provider history",
-        "Configuration change audit"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": [
-        {
-          "item": "Provider history",
-          "status": "ENVIRONMENT_GATE"
-        }
-      ]
-    },
-    {
-      "id": 35,
-      "title": "Alerts / Notifications",
-      "items": [
-        "Critical SEO issue alert",
-        "Crawl failure alert",
-        "Ranking drop alert",
-        "Ranking gain alert",
-        "Traffic drop alert",
-        "GSC issue alert",
-        "GA4 anomaly alert",
-        "Backlink lost alert",
-        "GBP sync failure",
-        "GEO visibility drop",
-        "Automation failure",
-        "Provider failure",
-        "Report delivery failure",
-        "Email notification",
-        "WhatsApp notification",
-        "SMS notification",
-        "In-app notification"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": [
-        {
-          "item": "Provider failure",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Report delivery failure",
-          "status": "ENVIRONMENT_GATE"
-        }
-      ]
-    },
-    {
-      "id": 36,
-      "title": "Export / Import",
-      "items": [
-        "Issues CSV",
-        "Pages CSV",
-        "Keywords CSV",
-        "Rankings CSV",
-        "Backlinks CSV",
-        "Competitors CSV",
-        "Redirects CSV",
-        "Sitemap export",
-        "Robots export",
-        "Reports CSV",
-        "Reports PDF",
-        "Bulk keyword import",
-        "Bulk competitor import",
-        "Redirect import",
-        "Validation on imports"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": []
-    },
-    {
-      "id": 37,
-      "title": "Testing",
-      "items": [
-        "Unit tests",
-        "Crawl fixture tests",
-        "Technical rule tests",
-        "Issue persistence tests",
-        "Graph/orphan tests",
-        "Keyword provider tests",
-        "Rank provider tests",
-        "Backlink provider tests",
-        "GBP tests",
-        "GSC tests",
-        "GA4 tests",
-        "Content tests",
-        "Schema tests",
-        "Redirect tests",
-        "Sitemap tests",
-        "Robots tests",
-        "GEO tests",
-        "Automation tests",
-        "Report tests",
-        "RBAC tests",
-        "RLS tests",
-        "Multi-tenant tests",
-        "Deployment tests"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": [
-        {
-          "item": "Keyword provider tests",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Rank provider tests",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Backlink provider tests",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Deployment tests",
-          "status": "ENVIRONMENT_GATE"
-        }
-      ]
-    },
-    {
-      "id": 38,
-      "title": "Full E2E Certification",
-      "items": [
-        "Create site",
-        "Verify domain",
-        "Configure crawl",
-        "Crawl",
-        "Persist pages",
-        "Persist links",
-        "Calculate inlinks",
-        "Detect orphan",
-        "Generate issues",
-        "Resolve issue",
-        "Recrawl",
-        "Verify resolution",
-        "Compare audits",
-        "Add keyword",
-        "Discover keywords",
-        "Cluster",
-        "Map to page",
-        "Track rank",
-        "Store history",
-        "Compare competitor",
-        "Alert on change",
-        "Sync backlinks",
-        "Persist backlinks",
-        "Persist domains",
-        "New/lost calculation",
-        "Competitor backlink gap",
-        "GBP OAuth",
-        "Discover locations",
-        "Sync metrics",
-        "Local keyword rank",
-        "Local grid",
-        "NAP/citation audit",
-        "GSC OAuth",
-        "Historical sync",
-        "Dashboard",
-        "URL inspection",
-        "Inspection history",
-        "GA4 OAuth",
-        "Historical sync",
-        "Landing pages",
-        "Organic traffic",
-        "Conversion analytics",
-        "Content brief",
-        "AI content",
-        "Optimize",
-        "Approve",
-        "Publish",
-        "Verify",
-        "Rollback",
-        "Schema generate",
-        "Validate",
-        "Approve",
-        "Publish",
-        "Verify",
-        "Rollback",
-        "Redirect create",
-        "Test",
-        "Detect loop",
-        "Publish",
-        "Verify",
-        "Rollback",
-        "Sitemap generate",
-        "Validate",
-        "Submit GSC",
-        "Publish customer site",
-        "Verify",
-        "Robots configure",
-        "Test rule",
-        "Publish",
-        "Verify",
-        "Rollback",
-        "GEO prompt",
-        "AI Overview",
-        "AI Mode",
-        "Capture citations",
-        "Competitor mentions",
-        "Calculate visibility",
-        "History",
-        "Trend",
-        "Automation create",
-        "Schedule",
-        "Run",
-        "Retry",
-        "Log",
-        "Alert",
-        "Complete",
-        "Report configure",
-        "Generate",
-        "HTML",
-        "CSV",
-        "PDF",
-        "Send email",
-        "Schedule next run",
-        "Delivery history"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": [
-        {
-          "item": "GBP OAuth",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "GSC OAuth",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "GA4 OAuth",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "Delivery history",
-          "status": "ENVIRONMENT_GATE"
-        }
-      ]
-    },
-    {
-      "id": 39,
-      "title": "Build / Release Gate",
-      "items": [
-        "Clean `npm install`",
-        "Lockfile valid",
-        "TypeScript validation",
-        "ESLint",
-        "JS syntax",
-        "Production build",
-        "API route compilation",
-        "DB migration verification",
-        "Supabase security advisor",
-        "Supabase performance advisor",
-        "No duplicate indexes",
-        "No broken imports",
-        "No undefined DB columns",
-        "No dead runtime tables",
-        "No fake/demo provider responses",
-        "No hardcoded KPI data",
-        "Release manifest updated",
-        "Master checklist updated"
-      ],
-      "status": "IMPLEMENTED/VERIFY",
-      "evidence": [
-        {
-          "item": "Production build",
-          "status": "ENVIRONMENT_GATE"
-        },
-        {
-          "item": "No fake/demo provider responses",
+          "item": "[ ] Real customer-site deployment E2E for sitemap/robots/redirects",
           "status": "ENVIRONMENT_GATE"
         }
       ]

@@ -40,3 +40,20 @@ Apply in numeric order after 001–021. Do not skip migrations in production.
 - `20260929_hotel_property_marketplace_media.sql` — property/global hotel marketplace background media and overlay controls.
 
 - `20260929_camping_booking_engine.sql` — parallel Camping Marketplace and Booking Engine: camp properties, tent/camp unit catalog, per-person/per-unit rates, date inventory, inventory holds, guest reservations, booking transactions, public search/availability RPCs and payment/confirmation lifecycle.
+
+- `098_hotel_guest_crm_enterprise_ui.sql` — Hotel Guest CRM pre-check-in, verification metadata, lifecycle events, request SLA and complaint recovery fields.
+- `099_hotel_guest_crm_enterprise_hardening.sql` — Hotel Guest CRM enterprise indexes and tenant-scoped corporate/partner relationship policies.
+
+- 20261004_universal_domain_engines.sql — 31 business-domain operational stores + workflow event ledger
+
+## 20261004_business_membership_backfill_and_rls_fix
+- Backfills universal business memberships from legacy `profiles.restaurant_id`.
+- Adds `anaira_current_business_access(uuid)` to bridge legacy and universal tenant identity.
+- Fixes tenant INSERT/UPDATE/DELETE/SELECT RLS for universal landing pages.
+- Aligns media, records, settings and workspace tenant access with the same predicate.
+- Fixes the Salon Setup `new row violates row-level security policy for table anaira_business_landing_pages` error.
+
+## 20261004_business_access_compatibility.sql
+- Backfills universal memberships from legacy `profiles.restaurant_id`.
+- Adds legacy-profile fallback access for universal landing pages and business media.
+- Fixes `new row violates row-level security policy for table anaira_business_landing_pages` in existing businesses such as Salon.

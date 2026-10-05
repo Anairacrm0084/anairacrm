@@ -1,11 +1,11 @@
 {
   "project": "anaira-hotel-restaurant-crm",
   "phase": "P0",
-  "timestamp": "2026-09-28T22:30:23.470Z",
+  "timestamp": "2026-10-04T10:02:45.335Z",
   "summary": {
     "failures": 0,
-    "warnings": 0,
-    "checks": 8
+    "warnings": 14,
+    "checks": 22
   },
   "checks": [
     {
@@ -47,6 +47,76 @@
       "name": "script:build",
       "status": "PASS",
       "detail": ""
+    },
+    {
+      "name": "secret-reference:SUPABASE_SERVICE_ROLE_KEY",
+      "status": "WARN",
+      "detail": "Referenced by server source; verify it is never exposed via NEXT_PUBLIC_*"
+    },
+    {
+      "name": "secret-reference:WHATSAPP_ACCESS_TOKEN",
+      "status": "WARN",
+      "detail": "Referenced by server source; verify it is never exposed via NEXT_PUBLIC_*"
+    },
+    {
+      "name": "secret-reference:RESEND_API_KEY",
+      "status": "WARN",
+      "detail": "Referenced by server source; verify it is never exposed via NEXT_PUBLIC_*"
+    },
+    {
+      "name": "secret-reference:TWILIO_AUTH_TOKEN",
+      "status": "WARN",
+      "detail": "Referenced by server source; verify it is never exposed via NEXT_PUBLIC_*"
+    },
+    {
+      "name": "secret-reference:CRON_SECRET",
+      "status": "WARN",
+      "detail": "Referenced by server source; verify it is never exposed via NEXT_PUBLIC_*"
+    },
+    {
+      "name": "secret-reference:ANAIRA_SECRET_KEY",
+      "status": "WARN",
+      "detail": "Referenced by server source; verify it is never exposed via NEXT_PUBLIC_*"
+    },
+    {
+      "name": "secret-reference:ANAIRA_PAYMENT_WEBHOOK_SECRET",
+      "status": "WARN",
+      "detail": "Referenced by server source; verify it is never exposed via NEXT_PUBLIC_*"
+    },
+    {
+      "name": "secret-reference:ANAIRA_SECRET",
+      "status": "WARN",
+      "detail": "Referenced by server source; verify it is never exposed via NEXT_PUBLIC_*"
+    },
+    {
+      "name": "secret-reference:RAZORPAY_KEY_SECRET",
+      "status": "WARN",
+      "detail": "Referenced by server source; verify it is never exposed via NEXT_PUBLIC_*"
+    },
+    {
+      "name": "secret-reference:STRIPE_SECRET_KEY",
+      "status": "WARN",
+      "detail": "Referenced by server source; verify it is never exposed via NEXT_PUBLIC_*"
+    },
+    {
+      "name": "secret-reference:RAZORPAY_WEBHOOK_SECRET",
+      "status": "WARN",
+      "detail": "Referenced by server source; verify it is never exposed via NEXT_PUBLIC_*"
+    },
+    {
+      "name": "secret-reference:STRIPE_WEBHOOK_SECRET",
+      "status": "WARN",
+      "detail": "Referenced by server source; verify it is never exposed via NEXT_PUBLIC_*"
+    },
+    {
+      "name": "secret-reference:OPENAI_API_KEY",
+      "status": "WARN",
+      "detail": "Referenced by server source; verify it is never exposed via NEXT_PUBLIC_*"
+    },
+    {
+      "name": "secret-reference:GOOGLE_CLIENT_SECRET",
+      "status": "WARN",
+      "detail": "Referenced by server source; verify it is never exposed via NEXT_PUBLIC_*"
     }
   ],
   "productionBuild": {

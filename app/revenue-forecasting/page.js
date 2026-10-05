@@ -1,2 +1,2 @@
-import PluginPage from '../PluginPage';
-export default function Page(){return <PluginPage pluginKey='revenue_forecasting'/>}
+import CrmEnterprisePage from '../CrmEnterprisePage';
+export default function Page(){return <CrmEnterprisePage module='forecasting' route='/revenue-forecasting'/>}

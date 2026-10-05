@@ -1,0 +1,3 @@
+-- Live-applied source-event sync triggers for CRM bills, restaurant reservations,
+-- marketplace orders and delivery orders.
+-- Emits idempotent crm_restaurant_order_events rows for INSERT/UPDATE.

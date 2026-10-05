@@ -1,9 +1,9 @@
 {
   "id": "seo-system",
   "name": "Anaira SEO System",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "category": "CRM/Marketing",
-  "description": "Anaira SEO System \u2014 technical audit, crawl control, keywords, rankings, backlinks, local SEO, GSC, GA4, AI/GEO, content, internal links, schema, redirects, sitemap, robots, automation and reporting.",
+  "description": "Universal multi-business, multi-platform SEO system for hospitality, local services, professional services, retail, ecommerce, SaaS and other organizations.",
   "settings": [
     "sitemap_enabled",
     "robots_enabled",
@@ -25,6 +25,13 @@
     "competitor_intelligence_enabled",
     "reports_enabled",
     "keyword_research_enabled",
-    "crawl_delay_ms"
+    "crawl_delay_ms",
+    "business_vertical",
+    "platform_type",
+    "ai_visibility_enabled",
+    "service_area_enabled",
+    "entity_schema_enabled",
+    "ecommerce_seo_enabled",
+    "app_seo_enabled"
   ]
 }

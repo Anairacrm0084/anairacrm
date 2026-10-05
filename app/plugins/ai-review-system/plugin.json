@@ -1,1 +1,15 @@
-{"id":"ai-review-system","name":"Anaira AI Review Automation","version":"1.0.0","category":"CRM/Reputation","description":"Review ingestion, AI sentiment/topic classification, response drafting, review-request automation, service recovery and reputation analytics.","settings":["review_sources","review_request_channels","approval_required","automation_rules","response_tone"]}
+{
+  "id": "ai-review-system",
+  "name": "Anaira AI Review Automation",
+  "version": "1.0.0",
+  "category": "CRM/Reputation",
+  "description": "Generic multi-business reputation and review automation for hotels, restaurants, cafes, shops, salons, barber shops, clinics, professionals, service businesses and other local businesses.",
+  "settings": [
+    "business_vertical",
+    "review_sources",
+    "review_request_channels",
+    "approval_required",
+    "automation_rules",
+    "response_tone"
+  ]
+}

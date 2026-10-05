@@ -114,6 +114,10 @@ export function SetupNav({hospitalityType='hotel'}){
   <a className="module-card" href={`/hotel-management/rooms${q}`}><h3>{m.units}</h3><p>Create every physical sellable unit and its live status.</p></a>
   <a className="module-card" href={`/hotel-management/inventory${q}`}><h3>{m.inventory}</h3><p>Automatic date-wise inventory from physical units and bookings.</p></a>
   <a className="module-card" href={`/hotel-management/rates${q}`}><h3>Rate Plans</h3><p>Per-unit or per-person pricing, weekend, seasonal and stay rules.</p></a>
+  <a className="module-card" href={`/hotel-management/rate-calendar${q}`}><h3>Daily Rate Calendar</h3><p>Anaira-style EP / CP / MAP / AP date-wise rates for every hospitality type, with individual day editing.</p></a>
+  <a className="module-card distribution-card" href={`/hotel-management/room-rate-mapping${q}`}><h3>Room / Rate Mapping</h3><p>Map master room types and rate plans to every distribution channel, with external codes, linkage and coverage.</p></a>
+  <a className="module-card distribution-card" href={`/revenue-management${q}`}><h3>Yield Management</h3><p>Occupancy, pickup, demand, lead-time, event rules, simulation and controlled rate publishing.</p></a>
+  <a className="module-card distribution-card" href={`/hotel-management/booking-source${q}`}><h3>Booking Source</h3><p>Direct, OTA, marketplace, corporate and agent source economics, allocation and performance.</p></a>
   <a className="module-card" href={`/booking?type=${encodeURIComponent(hospitalityType)}`}><h3>{m.reservation}</h3><p>Same booking control center, payment and confirmation lifecycle.</p></a>
   <a className="module-card" href={`/pms?type=${encodeURIComponent(hospitalityType)}`}><h3>{m.pms}</h3><p>Check-in, stay lifecycle, unit assignment and checkout.</p></a>
   <a className="module-card" href={`/housekeeping?type=${encodeURIComponent(hospitalityType)}`}><h3>{m.housekeeping}</h3><p>Cleaning, inspection, readiness and maintenance workflow.</p></a>

@@ -1,2 +1,2 @@
-import PluginPage from '../PluginPage';
-export default function Page(){return <PluginPage pluginKey='offers_coupons'/>}
+import {OffersCouponsCRM} from '../CrmDedicatedPages';
+export default function Page(){return <OffersCouponsCRM/>}

@@ -1,0 +1,11 @@
+ANAIRA UNIVERSAL BUSINESS FLOW V4 / V14 CLOSURE
+
+1. Fixed live universal landing-page RLS failure for legacy businesses.
+2. Added migration 20261004_business_access_compatibility.sql.
+3. Backfills anaira_business_memberships from profiles.restaurant_id.
+4. Landing page INSERT/UPDATE/SELECT now accepts canonical universal membership OR legacy profile tenant ownership.
+5. Universal business media follows the same tenant access predicate.
+6. Existing Salon setup and Salon asset bucket remain intact.
+7. Domain engine foundation from V13 remains included.
+
+Important: production certification still requires npm install, npm run build, applied migrations, authenticated browser E2E, and provider/payment integration tests in the user's environment.

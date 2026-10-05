@@ -1,3 +1,2 @@
-import ModulePage from '../ModulePage';
-import {pages} from '../pageConfigs';
-export default function Page(){ return <ModulePage config={{...pages['analytics'],dataSource:'analytics'}} /> }
+import {AnalyticsCRM} from '../CrmDedicatedPages';
+export default function Page(){return <AnalyticsCRM/>}

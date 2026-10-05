@@ -1,2 +1,2 @@
-import PluginPage from '../PluginPage';
-export default function Page(){return <PluginPage pluginKey='whatsapp_crm'/>}
+import {WhatsAppCRM} from '../CrmDedicatedPages';
+export default function Page(){return <WhatsAppCRM/>}

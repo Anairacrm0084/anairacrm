@@ -119,8 +119,8 @@ export const pluginRegistry = {
     },
     "hotel-booking": {
       "key": "hotel-booking",
-      "name": "Hotel Booking Engine",
-      "route": "/booking",
+      "name": "Anaira Booking Engine",
+      "route": "/booking-engine",
       "category": "Hotel",
       "description": "Direct booking, availability, rate plans, add-ons, payments and confirmations.",
       "owner": "hotel-booking",
@@ -1075,6 +1075,26 @@ export const pluginRegistry = {
         "subscribes": []
       }
     },
+    "marketplace": {
+      "key": "marketplace",
+      "name": "Anaira Marketplace",
+      "route": "/marketplace",
+      "category": "Commerce",
+      "description": "First-party marketplace orchestration for hotel and restaurant discovery, booking and ordering surfaces.",
+      "owner": "marketplace",
+      "dataTable": "anaira_platform_stores",
+      "fields": ["store_type","store_name","enabled","published","settings","updated_at"],
+      "settingsSchema": [
+        {"key":"hotel_marketplace_enabled","label":"Hotel Marketplace Enabled","type":"boolean","default":true},
+        {"key":"restaurant_marketplace_enabled","label":"Restaurant Marketplace Enabled","type":"boolean","default":true},
+        {"key":"booking_engine_bridge","label":"Booking Engine Bridge","type":"boolean","default":true},
+        {"key":"restaurant_pos_bridge","label":"Restaurant POS Bridge","type":"boolean","default":true},
+        {"key":"customer_event_bridge","label":"Customer / CRM Event Bridge","type":"boolean","default":true}
+      ],
+      "permissions": ["marketplace.view","marketplace.manage","marketplace.configure"],
+      "dependencies": ["hotel-booking","anaira-pos","restaurant-store","food-delivery","restaurant-reservation"],
+      "events": {"publishes":["marketplace.changed"],"subscribes":["hotel-booking.changed","anaira-pos.changed"]}
+    },
     "seo-system": {
       "key": "seo-system",
       "name": "Anaira SEO System",
@@ -1247,6 +1267,26 @@ export const pluginRegistry = {
         "reviewed_at"
       ],
       "settingsSchema": [
+        {
+          "key": "business_vertical",
+          "label": "Business Vertical",
+          "type": "select",
+          "default": "other",
+          "options": [
+            "hotel", "restaurant", "cafe", "bakery", "bar", "catering", "salon", "barber", "spa",
+            "clinic", "dentist", "doctor", "hospital", "pharmacy", "gym", "yoga", "retail", "grocery",
+            "fashion", "jewellery", "electronics", "furniture", "automotive", "auto_service", "real_estate",
+            "travel", "education", "coaching", "legal", "accounting", "agency", "professional_services",
+            "contractor", "home_services", "pet_services", "photography", "events", "entertainment", "coworking",
+            "repair", "cleaning", "logistics", "other"
+          ]
+        },
+        {
+          "key": "review_request_label",
+          "label": "Review Request Label",
+          "type": "text",
+          "default": "Customer Review Request"
+        },
         {
           "key": "notifications_enabled",
           "label": "Notifications Enabled",

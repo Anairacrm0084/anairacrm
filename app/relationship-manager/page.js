@@ -1,2 +1,2 @@
-import PluginPage from '../PluginPage';
-export default function Page(){return <PluginPage pluginKey='relationship_manager'/>}
+import {DomainWorkspace} from '../CrmDedicatedPages';
+export default function Page(){return <DomainWorkspace type="relationship"/>}

@@ -1,0 +1,10 @@
+V7 TARGETED UNIVERSAL BUSINESS TYPE FOUNDATION — 2026-10-04
+- Fixed restaurants_hospitality_types_check so non-hospitality businesses may store hospitality_types=[] instead of failing cardinality > 0.
+- Added hotel_restaurant to ana​ira_business_types so the composite tenant type satisfies universal workspace FK.
+- Added ana​ira_business_type_profiles: global per-business-type labels/settings catalog.
+- Added ana​ira_business_workspaces: tenant-specific business type, setup status, settings and landing settings with RLS.
+- Added dedicated landing + setup route sets under /business/<business_type> for all 33 non-composite business types.
+- Added shared business landing/setup components driven by business type configuration.
+- Super Admin property workspace now links non-hotel/non-restaurant businesses to their dedicated landing/setup.
+- Properties create/edit persists the universal business workspace row.
+- Business onboarding initializes the universal business workspace row.

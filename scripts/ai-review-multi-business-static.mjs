@@ -1,0 +1,24 @@
+import fs from 'fs';
+const read=p=>fs.readFileSync(p,'utf8');
+const checks=[];
+function pass(name,ok){checks.push([name,!!ok]);console.log(`${ok?'PASS':'FAIL'} ${name}`);}
+const cfg=read('lib/server/review-config.js');
+const engine=read('lib/server/review-engine.js');
+const automation=read('app/api/reviews/automation/route.js');
+const event=read('app/api/reviews/request-event/route.js');
+const mig=read('supabase/migrations/20261004_ai_review_multi_business.sql');
+const ui=read('app/ai-reviews/page.js');
+const registry=read('app/pluginRegistry.js');
+pass('business vertical catalog includes barber',cfg.includes("['barber'"));
+pass('business vertical catalog includes clinic',cfg.includes("['clinic'"));
+pass('business vertical catalog includes professional services',cfg.includes("['professional_services'"));
+pass('AI prompt is business-agnostic',engine.includes('any local business or professional service'));
+pass('AI receives business context',engine.includes('business_vertical:review.business_vertical'));
+pass('generic review request event migration',mig.includes('crm_review_request_events'));
+pass('generic request-event API',event.includes('crm_review_request_events'));
+pass('automation consumes generic events',automation.includes('crm_review_request_events'));
+pass('plugin settings expose business vertical',registry.includes('"key": "business_vertical"'));
+pass('dashboard exposes business vertical',ui.includes('Business vertical:'));
+const failed=checks.filter(x=>!x[1]).length;
+console.log(`AI Review multi-business checks: ${checks.length-failed}/${checks.length} PASS`);
+process.exit(failed?1:0);

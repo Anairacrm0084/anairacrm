@@ -1,0 +1,1 @@
+V3: Removed implicit Hotel defaults. Unconfigured admin/business_type=null now sees no Hotel Engine/HMS. Properties creation requires explicit Business Type. Hospitality Type is shown only for Hotel/Resort or Hotel+Restaurant. Direct hotel routes are blocked unless business_type is hotel_resort or hotel_restaurant.

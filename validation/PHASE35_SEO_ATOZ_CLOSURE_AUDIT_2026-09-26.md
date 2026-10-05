@@ -28,3 +28,6 @@ Implemented against Phase 34 source and locked market-parity baseline.
 - Full independent multi-surface AI-search benchmark.
 
 No production/A-to-Z certification is claimed until those runtime gates have evidence.
+
+## Forward closure
+Phase 36 (2026-10-03) adds keyword intelligence, SERP visibility/SOV, backlink-gap, multi-model GEO, workflow graph persistence and Browserless diagnostics hardening. See `validation/PHASE36_SEO_FULL_CLOSURE_2026-10-03.md`.

@@ -1,3 +1,2 @@
-import ModulePage from '../ModulePage';
-import {pages} from '../pageConfigs';
-export default function Page(){ return <ModulePage config={{...pages['timeline'],dataSource:'timeline'}} /> }
+import {TimelineCRM} from '../CrmDedicatedPages';
+export default function Page(){return <TimelineCRM/>}

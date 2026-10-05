@@ -20,8 +20,8 @@ async function syncSource(s,tenantId,src,int){
       const payload={tenant_id:tenantId,source:'google',external_review_id:ext,author_name:rv.reviewer?.displayName||null,rating:ratingValue(rv.starRating),review_text:rv.comment||'',reviewed_at:rv.createTime||new Date().toISOString(),language:null,sentiment:rv.comment?'pending':'neutral',status:'new',raw_payload:{...rv,locationId,accountId,locationName:`accounts/${accountId}/locations/${locationId}`}};
       const {data:existing}=await s.from('crm_reviews').select('id,reply_status,reply_text').eq('tenant_id',tenantId).eq('source','google').eq('external_review_id',ext).maybeSingle();
       if(existing){
-        if(existing.reply_status==='published')continue;
-        await s.from('crm_reviews').update({author_name:payload.author_name,rating:payload.rating,review_text:payload.review_text,reviewed_at:payload.reviewed_at,raw_payload:payload.raw_payload,status:'new',updated_at:new Date().toISOString()}).eq('id',existing.id); updated++;
+        // Provider sync must never reset a processed review back to `new`.
+        await s.from('crm_reviews').update({author_name:payload.author_name,rating:payload.rating,review_text:payload.review_text,reviewed_at:payload.reviewed_at,raw_payload:payload.raw_payload,updated_at:new Date().toISOString()}).eq('id',existing.id); updated++;
       }else{const ins=await s.from('crm_reviews').insert(payload);if(ins.error)throw ins.error;inserted++;}
       total++;
     }
