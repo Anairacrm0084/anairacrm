@@ -130,12 +130,22 @@ function StoreBuilder(){
 
  useEffect(()=>{if(rid&&kind)load()},[rid,kind,activeHospitalityType]);
  const storeKind=kind==='restaurant'?'restaurant':'hotel';
+ async function resolvePropertyStore(){
+   const {data:existing,error:existingError}=await supabase.from('anaira_platform_stores').select('*').eq('restaurant_id',rid).eq('store_type',storeKind).eq('is_platform_store',false).maybeSingle();
+   if(existingError) throw existingError;
+   if(existing) return existing;
+   const {data:storeId,error:storeRpcError}=await supabase.rpc('anaira_ensure_property_store',{p_restaurant_id:rid,p_store_type:storeKind,p_hospitality_type:storeKind==='hotel'?activeHospitalityType:null});
+   if(storeRpcError||!storeId) throw new Error(storeRpcError?.message||'Unable to provision this property store.');
+   const {data:created,error:createdError}=await supabase.from('anaira_platform_stores').select('*').eq('id',storeId).eq('restaurant_id',rid).eq('is_platform_store',false).maybeSingle();
+   if(createdError) throw createdError;
+   return created||null;
+ }
  async function load(){
    setError('');
-   const {data:storeId,error:storeRpcError}=await supabase.rpc('anaira_ensure_property_store',{p_restaurant_id:rid,p_store_type:storeKind,p_hospitality_type:storeKind==='hotel'?activeHospitalityType:null});
-   if(storeRpcError||!storeId){setError(storeRpcError?.message||'Unable to provision this property store.');return}
-   const {data:s,error:se}=await supabase.from('anaira_platform_stores').select('*').eq('id',storeId).eq('restaurant_id',rid).eq('is_platform_store',false).maybeSingle();
-   if(se){setError(se.message);return} setStore(s||null); if(!s)return;
+   let s;
+   try{s=await resolvePropertyStore()}catch(e){setError(e?.message||'Unable to resolve this property store.');return}
+   if(!s){setError('This property does not have a store yet.');return}
+   setStore(s);
    const {data:m,error:me}=await supabase.from('anaira_store_memberships').select('*').eq('store_id',s.id).eq('restaurant_id',rid).maybeSingle();
    if(me){setError(me.message);return} setMembership(m||null);
    const {data:ss}=await supabase.from('anaira_store_settings').select('*').eq('store_id',s.id).eq('restaurant_id',rid).maybeSingle();

@@ -59,16 +59,24 @@ begin
 
   select coalesce(name,'Property') into v_name from public.restaurants where id=p_restaurant_id;
   if v_name is null then raise exception 'property not found'; end if;
-  v_slug := lower(regexp_replace(coalesce(v_name,'property') || '-' || substr(p_restaurant_id::text,1,8), '[^a-zA-Z0-9]+', '-', 'g'));
+  v_slug := lower(regexp_replace(coalesce(v_name,'property') || '-' || replace(p_restaurant_id::text,'-',''), '[^a-zA-Z0-9]+', '-', 'g'));
 
-  insert into public.anaira_platform_stores
-    (store_name, store_type, restaurant_id, is_platform_store, parent_platform_store_id,
-     hospitality_type, enabled, published, builder_mode, public_path, settings, created_at, updated_at)
-  values
-    (v_name || case when p_store_type='hotel' then ' Hotel Store' else ' Restaurant Store' end,
-     p_store_type, p_restaurant_id, false, v_parent, p_hospitality_type,
-     true, false, 'admin_builder', '/store/' || v_slug, '{}'::jsonb, now(), now())
-  returning id into v_store;
+  begin
+    insert into public.anaira_platform_stores
+      (store_name, store_type, slug, restaurant_id, is_platform_store, parent_platform_store_id,
+       hospitality_type, enabled, published, builder_mode, public_path, settings, created_at, updated_at)
+    values
+      (v_name || case when p_store_type='hotel' then ' Hotel Store' else ' Restaurant Store' end,
+       p_store_type, v_slug, p_restaurant_id, false, v_parent, p_hospitality_type,
+       true, false, 'admin_builder', '/store/' || v_slug, '{}'::jsonb, now(), now())
+    returning id into v_store;
+  exception when unique_violation then
+    select id into v_store
+    from public.anaira_platform_stores
+    where restaurant_id=p_restaurant_id and store_type=p_store_type
+    limit 1;
+    if v_store is null then raise; end if;
+  end;
 
   insert into public.anaira_store_memberships
     (store_id, restaurant_id, enabled, sort_order, listing_override, catalog_source,
