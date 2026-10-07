@@ -90,22 +90,24 @@ export default function RestaurantStoreId(){
     if(!id)return;
     (async()=>{
       try{
-        const {data:stores,error:storeError}=await supabase.from('anaira_platform_stores').select('id,enabled,published,store_name,slug').eq('store_type','restaurant').eq('enabled',true).eq('published',true).limit(1);
-        if(storeError)throw storeError;
-        const store=stores?.[0];
-        if(!store){setError('Restaurant Store is not published.');return;}
-        const {data:m,error:me}=await supabase.from('anaira_store_memberships').select('*').eq('restaurant_id',id).eq('store_id',store.id).eq('enabled',true).maybeSingle();
+        let store=null;
+        const {data:storeById}=await supabase.from('anaira_platform_stores').select('id,restaurant_id,enabled,published,store_name,slug,is_platform_store').eq('id',id).eq('is_platform_store',false).maybeSingle();
+        if(storeById) store=storeById;
+        if(!store){const {data:stores,error:storeError}=await supabase.from('anaira_platform_stores').select('id,restaurant_id,enabled,published,store_name,slug,is_platform_store').eq('restaurant_id',id).eq('store_type','restaurant').eq('is_platform_store',false).eq('enabled',true).eq('published',true).limit(1); if(storeError)throw storeError; store=stores?.[0];}
+        if(!store){setError('Restaurant property store is not published.');return;}
+        const propertyId=store.restaurant_id||id;
+        const {data:m,error:me}=await supabase.from('anaira_store_memberships').select('*').eq('restaurant_id',propertyId).eq('store_id',store.id).eq('enabled',true).maybeSingle();
         if(me)throw me;
         if(!m){setError('This restaurant is not published in the Restaurant Store.');return;}
         const o=m.listing_override||{}, sc=m.store_config||{};
         const [{data:ss},{data:fi},{data:cats},{data:menu},{data:of},{data:hb},{data:property}]=await Promise.all([
-          supabase.from('anaira_store_settings').select('*').eq('restaurant_id',id).eq('store_id',store.id).eq('store_type','restaurant').maybeSingle(),
-          supabase.from('anaira_marketplace_featured_items').select('*').eq('restaurant_id',id).eq('store_id',store.id).eq('active',true).order('display_order'),
-          supabase.from('anaira_store_categories').select('*').eq('restaurant_id',id).eq('store_id',store.id).eq('active',true).order('display_order').order('name'),
+          supabase.from('anaira_store_settings').select('*').eq('restaurant_id',propertyId).eq('store_id',store.id).eq('store_type','restaurant').maybeSingle(),
+          supabase.from('anaira_marketplace_featured_items').select('*').eq('restaurant_id',propertyId).eq('store_id',store.id).eq('active',true).order('display_order'),
+          supabase.from('anaira_store_categories').select('*').eq('restaurant_id',propertyId).eq('store_id',store.id).eq('active',true).order('display_order').order('name'),
           supabase.from('anaira_marketplace_menu_items').select('*').eq('restaurant_id',id).eq('active',true).order('display_order').order('item_name').limit(1000),
-          supabase.from('anaira_store_offers').select('*').eq('restaurant_id',id).eq('store_id',store.id).eq('active',true).order('created_at',{ascending:false}),
-          supabase.from('anaira_store_banners').select('*').eq('restaurant_id',id).eq('store_id',store.id).eq('active',true).order('display_order'),
-          supabase.from('restaurants').select('id,name,cuisine,city,address,phone,website,logo,cover_image').eq('id',id).maybeSingle()
+          supabase.from('anaira_store_offers').select('*').eq('restaurant_id',propertyId).eq('store_id',store.id).eq('active',true).order('created_at',{ascending:false}),
+          supabase.from('anaira_store_banners').select('*').eq('restaurant_id',propertyId).eq('store_id',store.id).eq('active',true).order('display_order'),
+          supabase.from('restaurants').select('id,name,cuisine,city,address,phone,website,logo,cover_image').eq('id',propertyId).maybeSingle()
         ]);
         if(property) setRestaurant({...property,...o,listing_override:o,store_config:sc,store_id:store.id});
         else setRestaurant({id,...o,listing_override:o,store_config:sc,store_id:store.id});
@@ -164,7 +166,7 @@ export default function RestaurantStoreId(){
     setReservationBusy(true);setReservationMsg('');
     try{
       const key=globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random()}`;
-      const {data,error:e}=await supabase.rpc('anaira_create_restaurant_reservation_v2',{p_restaurant_id:id,p_guest_name:reservation.name,p_guest_phone:reservation.phone,p_guest_email:null,p_date:reservation.date,p_time:reservation.time,p_party_size:Number(reservation.party),p_duration_minutes:90,p_source:'anaira_store_id',p_table_id:null,p_idempotency_key:key,p_special_request:null});
+      const {data,error:e}=await supabase.rpc('anaira_create_restaurant_reservation_v2',{p_restaurant_id:propertyId,p_guest_name:reservation.name,p_guest_phone:reservation.phone,p_guest_email:null,p_date:reservation.date,p_time:reservation.time,p_party_size:Number(reservation.party),p_duration_minutes:90,p_source:'anaira_store_id',p_table_id:null,p_idempotency_key:key,p_special_request:null});
       if(e)throw e;
       setReservationMsg(`Reservation ${data?.reservation_code||''} confirmed.`);
     }catch(e){setReservationMsg(e?.message||'Unable to confirm reservation. Please try another time.');}

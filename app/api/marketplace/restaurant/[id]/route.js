@@ -16,7 +16,7 @@ async function safeQuery(fn, fallback=null){
 async function loadLocal(s,id){
   // Public store identity must not depend on the tenant-private restaurants table.
   // Store membership is explicitly public-readable when enabled/published.
-  const storeQ=await safeQuery(()=>s.from('anaira_platform_stores').select('id,enabled,published,store_name,slug').eq('store_type','restaurant').eq('enabled',true).eq('published',true).limit(10));
+  const storeQ=await safeQuery(()=>s.from('anaira_platform_stores').select('id,restaurant_id,enabled,published,store_name,slug,is_platform_store').eq('restaurant_id',id).eq('store_type','restaurant').eq('is_platform_store',false).eq('enabled',true).eq('published',true).limit(1));
   const store=(storeQ.data||[])[0];
   if(!store?.enabled || !store?.published) return null;
 
@@ -30,10 +30,10 @@ async function loadLocal(s,id){
   const restaurantQ=await safeQuery(()=>s.from('restaurants').select('id,name,slug,status,logo,cover_image,cuisine,address,city,phone,website,delivery_enabled').eq('id',id).maybeSingle(),null);
   const [settingsQ,categoriesQ,menuQ,offersQ,featuredQ]=await Promise.all([
     safeQuery(()=>s.from('anaira_store_settings').select('*').eq('restaurant_id',id).eq('store_id',store.id).eq('store_type','restaurant').eq('enabled',true).eq('published',true).limit(10)),
-    safeQuery(()=>s.from('anaira_store_categories').select('*').eq('restaurant_id',id).eq('active',true).order('display_order').order('name'),[]),
+    safeQuery(()=>s.from('anaira_store_categories').select('*').eq('restaurant_id',id).eq('store_id',store.id).eq('active',true).order('display_order').order('name'),[]),
     safeQuery(()=>s.from('anaira_marketplace_menu_items').select('*').eq('restaurant_id',id).eq('active',true).order('display_order').order('item_name').limit(1000),[]),
-    safeQuery(()=>s.from('anaira_store_offers').select('*').eq('restaurant_id',id).eq('active',true).order('created_at',{ascending:false}),[]),
-    safeQuery(()=>s.from('anaira_marketplace_featured_items').select('*').eq('restaurant_id',id).eq('active',true).order('display_order'),[])
+    safeQuery(()=>s.from('anaira_store_offers').select('*').eq('restaurant_id',id).eq('store_id',store.id).eq('active',true).order('created_at',{ascending:false}),[]),
+    safeQuery(()=>s.from('anaira_marketplace_featured_items').select('*').eq('restaurant_id',id).eq('store_id',store.id).eq('active',true).order('display_order'),[])
   ]);
 
   const settings=(settingsQ.data||[])[0]||null;

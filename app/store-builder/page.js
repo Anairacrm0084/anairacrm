@@ -132,7 +132,9 @@ function StoreBuilder(){
  const storeKind=kind==='restaurant'?'restaurant':'hotel';
  async function load(){
    setError('');
-   const {data:s,error:se}=await supabase.from('anaira_platform_stores').select('*').eq('store_type',storeKind).maybeSingle();
+   const {data:storeId,error:storeRpcError}=await supabase.rpc('anaira_ensure_property_store',{p_restaurant_id:rid,p_store_type:storeKind,p_hospitality_type:storeKind==='hotel'?activeHospitalityType:null});
+   if(storeRpcError||!storeId){setError(storeRpcError?.message||'Unable to provision this property store.');return}
+   const {data:s,error:se}=await supabase.from('anaira_platform_stores').select('*').eq('id',storeId).eq('restaurant_id',rid).eq('is_platform_store',false).maybeSingle();
    if(se){setError(se.message);return} setStore(s||null); if(!s)return;
    const {data:m,error:me}=await supabase.from('anaira_store_memberships').select('*').eq('store_id',s.id).eq('restaurant_id',rid).maybeSingle();
    if(me){setError(me.message);return} setMembership(m||null);
