@@ -52,8 +52,15 @@ export async function POST(req){
       }
     }
 
-    // restaurants has CASCADE FKs for the tenant data engine. The only non-cascade tenant FK is
-    // profiles.restaurant_id (SET NULL), so all tenant records are removed atomically by this delete.
+    // Delete property-master records explicitly before the tenant row. This keeps the canonical
+    // property identity and legacy hotel-property rows from surviving a tenant deletion.
+    const {error:masterDeleteError}=await admin.from('anaira_hospitality_properties_master').delete().eq('tenant_id',propertyId);
+    if(masterDeleteError)throw masterDeleteError;
+    const {error:legacyPropertyDeleteError}=await admin.from('anaira_hotel_properties').delete().eq('tenant_id',propertyId);
+    if(legacyPropertyDeleteError)throw legacyPropertyDeleteError;
+
+    // The DB migration hardens the remaining tenant FKs to CASCADE. The restaurant delete is
+    // therefore the single atomic tenant-data deletion point.
     const {error:deleteError}=await admin.from('restaurants').delete().eq('id',propertyId);
     if(deleteError)throw deleteError;
 
