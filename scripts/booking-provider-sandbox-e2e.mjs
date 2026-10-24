@@ -10,5 +10,5 @@ const credentials={api_key:'sandbox'};
 const test=await testNativeProvider(connection,platform,credentials);
 const sync=await executeNativeSync(connection,platform,credentials,{event_type:'inventory',payload:{room_type_id:'sandbox',availability:3}});
 server.close();
-if(!test.ok||!sync.ok||test.adapter!=='native_booking_com'||sync.adapter!=='native_booking_com') throw new Error('Provider sandbox E2E failed');
-console.log(JSON.stringify({status:'PASS',provider:'booking_com',test_adapter:test.adapter,sync_adapter:sync.adapter},null,2));
+if(!test.ok||!sync.ok||test.adapter!=='configured_rest_booking_com'||sync.adapter!=='configured_rest_booking_com') throw new Error('Provider sandbox E2E failed');
+console.log(JSON.stringify({status:'PASS',test_scope:'local mock server only; not real OTA certification',provider:'booking_com',test_adapter:test.adapter,sync_adapter:sync.adapter},null,2));

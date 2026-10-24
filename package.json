@@ -40,7 +40,8 @@
     "ai-review:multi-business-check": "node scripts/ai-review-multi-business-static.mjs",
     "seo:universal-check": "node scripts/seo-universal-multi-platform-static.mjs",
     "crm:universal-check": "node tests/crm-universal-multi-business-static.mjs",
-    "business:identity-check": "node scripts/universal-business-identity-static.mjs"
+    "business:identity-check": "node scripts/universal-business-identity-static.mjs",
+    "ota:configuration-guard": "node scripts/ota-provider-configuration-guard.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

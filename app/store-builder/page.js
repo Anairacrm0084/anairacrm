@@ -131,15 +131,31 @@ function StoreBuilder(){
  useEffect(()=>{if(rid&&kind)load()},[rid,kind,activeHospitalityType]);
  const storeKind=kind==='restaurant'?'restaurant':'hotel';
  async function resolvePropertyStore(){
-   const {data:existing,error:existingError}=await supabase.from('anaira_platform_stores').select('*').eq('restaurant_id',rid).eq('store_type',storeKind).eq('is_platform_store',false).maybeSingle();
-   if(existingError) throw existingError;
-   if(existing) return existing;
-   const {data:storeId,error:storeRpcError}=await supabase.rpc('anaira_ensure_property_store',{p_restaurant_id:rid,p_store_type:storeKind,p_hospitality_type:storeKind==='hotel'?activeHospitalityType:null});
-   if(storeRpcError||!storeId) throw new Error(storeRpcError?.message||'Unable to provision this property store.');
-   const {data:created,error:createdError}=await supabase.from('anaira_platform_stores').select('*').eq('id',storeId).eq('restaurant_id',rid).eq('is_platform_store',false).maybeSingle();
-   if(createdError) throw createdError;
-   return created||null;
+   // Resolve the store for this tenant only. A platform template or another
+   // tenant's store must never be used as a fallback for a property builder.
+   const {data,error}=await supabase.rpc('anaira_store_builder_resolve',{
+     p_restaurant_id:rid,
+     p_store_type:storeKind,
+     p_hospitality_type:storeKind==='hotel'?activeHospitalityType:null
+   });
+   if(!error && data?.store?.id) return data.store;
+
+   // Graceful compatibility path for projects where the resolver migration
+   // has not been applied yet. Filter by both store type and tenant before
+   // selecting a row; do not use maybeSingle() against the global store set.
+   const {data:rows,error:queryError}=await supabase
+     .from('anaira_platform_stores')
+     .select('*')
+     .eq('restaurant_id',rid)
+     .eq('store_type',storeKind)
+     .eq('is_platform_store',false)
+     .order('created_at',{ascending:true})
+     .limit(1);
+   if(queryError) throw new Error(error?.message ? `${error.message}; fallback: ${queryError.message}` : queryError.message);
+   if(rows?.[0]) return rows[0];
+   throw new Error(error?.message || 'No store exists for this business yet. Please ask an administrator to provision this property store.');
  }
+
  async function load(){
    setError('');
    let s;
@@ -287,7 +303,7 @@ async function moveHeroSlide(id,direction){
     <div className="sb-actions">{kind!=='restaurant'&&availableKinds.filter(k=>k!=='restaurant').length>1&&<select className="compact-input" value={activeHospitalityType} onChange={e=>{const next=e.target.value;setActiveHospitalityType(next);setKind(next);router.replace(`/store-builder?kind=${encodeURIComponent(next)}&hospitality_type=${encodeURIComponent(next)}`);}}>{availableKinds.filter(k=>k!=='restaurant').map(k=><option key={k} value={k}>{`My ${{hotel:'Hotel',camp:'Camping',homestay:'Homestay',guest_house:'Guest House',cottage:'Cottage'}[k]||'Hospitality'} Store`}</option>)}</select>}<a className="btn" href={publicUrl} target="_blank">Preview Store ↗</a><button className="btn primary" disabled={busy} onClick={saveStore}>{busy?'Saving…':'Save Changes'}</button></div>
    </div>
    {error&&<div className="notice error">{error}</div>}
-   {!store?<div className="notice">This platform store is disabled or unpublished by Super Admin.</div>:<>
+   {!store?<div className="notice">No property store is available to edit. The system will attempt to provision one automatically; if this message remains, check the store resolver and tenant permissions.</div>:<>
     <div className="sb-kpis"><div><span>BUSINESS</span><b>{property?.name||rid.slice(0,8)}</b><small>Business Admin scope</small></div><div><span>CATALOG SOURCE</span><b>{sourceLabels[source]||source}</b><small>Single source of truth</small></div><div><span>{storeKind==='restaurant'?'MENU ITEMS':'BOOKINGS'}</span><b>{storeKind==='restaurant'?items.length:orders.length}</b><small>Live operational data</small></div><div><span>STORE</span><b>Connected</b><small>{publicUrl}</small></div></div>
     {storeKind==='restaurant'?<>
       <StoreTabNav active={storeTab} onChange={setStoreTab}/>

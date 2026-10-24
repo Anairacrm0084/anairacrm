@@ -52,12 +52,23 @@ export async function POST(req){
       }
     }
 
-    // Delete property-master records explicitly before the tenant row. This keeps the canonical
-    // property identity and legacy hotel-property rows from surviving a tenant deletion.
+    // Resolve legacy property IDs through the canonical master. The legacy table uses
+    // business_id (not tenant_id), so filtering it by tenant_id is an invalid query.
+    const {data:masterRows,error:masterRowsError}=await admin
+      .from('anaira_hospitality_properties_master')
+      .select('id,source_table,source_id')
+      .eq('tenant_id',propertyId);
+    if(masterRowsError)throw masterRowsError;
+    const legacyPropertyIds=[...new Set((masterRows||[])
+      .filter(x=>x.source_table==='anaira_hotel_properties' && x.source_id)
+      .map(x=>x.source_id))];
+    if(legacyPropertyIds.length){
+      const {error:legacyPropertyDeleteError}=await admin
+        .from('anaira_hotel_properties').delete().in('id',legacyPropertyIds);
+      if(legacyPropertyDeleteError)throw legacyPropertyDeleteError;
+    }
     const {error:masterDeleteError}=await admin.from('anaira_hospitality_properties_master').delete().eq('tenant_id',propertyId);
     if(masterDeleteError)throw masterDeleteError;
-    const {error:legacyPropertyDeleteError}=await admin.from('anaira_hotel_properties').delete().eq('tenant_id',propertyId);
-    if(legacyPropertyDeleteError)throw legacyPropertyDeleteError;
 
     // The DB migration hardens the remaining tenant FKs to CASCADE. The restaurant delete is
     // therefore the single atomic tenant-data deletion point.

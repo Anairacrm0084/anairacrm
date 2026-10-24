@@ -1,0 +1,22 @@
+-- Anaira OTA production setup catalog. This catalog enables setup workflows only;
+-- provider approval, valid credentials and successful live tests are still required.
+insert into public.anaira_distribution_platforms
+(provider_code,provider_name,category,description,capabilities,integration_type,active,config_schema)
+values
+('booking_com','Booking.com','ota','Approved connectivity API or contracted channel-manager connection.','["rates","availability","reservations","modifications","cancellations"]'::jsonb,'rest_api',true,'{"requires_provider_approval":true,"endpoint_paths_required":true}'::jsonb),
+('expedia','Expedia Group','ota','Expedia Group lodging connectivity; partner credentials and API contract required.','["rates","availability","reservations","modifications","cancellations"]'::jsonb,'rest_api',true,'{"requires_provider_approval":true,"endpoint_paths_required":true}'::jsonb),
+('agoda','Agoda','ota','Agoda partner connectivity or approved channel-manager integration.','["rates","availability","reservations"]'::jsonb,'rest_api',true,'{"requires_provider_approval":true,"endpoint_paths_required":true}'::jsonb),
+('airbnb','Airbnb','ota','Use an approved connectivity provider; direct arbitrary REST access is not implied.','["availability","reservations"]'::jsonb,'rest_api',true,'{"requires_provider_approval":true,"endpoint_paths_required":true}'::jsonb),
+('makemytrip','MakeMyTrip','ota','Partner API or approved channel manager required.','["rates","availability","reservations"]'::jsonb,'rest_api',true,'{"requires_provider_approval":true,"endpoint_paths_required":true}'::jsonb),
+('goibibo','Goibibo','ota','Partner API or approved channel manager required.','["rates","availability","reservations"]'::jsonb,'rest_api',true,'{"requires_provider_approval":true,"endpoint_paths_required":true}'::jsonb),
+('trip_com','Trip.com','ota','Partner connectivity or approved channel manager required.','["rates","availability","reservations"]'::jsonb,'rest_api',true,'{"requires_provider_approval":true,"endpoint_paths_required":true}'::jsonb),
+('hostelworld','Hostelworld','ota','Eligible accommodation and partner connectivity required.','["availability","reservations"]'::jsonb,'rest_api',true,'{"requires_provider_approval":true,"endpoint_paths_required":true}'::jsonb),
+('google_hotel_ads','Google Hotel Ads','metasearch','Hotel Center/connectivity partner integration; not a general OTA reservation inbox.','["rates","booking_links"]'::jsonb,'rest_api',true,'{"requires_provider_approval":true,"endpoint_paths_required":true}'::jsonb),
+('siteminder','SiteMinder','channel_manager','Channel-manager API contract and credentials required.','["rates","availability","reservations","modifications","cancellations"]'::jsonb,'rest_api',true,'{"requires_provider_approval":true,"endpoint_paths_required":true}'::jsonb),
+('staah','STAAH','channel_manager','Channel-manager API contract and credentials required.','["rates","availability","reservations","modifications","cancellations"]'::jsonb,'rest_api',true,'{"requires_provider_approval":true,"endpoint_paths_required":true}'::jsonb),
+('gds','GDS / other channel bridge','channel_manager','Configurable bridge for a contracted provider API; not a certified GDS adapter by itself.','["rates","availability","reservations"]'::jsonb,'rest_api',true,'{"requires_provider_approval":true,"endpoint_paths_required":true}'::jsonb)
+on conflict(provider_code) do update set provider_name=excluded.provider_name,category=excluded.category,description=excluded.description,capabilities=excluded.capabilities,integration_type=excluded.integration_type,active=true,config_schema=excluded.config_schema,updated_at=now();
+
+-- Add tenant-safe indexes and make setup status observable.
+create index if not exists ana_dist_connections_tenant_status_idx on public.anaira_distribution_connections(restaurant_id,status,updated_at desc);
+create index if not exists ana_dist_connections_platform_status_idx on public.anaira_distribution_connections(platform_id,status);
