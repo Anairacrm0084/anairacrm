@@ -1,11 +1,16 @@
-# Anaira SEO A-to-Z Certification Report
+# SEO A-to-Z certification report
 
-Generated: 2026-10-01T05:44:01.575Z
+**Status: IMPLEMENTED / VERIFY — NOT PRODUCTION CERTIFIED**  
+**Evidence baseline:** `docs/SEO_A_TO_Z_CERTIFICATION_REPORT.json` (generated 2026-10-01)
 
-**Certification: NOT COMPLETE**
+The source contains the SEO control plane, crawler/runtime, technical checks, indexability, sitemap/robots, SERP/local-grid/GEO and attribution foundations. The current static P5 checks pass 12/12.
 
-The locked rule requires Data Model → Security/RLS → API/Runtime → UI → Provider → Persistence/History → Error/Retry → E2E → Production Build → Documentation to all PASS.
+The JSON certification record explicitly keeps certification false. Remaining verification includes:
 
-Static evidence: 70 SEO route files, 340 JavaScript files, master completion migration=true, SEO test directory=true.
+- Live domain/DNS and HTML/meta verification adapters.
+- Full discrete market-issue parity independently implemented and E2E tested.
+- Google Search Console and GA4 OAuth/data ingestion with real credentials.
+- Deployed crawl scheduling, retry/recovery and history comparison.
+- Browser E2E, tenant isolation and production build.
 
-Provider/live deployment/clean-build claims are not inferred from source code.
+Do not treat static presence or P5 static PASS as SEO production certification.

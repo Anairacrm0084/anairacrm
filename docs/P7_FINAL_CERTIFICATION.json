@@ -1,6 +1,6 @@
 {
   "phase": "P7",
-  "generated_at": "2026-10-05T13:26:18.168Z",
+  "generated_at": "2026-11-05T09:06:30.359Z",
   "certified": false,
   "status": "RELEASE CANDIDATE / NOT PRODUCTION CERTIFIED",
   "checks": [
@@ -61,7 +61,7 @@
     },
     {
       "name": "package-lock",
-      "status": "BLOCKED",
+      "status": "PASS",
       "evidence": "Reproducible install requires lockfile."
     },
     {

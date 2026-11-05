@@ -72,8 +72,13 @@ export default function HospitalityStore(){
    setMsg('');
    setBusy(true);
    if(activeStayType==='camp'){
-     const [{data:inv,error:ie},{data:units}]=await Promise.all([supabase.from('camp_inventory').select('*').eq('restaurant_id',hotel.id).gte('stay_date',form.checkIn).lt('stay_date',form.checkOut),supabase.from('camp_unit_types').select('id,max_adults,max_children,max_guests').eq('restaurant_id',hotel.id).eq('active',true)]);
-     if(!ie&&inv?.length){const um=new Map((units||[]).map(x=>[String(x.id),x]));const by=new Map();for(const row of inv){const m=um.get(String(row.unit_type_id));if(!m)continue;if(Number(form.adults)>Number(m.max_adults||1)||Number(form.children)>Number(m.max_children||0)||Number(form.adults)+Number(form.children)>Number(m.max_guests||1))continue;const k=String(row.unit_type_id);const a=Math.max(0,Number(row.total_units||0)-Number(row.sold_units||0)-Number(row.held_units||0)-Number(row.blocked_units||0));const cur=by.get(k)||{n:null};cur.n=cur.n===null?a:Math.min(cur.n,a);by.set(k,cur);}setRooms(cur=>cur.map(r=>{const a=by.get(String(r.id||r.room_type_id));return {...r,available_rooms:a?.n??0,availability_known:true,room_type_id:r.room_type_id||r.id}}));setBusy(false);return;}
+     // Public pages must never read camp_inventory rows (sold/held/blocked counts).
+     // The SECURITY DEFINER availability RPC returns only safe sellable counts.
+     const {data:campAvailability,error:campAvailabilityError}=await supabase.rpc('anaira_public_camp_availability',{p_restaurant_id:hotel.id,p_check_in:form.checkIn,p_check_out:form.checkOut,p_adults:Number(form.adults)||1,p_children:Number(form.children)||0});
+     if(campAvailabilityError){setMsg(campAvailabilityError.message||'Camping availability could not be checked.');setBusy(false);return;}
+     const by=new Map((campAvailability||[]).map(x=>[String(x.unit_type_id),x]));
+     setRooms(cur=>cur.map(r=>{const a=by.get(String(r.id||r.room_type_id));return {...r,available_rooms:Number(a?.available_units??0),availability_known:true,room_type_id:r.room_type_id||r.id}}));
+     setBusy(false);return;
    }
    const {data,error}=await supabase.rpc('anaira_public_hms_room_availability',{p_restaurant_id:hotel.id,p_check_in:form.checkIn,p_check_out:form.checkOut,p_adults:Number(form.adults),p_children:Number(form.children),p_hospitality_type:activeStayType});
    if(error){setMsg(error.message);setBusy(false);return;}const map=new Map((data||[]).map(x=>[String(x.room_type_id),x]));setRooms(cur=>cur.map(r=>{const a=map.get(String(r.id||r.room_type_id));return {...r,available_rooms:a?.available_rooms??0,availability_known:true,room_type_id:r.room_type_id||r.id}}));setBusy(false);

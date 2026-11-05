@@ -1,0 +1,26 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
+const hotelStore = read('app/hotel-store/page.js');
+const staysAlias = read('app/stays/page.js');
+const marketplace = read('app/anaira/hotels/page.jsx');
+const camp = read('app/camping/[id]/page.js');
+const resolver = read('lib/publicProperty.js');
+const staysAdmin = read('app/booking-engine/stays/page.jsx');
+const membershipPolicy = read('supabase/migrations/20261105084338_fix_public_store_membership_rls_scope.sql');
+assert.match(hotelStore, /redirect\('\/anaira\/hotels'\)/, 'hotel-store must be a public customer entry');
+assert.match(staysAlias, /redirect\('\/anaira\/hotels'\)/, 'stays alias must lead to public marketplace');
+assert.match(marketplace, /\/property\/\$\{x\.restaurant_id\}/, 'camp results must open the business-specific property landing page');
+assert.match(marketplace, /\/property\/\$\{x\.restaurant_id\|\|x\.property_id\}/, 'alternative stays must open the business-specific property landing page');
+assert.match(camp, /redirect\(`\/book\//, 'legacy camp storefront must redirect to the canonical direct-booking store');
+assert.match(resolver, /membership is optional profile enrichment/i, 'public property resolution must not require a store membership');
+assert.match(staysAdmin, /useState\(undefined\)/, 'operator stay engine must wait for auth resolution');
+assert.match(membershipPolicy, /s\.restaurant_id = anaira_store_memberships\.restaurant_id/, 'public membership policy must match the tenant store owner');
+assert.match(membershipPolicy, /s\.published = true/, 'public membership policy must require a published tenant store');
+
+assert.match(marketplace, /anaira_marketplace_camp_search/, 'camp discovery must use the camp inventory engine');
+assert.match(marketplace, /anaira_marketplace_stay_search/, 'homestay/guest-house/cottage discovery must use the stay engine');
+assert.match(marketplace, /p_stay_type:requestedType|p_stay_type:type/, 'stay search must pass the selected stay type');
+assert.match(marketplace, /property_id/, 'stay search results must route by canonical property id');
+assert.match(marketplace, /is_platform_store',true/, 'store banners must resolve the platform store, not an arbitrary tenant store');
+console.log('PUBLIC HOSPITALITY STOREFRONT: 14/14 PASS');

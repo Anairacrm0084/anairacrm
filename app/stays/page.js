@@ -1,3 +1,4 @@
-import ModulePage from '../ModulePage';
-import {pages} from '../pageConfigs';
-export default function Page(){ return <ModulePage config={{...pages['stays'],dataSource:'stays'}} /> }
+import { redirect } from 'next/navigation';
+
+// Public customer storefront for hotels, camps, homestays, guest houses and cottages.
+export default function StaysStore(){ redirect('/anaira/hotels'); }
