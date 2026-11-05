@@ -42,7 +42,7 @@ export default function Customer360(){
     scoped('crm_complaints','*',{customer_id:id}),
     scoped('crm_timeline_events','*',{customer_id:id}),
     scoped('crm_loyalty_accounts','*',{customer_id:id}),
-    scoped('crm_loyalty_transactions','*',{customer_id:id}),
+    Promise.resolve({data:[],error:null}),
     scoped('crm_feedback','*',{customer_id:id}),
     scoped('crm_guest_stays','*',{customer_id:id}),
     scoped('crm_restaurant_visits','*',{customer_id:id}),
@@ -64,8 +64,14 @@ export default function Customer360(){
     scoped('crm_guest_documents','*',{customer_id:id}),
     scoped('crm_reviews','*',{customer_id:id})
    ]);
-   const [prefs,tasks,complaints,timeline,loyalty,loyaltyTx,feedback,stays,visits,upsells,insights,channels,identity,assignments,requests,dataRequests,bookings,messages,campaigns,churn,vipProfile,consents,corporateContacts,partnerBookings,documents,reviews]=qs;
-   const bad=qs.find(x=>x.error);
+   const [prefs,tasks,complaints,timeline,loyalty,loyaltyTxPlaceholder,feedback,stays,visits,upsells,insights,channels,identity,assignments,requests,dataRequests,bookings,messages,campaigns,churn,vipProfile,consents,corporateContacts,partnerBookings,documents,reviews]=qs;
+   // Loyalty transactions belong to a loyalty account, not directly to a customer.
+   // Resolve the customer's account(s), then query the ledger using loyalty_account_id.
+   const loyaltyAccountIds=(loyalty.data||[]).map(a=>a.id).filter(Boolean);
+   const loyaltyTx=loyaltyAccountIds.length
+     ? await scoped('crm_loyalty_transactions','*').in('loyalty_account_id',loyaltyAccountIds).order('created_at',{ascending:false})
+     : {data:[],error:null};
+   const bad=[...qs,loyaltyTx].find(x=>x.error);
    if(bad)setError(bad.error.message);
    setRelated({
     prefs:prefs.data||[],tasks:tasks.data||[],complaints:complaints.data||[],timeline:(timeline.data||[]).sort((a,b)=>new Date(b.occurred_at||0)-new Date(a.occurred_at||0)),loyalty:loyalty.data?.[0]||null,loyaltyTx:loyaltyTx.data||[],feedback:feedback.data||[],stays:stays.data||[],visits:visits.data||[],upsells:upsells.data||[],insights:insights.data||[],channels:channels.data||[],identity:identity.data||[],assignments:assignments.data||[],requests:requests.data||[],dataRequests:dataRequests.data||[],bookings:bookings.data||[],messages:messages.data||[],campaigns:campaigns.data||[],churn:churn.data?.[0]||null,vipProfile:vipProfile.data?.[0]||null,consents:consents.data||[],corporateContacts:corporateContacts.data||[],partnerBookings:partnerBookings.data||[],documents:documents.data||[],reviews:reviews.data||[]

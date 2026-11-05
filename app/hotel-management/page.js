@@ -70,11 +70,23 @@ export default function PMSPage(){
     setBusy(r.id+action);setError('');
     let roomId=r.room_id;
     if(action==='check_in'||action==='room_move'){
-      roomId=prompt(action==='check_in'?'Room ID for check-in':'Target room ID',roomId||'')||null;
-      if(!roomId){setBusy('');return;}
+      const candidates=rooms.filter(x=>x.active!==false&&x.status==='available'&&['clean','inspected'].includes(x.housekeeping_status));
+      const choices=candidates.map(x=>`${x.room_number} — ${typeMap[x.room_type_id]?.name||'Unit'} [${x.id}]`).join('\\n');
+      const answer=prompt(`${action==='check_in'?'Select available room / tent number':'Select target room / tent number'}:\\n${choices}\\n\\nEnter room/tent number (not database UUID):`,roomMap[r.room_id]?.room_number||'')||'';
+      if(!answer.trim()){setBusy('');return;}
+      const selected=candidates.find(x=>String(x.room_number).toLowerCase()===answer.trim().toLowerCase()||x.id===answer.trim());
+      if(!selected){setError('Invalid selection. Enter one of the available room/tent numbers shown.');setBusy('');return;}
+      roomId=selected.id;
     }
-    const {data,error:e}=await supabase.rpc('anaira_hms_reservation_transition',{p_restaurant_id:restaurantId,p_reservation_id:r.id,p_action:action,p_room_id:roomId,p_notes:null});
-    if(e)setError(e.message);else if(data?.ok)await load(restaurantId);else setError('Reservation transition was not accepted.');
+    let data=null,error=null;
+    if(action==='confirm'){
+      const result=await supabase.rpc('anaira_hotel_confirm_reservation',{p_restaurant_id:restaurantId,p_reservation_id:r.id,p_user_id:session?.user?.id});
+      data=result.data;error=result.error;
+    }else{
+      const result=await supabase.rpc('anaira_hms_reservation_transition',{p_restaurant_id:restaurantId,p_reservation_id:r.id,p_action:action,p_room_id:roomId,p_notes:null});
+      data=result.data;error=result.error;
+    }
+    if(error)setError(error.message);else if(data?.ok)await load(restaurantId);else setError('Reservation transition was not accepted.');
     setBusy('');
   }
 

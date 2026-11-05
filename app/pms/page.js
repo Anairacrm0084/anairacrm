@@ -43,7 +43,7 @@ export default function PMSPage() {
       supabase
         .from('hms_rooms')
         .select(
-          'id,room_number,floor,status,housekeeping_status,room_type_id,hospitality_type'
+          'id,room_number,floor,status,housekeeping_status,room_type_id,hospitality_type,active'
         )
         .eq('restaurant_id', rid)
         .eq('hospitality_type', type)
@@ -179,18 +179,40 @@ export default function PMSPage() {
     let roomId = r.room_id;
 
     if (action === 'check_in' || action === 'room_move') {
-      roomId =
-        prompt(
-          action === 'check_in'
-            ? 'Room ID for check-in'
-            : 'Target room ID',
-          roomId || ''
-        ) || null;
-
-      if (!roomId) {
+      const candidates = rooms.filter(
+        (x) =>
+          x.active !== false &&
+          x.status === 'available' &&
+          ['clean', 'inspected'].includes(String(x.housekeeping_status || '').toLowerCase())
+      );
+      const choices = candidates
+        .map((x) => `${x.room_number} — ${x.floor || 'No floor'} (${x.housekeeping_status})`)
+        .join('\\n');
+      if (!candidates.length) {
+        setError('No clean and available room/tent is currently assignable.');
         setBusy('');
         return;
       }
+      const answer =
+        prompt(
+          `${action === 'check_in' ? 'Select room/tent for check-in' : 'Select target room/tent'}:\\n${choices}\\n\\nEnter the visible room/tent number:`,
+          rooms.find((x) => x.id === r.room_id)?.room_number || ''
+        ) || '';
+      if (!answer.trim()) {
+        setBusy('');
+        return;
+      }
+      const selected = candidates.find(
+        (x) =>
+          String(x.room_number).toLowerCase() === answer.trim().toLowerCase() ||
+          x.id === answer.trim()
+      );
+      if (!selected) {
+        setError('Invalid room/tent number. Select one of the available units shown.');
+        setBusy('');
+        return;
+      }
+      roomId = selected.id;
     }
 
     const { data, error: transitionError } = await supabase.rpc(
@@ -201,6 +223,9 @@ export default function PMSPage() {
         p_action: action,
         p_room_id: roomId,
         p_notes: null,
+        // The live database has both the 5-argument and 6-argument overload.
+        // Supplying this flag explicitly makes PostgREST select the 6-argument RPC.
+        p_allow_early_checkout: false,
       }
     );
 
@@ -296,7 +321,7 @@ export default function PMSPage() {
               {r.status}
             </Pill>,
 
-            r.room_id || 'Unassigned',
+            rooms.find((room) => room.id === r.room_id)?.room_number || 'Unassigned',
 
             String(r.total_amount ?? 0),
 
@@ -308,16 +333,24 @@ export default function PMSPage() {
                 flexWrap: 'wrap',
               }}
             >
-              {actions.map(([a, label]) => (
-                <button
-                  key={a}
-                  className="btn"
-                  disabled={!!busy}
-                  onClick={() => transition(r, a)}
-                >
-                  {busy === r.id + a ? '…' : label}
-                </button>
-              ))}
+              {actions
+                .filter(([a]) => {
+                  const status = String(r.status || '').toLowerCase();
+                  if (['confirmed'].includes(status)) return ['check_in', 'no_show', 'cancel'].includes(a);
+                  if (['checked_in', 'in_house'].includes(status)) return ['room_move', 'checkout'].includes(a);
+                  if (['inquiry', 'pending', 'payment_pending'].includes(status)) return ['confirm', 'cancel'].includes(a);
+                  return false;
+                })
+                .map(([a, label]) => (
+                  <button
+                    key={a}
+                    className="btn"
+                    disabled={!!busy}
+                    onClick={() => transition(r, a)}
+                  >
+                    {busy === r.id + a ? '…' : label}
+                  </button>
+                ))}
             </div>,
           ])}
         />
