@@ -23,4 +23,17 @@ assert.match(marketplace, /anaira_marketplace_stay_search/, 'homestay/guest-hous
 assert.match(marketplace, /p_stay_type:requestedType|p_stay_type:type/, 'stay search must pass the selected stay type');
 assert.match(marketplace, /property_id/, 'stay search results must route by canonical property id');
 assert.match(marketplace, /is_platform_store',true/, 'store banners must resolve the platform store, not an arbitrary tenant store');
-console.log('PUBLIC HOSPITALITY STOREFRONT: 14/14 PASS');
+
+const publicProfileApi = read('app/api/public/hospitality/property/[id]/route.js');
+const publicBookingPage = read('app/book/[id]/page.js');
+const hospitalityCheckout = read('app/book/[id]/checkout/page.js');
+const campCheckout = read('app/camping/[id]/checkout/page.js');
+assert.match(publicBookingPage, /api\/public\/hospitality\/property\//, 'public booking page must load published profile enrichment through server API');
+assert.match(publicBookingPage, /profile\.cover_url\|\|profile\.cover_image_url\|\|profile\.cover_image/, 'public hero must use membership/store cover image');
+assert.match(publicProfileApi, /cover_url:override\.cover_url/, 'public profile API must return the published membership cover image');
+assert.match(publicProfileApi, /published=true|published',true|published', true/, 'public profile API must enforce published content');
+assert.match(hospitalityCheckout, /property_type:stayType==='camp'\?'camp':'hotel'/, 'camp checkout OTP must validate against camping property');
+assert.match(hospitalityCheckout, /const availabilityOk=available===null\?await check\(\):Number\(available\)>0/, 'hospitality checkout must block if availability check fails');
+assert.match(campCheckout, /const availabilityOk=available===null\?await check\(\):Number\(available\)>0/, 'camp checkout must block if availability check fails');
+
+console.log('PUBLIC HOSPITALITY STOREFRONT: 21/21 PASS');

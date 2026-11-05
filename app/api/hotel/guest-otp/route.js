@@ -49,7 +49,7 @@ export async function POST(req){
       return appError('Server Supabase credentials are not configured. Set SUPABASE_SERVICE_ROLE_KEY in the Vercel Production environment and redeploy.', 500);
     }
     let tenant;
-    if(propertyType==='camp'){ const {data,error}=await db.from('camp_properties').select('restaurant_id').eq('restaurant_id',tenantId).eq('active',true).maybeSingle(); if(error) throw error; tenant=data; }
+    if(propertyType==='camp'){ const {data,error}=await db.from('camp_properties').select('restaurant_id').eq('restaurant_id',tenantId).eq('active',true).eq('marketplace_visible',true).maybeSingle(); if(error) throw error; tenant=data; }
     else { const {data,error}=await db.from('hms_settings').select('restaurant_id').eq('restaurant_id',tenantId).maybeSingle(); if(error) throw error; tenant=data; }
     if(!tenant) return appError(propertyType==='camp'?'Camping configuration was not found.':'Hotel configuration was not found.',404);
     const destinationHash=hash(`${channel}:${destination}`);

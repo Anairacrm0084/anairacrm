@@ -22,22 +22,23 @@ export default function HospitalityStore(){
  useEffect(()=>{if(!key)return;(async()=>{try{
    const r=await resolveRestaurantId(key); if(!r){setMsg('Property not found.');return;}
    const requested=new URLSearchParams(window.location.search).get('stay_type')||'';
-   const {data:b}=await supabase.from('restaurants').select('name,logo,cover_image,description,city,address,phone,email,website,gallery,hospitality_types,hospitality_type,nearby_destinations,nearby_activities,hospitality_highlights').eq('id',r.id).maybeSingle();
+   // Public profile enrichment is loaded server-side because membership,
+   // platform-store and HMS settings tables are intentionally not readable
+   // by anonymous browser sessions. The endpoint only returns published data.
+   const publicResponse=await fetch(`/api/public/hospitality/property/${encodeURIComponent(r.id)}?stay_type=${encodeURIComponent(requested)}`,{cache:'no-store'});
+   const publicPayload=await publicResponse.json().catch(()=>({}));
+   if(!publicResponse.ok||!publicPayload?.ok) throw new Error(publicPayload?.error||'Public property details could not be loaded.');
+   const b=publicPayload.property||{};
+   const m=publicPayload.membership||null;
+   const s=publicPayload.storeSettings||null;
+   const h=publicPayload.hms||{};
+   const platformStore=publicPayload.platformStore||null;
    const types=Array.isArray(b?.hospitality_types)&&b.hospitality_types.length?b.hospitality_types:[b?.hospitality_type||'hotel'];
    const initial=types.includes(requested)?requested:types[0];
    const direct=['camp','homestay','guest_house','cottage'].includes(initial);
-   let platformStore=null;
-   if(!direct){
-     if(r.store_id){const {data:s}=await supabase.from('anaira_platform_stores').select('id,enabled,published,store_type').eq('id',r.store_id).maybeSingle();if(s?.enabled&&s?.published)platformStore=s;}
-     if(!platformStore){const {data:m}=await supabase.from('anaira_store_memberships').select('store_id').eq('restaurant_id',r.id).eq('enabled',true).not('store_id','is',null);const ids=[...new Set((m||[]).map(x=>x.store_id).filter(Boolean))];if(ids.length){const {data:s}=await supabase.from('anaira_platform_stores').select('id,enabled,published,store_type').in('id',ids);platformStore=(s||[]).find(x=>x.enabled&&x.published)||null;}}
-     if(!platformStore){setMsg('Hotel marketplace store is not currently published.');return;}
-   }
-   const [{data:m},{data:s},{data:h}]=await Promise.all([
-     platformStore?supabase.from('anaira_store_memberships').select('store_id,listing_override,catalog_source,store_config').eq('store_id',platformStore.id).eq('restaurant_id',r.id).eq('enabled',true).maybeSingle():Promise.resolve({data:null}),
-     platformStore?supabase.from('anaira_store_settings').select('*').eq('restaurant_id',r.id).eq('store_id',platformStore.id).eq('published',true).maybeSingle():Promise.resolve({data:null}),
-     supabase.from('hms_settings').select('*').eq('restaurant_id',r.id).maybeSingle()
-   ]);
-   const profileData={...r,...b,hms:h||{},gallery:Array.isArray(b?.gallery)&&b.gallery.length?b.gallery:(Array.isArray(h?.gallery)?h.gallery:[]),listing_override:m?.listing_override||{},hospitality_types:types,nearby_destinations:Array.isArray(b?.nearby_destinations)?b.nearby_destinations:[],nearby_activities:Array.isArray(b?.nearby_activities)?b.nearby_activities:[],hospitality_highlights:Array.isArray(b?.hospitality_highlights)?b.hospitality_highlights:[]};
+   if(!direct&&!platformStore){setMsg('Hotel marketplace store is not currently published.');return;}
+   if(initial==='camp'&&!publicPayload.camp?.marketplace_visible){setMsg('Camping property is not currently published.');return;}
+   const profileData={...r,...b,hms:h||{},gallery:Array.isArray(b?.gallery)?b.gallery:[],listing_override:m?.listing_override||{},hospitality_types:types,nearby_destinations:Array.isArray(b?.nearby_destinations)?b.nearby_destinations:[],nearby_activities:Array.isArray(b?.nearby_activities)?b.nearby_activities:[],hospitality_highlights:Array.isArray(b?.hospitality_highlights)?b.hospitality_highlights:[]};
    setHotel(profileData);setMembership(m||null);setSettings(s||null);setStayTypes(types);setActiveStayType(initial);
    const [{data:catalog,error:e1},{data:rates,error:e2}]=await Promise.all([
      supabase.from('hms_room_types').select('*').eq('restaurant_id',r.id).in('hospitality_type',types).eq('active',true).order('hospitality_type').order('name'),
@@ -85,7 +86,7 @@ export default function HospitalityStore(){
  }
  function bookingUrl(stayType,roomTypeId,rateId,source,legacyUnitTypeId){const common=`check_in=${encodeURIComponent(form.checkIn||'')}&check_out=${encodeURIComponent(form.checkOut||'')}&adults=${Number(form.adults)||2}&children=${Number(form.children)||0}`;if(stayType==='camp'&&source==='legacy_camp')return `/camping/${key}/checkout?unit_type=${encodeURIComponent(legacyUnitTypeId||roomTypeId)}&rate_plan=${encodeURIComponent(rateId||'')}&${common}`;return `/book/${key}/checkout?stay_type=${encodeURIComponent(stayType)}&room_type=${encodeURIComponent(roomTypeId)}&rate_plan=${encodeURIComponent(rateId||'')}&${common}`;}
  if(!hotel)return <main className="hp"><div className="loading-card">{msg||'Loading hospitality experience…'}</div></main>;
- const cover=profile.cover_url||profile.cover_image_url||hotel.hms?.cover_image_url||gallery[0];
+ const cover=profile.cover_url||profile.cover_image_url||profile.cover_image||hotel.hms?.marketplace_background_image_url||hotel.hms?.cover_image_url||gallery[0]||'';
  const premiumIcons={
   hotel:[['🛏️','Rooms & Suites','Thoughtfully prepared stays'],['🍽️','Dining','Local flavours & comfort'],['🧖','Wellness','Relax and recharge'],['🏊','Pool & Leisure','Unwind at your pace'],['🚗','Easy Access','Convenient arrival'],['📶','Connected','Wi-Fi support'],['🛎️','Guest Service','Here when you need us'],['🛡️','Safe & Secure','Comfort with confidence']],
   camp:[['⛺','Camping','Adventure under the stars'],['🔥','Bonfire','Evening campfire moments'],['🥾','Trekking','Trails & mountain walks'],['🌲','Nature','Forest & fresh air'],['🪵','Campfire Dining','Warm local experiences'],['🔭','Stargazing','Clear Himalayan nights'],['🚙','Easy Access','Simple arrival & parking'],['🛡️','Safe & Secure','Comfort in nature']],
@@ -96,7 +97,7 @@ export default function HospitalityStore(){
  const iconBoxes=(premiumIcons[activeStayType]||premiumIcons.hotel);
  return <main className="hp">
    <header className="hp-hero" style={{backgroundImage:cover?`linear-gradient(90deg,rgba(17,12,8,.82),rgba(17,12,8,.20)),url(${cover})`:'linear-gradient(135deg,#15251e,#8b5c32)'}}>
-    <nav className="hp-nav"><div className="brand">{profile.logo_url&&<img src={profile.logo_url} alt=""/>}<span>ANAIRA</span></div><div className="nav-pills"><span>{meta.icon} {meta.label}</span>{profile.city&&<span>⌖ {profile.city}</span>}<a href="#book">Book now</a></div></nav>
+    <nav className="hp-nav"><div className="brand">{(profile.logo_url||profile.logo)&&<img src={profile.logo_url||profile.logo} alt=""/>}<span>ANAIRA</span></div><div className="nav-pills"><span>{meta.icon} {meta.label}</span>{profile.city&&<span>⌖ {profile.city}</span>}<a href="#book">Book now</a></div></nav>
     <div className="hero-copy"><span className="eyebrow">{meta.eyebrow}</span><h1>{profile.title||profile.hotel_name||hotel.name}</h1><p>{profile.tagline||meta.hero}</p><div className="hero-meta"><span>{meta.icon} {meta.label}</span>{profile.city&&<span>⌖ {profile.city}{profile.state?`, ${profile.state}`:''}</span>}{profile.star_rating&&activeStayType==='hotel'&&<span>★ {profile.star_rating} star</span>}</div></div>
    </header>
    <section className="booking-wrap" id="book"><div className="booking-bar">
