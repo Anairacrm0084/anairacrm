@@ -150,9 +150,7 @@ export default function RoomDetails() {
     children: search.get('children') || '0',
   }).toString();
 
-  const bookingUrl = stayType === 'camp' && firstRate?.source === 'legacy_camp'
-    ? `/camping/${key}/checkout?unit_type=${encodeURIComponent(firstRate.legacy_unit_type_id || room.id)}&rate_plan=${encodeURIComponent(firstRate.id || '')}&check_in=${encodeURIComponent(search.get('check_in') || '')}&check_out=${encodeURIComponent(search.get('check_out') || '')}&adults=${encodeURIComponent(search.get('adults') || '2')}&children=${encodeURIComponent(search.get('children') || '0')}`
-    : `/book/${key}/checkout?${bookingQuery}`;
+  const bookingUrl = `/book/${key}/checkout?${bookingQuery}`;
 
   const images = parseList(room.image_urls || room.photos);
   const amenities = parseList(room.amenities);
