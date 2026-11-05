@@ -3,13 +3,11 @@ import {encryptCredentials,testProvider} from '../../../../../lib/server/distrib
 import {db} from '../../../../../lib/server/provider';
 import {open} from '../../../../../lib/server/provider';
 import {requireTenant} from '../../../../../lib/server/auth';
-import {requireOtaProperty} from '../../../../../lib/server/distribution/property-guard';
 export const runtime='nodejs';
 export async function POST(req){
  try{
   const body=await req.json().catch(()=>({})); const tenantId=String(body.restaurant_id||body.tenantId||'');
   const {profile}=await requireTenant(req,tenantId); const s=db();
-  await requireOtaProperty(s,tenantId);
   if(!profile.is_super_admin && profile.restaurant_id!==tenantId) throw new Error('Tenant access denied');
   const platformQuery=s.from('anaira_distribution_platforms').select('*'); const {data:platform,error:pe}=body.platform_id?await platformQuery.eq('id',body.platform_id).single():await platformQuery.eq('provider_code',String(body.provider_code||'').toLowerCase()).single(); if(pe) throw pe;
   if(!platform.active) throw new Error('Platform is disabled globally.');

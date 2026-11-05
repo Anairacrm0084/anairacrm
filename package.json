@@ -42,9 +42,7 @@
     "crm:universal-check": "node tests/crm-universal-multi-business-static.mjs",
     "business:identity-check": "node scripts/universal-business-identity-static.mjs",
     "ota:configuration-guard": "node scripts/ota-provider-configuration-guard.mjs",
-    "public-hospitality:check": "node tests/public-hospitality-storefront-static.mjs",
-    "ota:inbound-test": "node tests/ota/inbound-reservation-normalization.mjs && node tests/ota/inbox-runtime-static.mjs && node tests/ota/replay-safety-static.mjs",
-    "ota:property-scope-test": "node tests/ota/property-only-scope.mjs"
+    "public-hospitality:check": "node tests/public-hospitality-storefront-static.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

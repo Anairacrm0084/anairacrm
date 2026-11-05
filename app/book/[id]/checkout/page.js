@@ -33,7 +33,7 @@ function HotelBookingCheckout(){
  if(requestedStayType==='camp'){
    const {data:legacyUnits}=await supabase.from('camp_unit_types').select('*').eq('restaurant_id',r.id).eq('active',true);
    const legacyById=(legacyUnits||[]).find(x=>String(x.id)===String(search.get('room_type')));
-   const legacy=(legacyById||legacyUnits||[]).find(x=>{
+   const legacy=legacyById||(legacyUnits||[]).find(x=>{
      if(!resolvedRoom) return false;
      const sameCode=resolvedRoom.code&&x.code&&String(resolvedRoom.code).trim().toLowerCase()===String(x.code).trim().toLowerCase();
      const sameName=resolvedRoom.name&&x.name&&String(resolvedRoom.name).trim().toLowerCase()===String(x.name).trim().toLowerCase();
