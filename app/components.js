@@ -21,7 +21,7 @@ const PERMISSION_BY_ROUTE = {
   '/import-export':'customer.export','/activity':'staff.activity','/store-builder':'store.view','/plugins/seo-system/settings':'seo-system.configure'
 };
 const SUPER_ONLY_ROUTES = ['/super-admin','/anaira/super-admin','/admin','/properties','/business-admins','/audit','/platform-settings','/system','/super-admin/marketplace-settings','/super-admin/hotel-marketplace-settings','/super-admin/booking-engine','/super-admin/stores','/super-admin/anaira-store'];
-const ADMIN_ONLY_ROUTES = ['/store-builder','/users','/roles','/hotel-management/setup','/hotel-management/room-types','/hotel-management/rooms','/hotel-management/rates','/hotel-management/inventory','/restaurant-setup'];
+const ADMIN_ONLY_ROUTES = ['/store-builder','/users','/roles','/restaurant-setup'];
 const BUSINESS_SETTINGS_ROUTE='/business-settings';
 
 const SUPER_GROUPS = [
@@ -40,6 +40,25 @@ const HOSPITALITY_MANAGEMENT_GROUPS = {
   cottage: {title:'COTTAGE MANAGEMENT', items:[]}
 };
 const HOSPITALITY_PLUGIN={hotel:'hotel-management-suite',camp:'camping-management',homestay:'homestay-management',guest_house:'guest-house-management',cottage:'cottage-management'};
+
+function normalizeHospitalityType(value){
+  const raw=String(value||'').trim().toLowerCase().replace(/[\s-]+/g,'_');
+  const aliases={camping:'camp',campground:'camp',tent:'camp',guesthouse:'guest_house',homestay_property:'homestay',holiday_cottage:'cottage'};
+  const type=aliases[raw]||raw;
+  return HOSPITALITY_PLUGIN[type]?type:null;
+}
+function readHospitalityTypes(raw, primary, businessType){
+  let values=[];
+  if(Array.isArray(raw)) values=raw;
+  else if(typeof raw==='string'&&raw.trim()){
+    try { const parsed=JSON.parse(raw); values=Array.isArray(parsed)?parsed:[parsed]; }
+    catch { values=raw.split(',').map(x=>x.trim()).filter(Boolean); }
+  }
+  if(!values.length&&primary) values=[primary];
+  if(!values.length&&businessType) values=[businessType];
+  if(!values.length&&['hotel_resort','hotel_restaurant'].includes(String(businessType||'').trim().toLowerCase())) values=['hotel'];
+  return [...new Set(values.map(normalizeHospitalityType).filter(Boolean))];
+}
 const HOSPITALITY_MENU_META={
  hotel:['Hotel','Hotel','Hotel'],camp:['Camping','Camp','Camping'],homestay:['Homestay','Accommodation','Homestay'],guest_house:['Guest House','Accommodation','Guest House'],cottage:['Cottage','Cottage','Cottage']
 };
@@ -193,18 +212,7 @@ export function AppShell({children, active}) {
       // disappear just because hospitality_types is null/empty or an older
       // tenant only has hospitality_type populated.
       businessType=String(biz?.business_type||'').trim().toLowerCase()||null;
-      const rawMulti = biz?.hospitality_types;
-      let configuredRaw = [];
-      if(Array.isArray(rawMulti)) configuredRaw = rawMulti;
-      else if(typeof rawMulti === 'string'){
-        try { const parsed=JSON.parse(rawMulti); configuredRaw=Array.isArray(parsed)?parsed:[rawMulti]; } catch { configuredRaw=[rawMulti]; }
-      }
-      if(!configuredRaw.length && biz?.hospitality_type) configuredRaw=[biz.hospitality_type];
-      const normalizedConfigured = configuredRaw
-        .map(x=>String(x||'').trim().toLowerCase())
-        .map(x=>x==='camping'?'camp':x==='campground'?'camp':x==='guest-house'?'guest_house':x==='guest house'?'guest_house':x)
-        .filter(x=>HOSPITALITY_PLUGIN[x]);
-      const configured = [...new Set(normalizedConfigured)];
+      const configured = readHospitalityTypes(biz?.hospitality_types,biz?.hospitality_type,businessType);
       // A selected hospitality type is enabled by default when no explicit plugin assignment exists.
       // Super Admin can still disable it by creating/updating the corresponding restaurant_plugins row to enabled=false.
       for(const t of configured){const key=HOSPITALITY_PLUGIN[t];if(key && !Object.prototype.hasOwnProperty.call(pluginsMap,key))pluginsMap[key]=true;}
@@ -227,9 +235,15 @@ export function AppShell({children, active}) {
         // Legacy tenants can have no catalog rows yet. Fall back to the
         // property's primary hospitality_type so the correct management
         // workspace is still visible and usable.
-        if(!hospitalityTypes.length && businessType==='hotel_resort'){
-          const fallbackType=String(biz?.hospitality_type||'hotel').trim().toLowerCase();
-          if(HOSPITALITY_PLUGIN[fallbackType] && pluginsMap[HOSPITALITY_PLUGIN[fallbackType]]!==false) hospitalityTypes.push(fallbackType);
+        // Primary hospitality type is authoritative for legacy and dedicated
+        // tenants too (e.g. business_type='homestay' with no catalog rows).
+        // Do not restrict this fallback to hotel_resort: that caused Homestay,
+        // Guest House and Cottage admins to be redirected to the dashboard.
+        if(!hospitalityTypes.length){
+          const fallbackTypes=readHospitalityTypes([],biz?.hospitality_type,businessType);
+          for(const fallbackType of fallbackTypes){
+            if(HOSPITALITY_PLUGIN[fallbackType]&&pluginsMap[HOSPITALITY_PLUGIN[fallbackType]]!==false&&!hospitalityTypes.includes(fallbackType)) hospitalityTypes.push(fallbackType);
+          }
         }
       }
       hospitalityType=hospitalityTypes[0]||null;
@@ -252,12 +266,12 @@ export function AppShell({children, active}) {
     const configuredTypes=ctx.hospitalityTypes?.length?ctx.hospitalityTypes:[];
     const businessIsHotel=ctx.businessType==='hotel_resort'||ctx.businessType==='hotel_restaurant';
     const businessIsRestaurant=ctx.businessType==='restaurant_cafe'||ctx.businessType==='hotel_restaurant';
-    // Hotel management is shown by default ONLY for Hotel / Resort businesses.
-    // Restaurant management is shown by default ONLY for Restaurant / Cafe businesses.
-    // Other business types stay clean until the corresponding module is explicitly
-    // enabled/added by the tenant.
-    const types=businessIsHotel
-      ?(validUrlType && configuredTypes.includes(validUrlType)?[validUrlType]:configuredTypes.length?configuredTypes:['hotel'])
+    // A configured hospitality profile is authoritative even when the tenant's
+    // generic business_type is not hotel_resort (for example a homestay or cottage).
+    // Keep the legacy hotel fallback only for older hotel tenants with no profile.
+    const hasConfiguredHospitality=configuredTypes.length>0;
+    const types=(businessIsHotel||hasConfiguredHospitality)
+      ?(validUrlType && configuredTypes.includes(validUrlType)?[validUrlType]:hasConfiguredHospitality?configuredTypes:['hotel'])
       :[];
     const mgGroups=types.map(type=>({
       title:(HOSPITALITY_MANAGEMENT_GROUPS[type]||HOSPITALITY_MANAGEMENT_GROUPS.hotel).title,
@@ -339,7 +353,7 @@ export function AppShell({children, active}) {
     const businessCfg = BUSINESS_TYPE_MENU[ctx.businessType] || businessTypeMenuFallback(ctx.businessType);
     const businessGroup = businessCfg ? {title: businessCfg.title, items: businessCfg.items.map(x=>[x[0],x[1],(x[2].startsWith('/business/') && ctx.restaurantId) ? `${x[2]}${x[2].includes('?')?'&':'?'}business=${ctx.restaurantId}` : x[2],x[3],x[4]])} : null;
     return normalizeGroups([...(businessGroup?[businessGroup]:[]),...mgGroups,...revenueGroups,...base,dynamicOps]);
-  },[ctx.isSuperAdmin,ctx.role,ctx.profileKey,ctx.businessType,ctx.plugins,ctx.hospitalityType,ctx.hospitalityTypes?.join('|')]);
+  },[pathname,ctx.isSuperAdmin,ctx.role,ctx.profileKey,ctx.businessType,ctx.plugins,ctx.hospitalityType,ctx.hospitalityTypes?.join('|')]);
 
   const visibleGroups=groups.map(g=>({...g,items:g.items.filter(item=>{
     if(!item.permission && !item.plugin)return true;
@@ -357,21 +371,31 @@ export function AppShell({children, active}) {
     if(pathname==='/admin' || pathname.startsWith('/admin/')){if(!ctx.isSuperAdmin)router.replace('/');return;}
     if(pathname==='/plugins' && !ctx.isSuperAdmin && ctx.role!=='admin' && ctx.profileKey!=='business_admin'){router.replace('/');return;}
     if(SUPER_ONLY_ROUTES.some(r=>pathname===r||pathname.startsWith(r+'/')) && !ctx.isSuperAdmin){router.replace('/');return;}
-    if(ADMIN_ONLY_ROUTES.some(r=>pathname===r||pathname.startsWith(r+'/')) && !ctx.isSuperAdmin && ctx.role!=='admin' && ctx.profileKey!=='business_admin'){router.replace('/');return;}
-    if(pathname===BUSINESS_SETTINGS_ROUTE && !ctx.isSuperAdmin && ctx.role!=='admin' && ctx.profileKey!=='business_admin'){router.replace('/');return;}
+    const normalizedRole=String(ctx.role||'').trim().toLowerCase().replace(/[\s-]+/g,'_');
+    const normalizedProfile=String(ctx.profileKey||'').trim().toLowerCase().replace(/[\s-]+/g,'_');
+    const tenantAdminRoles=new Set(['admin','business_admin','owner','business_owner','tenant_admin','property_admin','hospitality_admin','hotel_admin','homestay_admin','guest_house_admin','cottage_admin','camp_admin']);
+    const isTenantAdmin=tenantAdminRoles.has(normalizedRole)||tenantAdminRoles.has(normalizedProfile);
+    const isHospitalityRoute=pathname==='/hotel-management'||pathname.startsWith('/hotel-management/')||pathname==='/pms'||pathname==='/housekeeping'||pathname==='/booking';
+    // Hospitality setup pages are tenant-admin pages, not platform-admin pages.
+    // Older builds incorrectly put Unit Types, Units, Inventory and Rate Plans
+    // in ADMIN_ONLY_ROUTES, which redirected custom Homestay Admin roles to '/'.
+    if(ADMIN_ONLY_ROUTES.some(r=>pathname===r||pathname.startsWith(r+'/')) && !ctx.isSuperAdmin && ctx.role!=='admin' && ctx.role!=='business_admin' && ctx.profileKey!=='business_admin'){router.replace('/');return;}
+    if(pathname===BUSINESS_SETTINGS_ROUTE && !ctx.isSuperAdmin && ctx.role!=='admin' && ctx.role!=='business_admin' && ctx.profileKey!=='business_admin'){router.replace('/');return;}
     if(ctx.isSuperAdmin)return;
     let plugin=PLUGIN_BY_ROUTE[pathname];
     const restaurantAdded=ctx.plugins['restaurant-management']===true || ctx.plugins['restaurant-core']===true || ctx.plugins['restaurant-store']===true || ctx.plugins['anaira-pos']===true || ctx.plugins['restaurant-reservation']===true || ctx.plugins['food-delivery']===true;
     const businessIsHotel=ctx.businessType==='hotel_resort'||ctx.businessType==='hotel_restaurant';
     const businessIsRestaurant=ctx.businessType==='restaurant_cafe'||ctx.businessType==='hotel_restaurant';
+    const hasConfiguredHospitality=Array.isArray(ctx.hospitalityTypes)&&ctx.hospitalityTypes.length>0;
     const hotelRoute=pathname==='/hotel-management'||pathname.startsWith('/hotel-management/')||pathname==='/pms'||pathname==='/housekeeping';
     const restaurantRoute=pathname==='/restaurant-setup'||pathname.startsWith('/restaurant-setup/');
-    if(hotelRoute && !businessIsHotel) { router.replace('/'); return; }
+    if(hotelRoute && !businessIsHotel && !hasConfiguredHospitality) { router.replace('/'); return; }
     if(restaurantRoute && !restaurantAdded) { router.replace('/'); return; }
     if(pathname==='/restaurant-setup') plugin='restaurant-store';
-    if(pathname==='/hotel-management'||pathname.startsWith('/hotel-management/')){ const urlType=typeof window!=='undefined'?new URLSearchParams(window.location.search).get('type'):'hotel'; plugin=HOSPITALITY_PLUGIN[urlType]||'hotel-management-suite'; }
-    const requestedType=typeof window!=='undefined'?new URLSearchParams(window.location.search).get('type'):'';
-    const configuredHospitality = requestedType && ctx.hospitalityTypes?.includes(requestedType);
+    const requestedTypeRaw=typeof window!=='undefined'?new URLSearchParams(window.location.search).get('type'):'';
+    const requestedType=normalizeHospitalityType(requestedTypeRaw);
+    if(pathname==='/hotel-management'||pathname.startsWith('/hotel-management/')) plugin=HOSPITALITY_PLUGIN[requestedType]||'hotel-management-suite';
+    const configuredHospitality = !!requestedType && (ctx.hospitalityTypes||[]).some(x=>normalizeHospitalityType(x)===requestedType);
     const hospitalityPath = pathname==='/hotel-management' || pathname.startsWith('/hotel-management/') || pathname==='/pms' || pathname==='/housekeeping' || pathname==='/booking';
     // Hotel Guest CRM is an enterprise CRM workspace. Older tenants may not
     // have a dedicated `hotel_guest_crm` row in restaurant_plugins because the
@@ -385,11 +409,14 @@ export function AppShell({children, active}) {
     if(plugin && ctx.plugins[plugin]!==true && !(hospitalityPath && configuredHospitality)){
       if(!(hotelGuestCrmRoute && plugin==='hotel_guest_crm' && hotelGuestCrmEnabled)){router.replace('/');return;}
     }
-    if(ctx.role!=='admin' && ctx.profileKey!=='business_admin'){
+    // Tenant-level hospitality admins own the configured property workspace.
+    // Do not require legacy staff permission rows for their Homestay tabs.
+    // Non-admin staff still pass the normal per-route permission check.
+    if(!(isTenantAdmin && isHospitalityRoute)){
       const required=PERMISSION_BY_ROUTE[pathname];
       if(required && ctx.permissions[required]!==true)router.replace('/');
     }
-  },[ctx.loading,ctx.session,ctx.isSuperAdmin,ctx.role,ctx.profileKey,ctx.plugins,ctx.permissions,pathname,router]);
+  },[ctx.loading,ctx.session,ctx.isSuperAdmin,ctx.role,ctx.profileKey,ctx.plugins,ctx.permissions,ctx.businessType,ctx.hospitalityType,ctx.hospitalityTypes,ctx.restaurantId,pathname,router]);
 
   const portalLabel=ctx.isSuperAdmin?'SUPER ADMIN':(ctx.role==='admin'||ctx.profileKey==='business_admin')?'BUSINESS PORTAL':ctx.role==='manager'?'MANAGER PORTAL':'STAFF PORTAL';
   const [mobileNavOpen,setMobileNavOpen]=useState(false);

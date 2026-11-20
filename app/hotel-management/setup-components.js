@@ -3,6 +3,24 @@ import {useEffect,useRef,useState} from 'react';
 import {supabase} from '../../lib/supabase';
 import {AppShell,Header,Section,Pill,Table} from '../components';
 
+function normalizeHospitalityType(value){
+ const raw=String(value||'').trim().toLowerCase().replace(/[\s-]+/g,'_');
+ const aliases={camping:'camp',campground:'camp',guesthouse:'guest_house',homestay_property:'homestay',holiday_cottage:'cottage'};
+ const type=aliases[raw]||raw;
+ return HOSPITALITY_META[type]?type:null;
+}
+function parseHospitalityTypes(raw,primary,businessType){
+ let values=[];
+ if(Array.isArray(raw)) values=raw;
+ else if(typeof raw==='string'&&raw.trim()){
+  try{const parsed=JSON.parse(raw);values=Array.isArray(parsed)?parsed:[parsed];}
+  catch{values=raw.split(',').map(x=>x.trim()).filter(Boolean);}
+ }
+ if(!values.length&&primary)values=[primary];
+ if(!values.length&&businessType)values=[businessType];
+ return [...new Set(values.map(normalizeHospitalityType).filter(Boolean))];
+}
+
 export const HOSPITALITY_META={
  hotel:{label:'Hotel',plural:'Hotels',unit:'Room',units:'Rooms',unitType:'Room Type',unitTypes:'Room Types',inventory:'Room Inventory',dashboard:'Hotel Dashboard',profile:'Hotel Profile',pms:'PMS / Front Desk',housekeeping:'Housekeeping',reservation:'Reservations',booking:'Hotel Booking Engine'},
  camp:{label:'Camping',plural:'Camps',unit:'Camp / Tent',units:'Camps / Tents',unitType:'Camp / Tent Type',unitTypes:'Camp / Tent Types',inventory:'Camp Inventory',dashboard:'Camping Dashboard',profile:'Camping Property',pms:'Camp Front Desk',housekeeping:'Camp Housekeeping',reservation:'Reservations',booking:'Camping Booking Engine'},
@@ -50,13 +68,13 @@ export function useTenantProperty(){
    const latest=readQuery();
    const selectedRid=isSuper?(latest.property||p?.restaurant_id||''):p?.restaurant_id||null;
    const selected=properties.find(x=>x.id===selectedRid);
-   const selectedTypes=Array.isArray(selected?.hospitality_types)&&selected.hospitality_types.length
-    ?selected.hospitality_types
-    :[selected?.hospitality_type||'hotel'];
-   const activeType=selectedTypes.includes(latest.type)?latest.type:selectedTypes[0];
+   const selectedTypes=parseHospitalityTypes(selected?.hospitality_types,selected?.hospitality_type,selected?.business_type);
+   const safeTypes=selectedTypes.length?selectedTypes:['hotel'];
+   const requestedType=normalizeHospitalityType(latest.type);
+   const activeType=requestedType&&safeTypes.includes(requestedType)?requestedType:safeTypes[0];
    if(alive&&seq===requestSeq.current){
     setQuery(latest);
-    setCtx({loading:false,session,super:isSuper,rid:selectedRid,properties,hospitalityType:activeType,hospitalityTypes:selectedTypes,error:'',selectProperty:null});
+    setCtx({loading:false,session,super:isSuper,rid:selectedRid,properties,hospitalityType:activeType,hospitalityTypes:safeTypes,error:'',selectProperty:null});
    }
   })();
   return()=>{alive=false};
@@ -65,11 +83,10 @@ export function useTenantProperty(){
  const selectProperty=(value)=>{
   const nextId=value||null;
   const selected=ctx.properties.find(x=>x.id===nextId);
-  const types=Array.isArray(selected?.hospitality_types)&&selected.hospitality_types.length
-   ?selected.hospitality_types
-   :[selected?.hospitality_type||'hotel'];
-  const currentType=readQuery().type;
-  const nextType=types.includes(currentType)?currentType:types[0];
+  const parsedTypes=parseHospitalityTypes(selected?.hospitality_types,selected?.hospitality_type,selected?.business_type);
+  const types=parsedTypes.length?parsedTypes:['hotel'];
+  const currentType=normalizeHospitalityType(readQuery().type);
+  const nextType=currentType&&types.includes(currentType)?currentType:types[0];
   const nextQuery={property:nextId||'',type:nextType||''};
 
   // Update React state first. The setup page stays mounted and immediately
@@ -118,10 +135,10 @@ export function SetupNav({hospitalityType='hotel'}){
   <a className="module-card distribution-card" href={`/hotel-management/room-rate-mapping${q}`}><h3>Room / Rate Mapping</h3><p>Map master room types and rate plans to every distribution channel, with external codes, linkage and coverage.</p></a>
   <a className="module-card distribution-card" href={`/revenue-management${q}`}><h3>Yield Management</h3><p>Occupancy, pickup, demand, lead-time, event rules, simulation and controlled rate publishing.</p></a>
   <a className="module-card distribution-card" href={`/hotel-management/booking-source${q}`}><h3>Booking Source</h3><p>Direct, OTA, marketplace, corporate and agent source economics, allocation and performance.</p></a>
-  <a className="module-card" href={`/booking?type=${encodeURIComponent(hospitalityType)}`}><h3>{m.reservation}</h3><p>Same booking control center, payment and confirmation lifecycle.</p></a>
-  <a className="module-card" href={`/pms?type=${encodeURIComponent(hospitalityType)}`}><h3>{m.pms}</h3><p>Check-in, stay lifecycle, unit assignment and checkout.</p></a>
-  <a className="module-card" href={`/housekeeping?type=${encodeURIComponent(hospitalityType)}`}><h3>{m.housekeeping}</h3><p>Cleaning, inspection, readiness and maintenance workflow.</p></a>
-  <a className="module-card" href={`/store-builder?kind=${encodeURIComponent(hospitalityType)}`}><h3>My {m.label} Store</h3><p>Same premium preview, branding, banners, SEO and publishing controls.</p></a>
+  <a className="module-card" href={`/booking${q}`}><h3>{m.reservation}</h3><p>Same booking control center, payment and confirmation lifecycle.</p></a>
+  <a className="module-card" href={`/pms${q}`}><h3>{m.pms}</h3><p>Check-in, stay lifecycle, unit assignment and checkout.</p></a>
+  <a className="module-card" href={`/housekeeping${q}`}><h3>{m.housekeeping}</h3><p>Cleaning, inspection, readiness and maintenance workflow.</p></a>
+  <a className="module-card" href={`/store-builder${q}&kind=${encodeURIComponent(hospitalityType)}`}><h3>My {m.label} Store</h3><p>Same premium preview, branding, banners, SEO and publishing controls.</p></a>
  </div></Section>
 }
 export function ensureSelected(ctx,rid){return rid||(!ctx.super?ctx.rid:null)}
