@@ -54,8 +54,14 @@ export default function HospitalityStore(){
    }
    setRooms(unified.map(x=>({...x,available_rooms:null,availability_known:false})));setRatePlans(unifiedRates);
  }catch(e){setMsg(e.message)}})()},[key]);
- const profile=useMemo(()=>({...hotel,...(hotel?.listing_override||{})}),[hotel]);
+ const profile=useMemo(()=>({...hotel,...(hotel?.listing_override||{}),
+   // The canonical property title is authoritative for Homestay/Guest House/
+   // Cottage/Camp storefronts; stale platform membership titles must not win.
+   ...(['homestay','guest_house','cottage','camp'].includes(activeStayType)&&hotel?.hotel_name
+     ? {title:hotel.hotel_name,hotel_name:hotel.hotel_name} : {})
+ }),[hotel,activeStayType]);
  const meta=TYPE_META[activeStayType]||TYPE_META.hotel;
+ useEffect(()=>{if(typeof document!=='undefined'&&profile?.title){document.title=`${profile.title} | ANAIRA ${meta.label}`;}},[profile?.title,meta.label]);
  const gallery=useMemo(()=>Array.isArray(profile.gallery)?profile.gallery.filter(Boolean):[],[profile.gallery]);
  const destinations=(Array.isArray(profile.nearby_destinations)?profile.nearby_destinations:[]).filter(x=>!x?.hospitality_type||x.hospitality_type===activeStayType);
  const activities=(Array.isArray(profile.nearby_activities)?profile.nearby_activities:[]).filter(x=>!x?.hospitality_type||x.hospitality_type===activeStayType);

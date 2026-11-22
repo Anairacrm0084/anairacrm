@@ -1,0 +1,19 @@
+ANAIRA HOMESTAY MARKETPLACE FLOW FIX
+
+Production Supabase project: bhptqdoteucuymmdzsmg
+Migration applied: hms_marketplace_stay_destination_search
+Date: 2026-11-22
+
+Verification:
+- Marketplace stay search executed for homestay, 2026-11-23 to 2026-11-24, 2 adults, 0 children, destination Manali.
+- Returned property: Home By (Justin)
+- Returned sellable room/rate rows: 11
+- Rate range: INR 1,999 to INR 6,000
+- Minimum available units across returned rows: 1
+
+The migration connects Marketplace stay discovery to canonical HMS room types,
+rate plans and date-based inventory. It does not duplicate room or inventory data.
+
+Local Next.js production build was not run in this environment because node_modules
+is not present in the supplied project archive. Run npm ci, then npm run build
+in the local project before deployment.

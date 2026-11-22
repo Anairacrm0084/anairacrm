@@ -169,7 +169,7 @@ function hospitalityOperationItems(types){
     const plugin=HOSPITALITY_PLUGIN[type]||'hotel-management-suite';
     out.push(
       ['⌂',`${m.label} Booking Engine`,`/booking?type=${type}`,'booking.view',plugin],
-      ['🏨',`My ${m.label} Store`,'/store-builder?kind=hotel&hospitality_type='+type,'booking.view',plugin],
+      ['🏨',`My ${m.label} Store`,'/store-builder?kind='+encodeURIComponent(type)+'&hospitality_type='+encodeURIComponent(type),'booking.view',plugin],
       ['▣',`${m.label} Booking Control`,`/booking-engine?type=${type}`,'booking.view',plugin]
     );
   }
@@ -360,8 +360,15 @@ export function AppShell({children, active}) {
     if(ctx.isSuperAdmin)return true;
     const hospitalityPluginKeys=Object.values(HOSPITALITY_PLUGIN);
     const hospitalityItem=item.plugin && hospitalityPluginKeys.includes(item.plugin);
+    const normalizedRole=String(ctx.role||'').trim().toLowerCase().replace(/[\\s-]+/g,'_');
+    const normalizedProfile=String(ctx.profileKey||'').trim().toLowerCase().replace(/[\\s-]+/g,'_');
+    const tenantAdminRoles=new Set(['admin','business_admin','owner','business_owner','tenant_admin','property_admin','hospitality_admin','hotel_admin','homestay_admin','guest_house_admin','cottage_admin','camp_admin']);
+    const isTenantAdmin=tenantAdminRoles.has(normalizedRole)||tenantAdminRoles.has(normalizedProfile);
+    // Hospitality plugins are tenant-scoped. Their menu items must remain
+    // visible for configured properties even when legacy plugin/permission
+    // rows have not been backfilled for a custom Homestay Admin profile.
     if(item.plugin && ctx.plugins[item.plugin]!==true && !hospitalityItem) return false;
-    if(item.permission && ctx.permissions[item.permission]!==true && ctx.role!=='admin' && ctx.role!=='business_admin' && ctx.profileKey!=='business_admin')return false;
+    if(item.permission && ctx.permissions[item.permission]!==true && !isTenantAdmin)return false;
     return true;
   })})).filter(g=>g.items.length);
 
@@ -375,11 +382,17 @@ export function AppShell({children, active}) {
     const normalizedProfile=String(ctx.profileKey||'').trim().toLowerCase().replace(/[\s-]+/g,'_');
     const tenantAdminRoles=new Set(['admin','business_admin','owner','business_owner','tenant_admin','property_admin','hospitality_admin','hotel_admin','homestay_admin','guest_house_admin','cottage_admin','camp_admin']);
     const isTenantAdmin=tenantAdminRoles.has(normalizedRole)||tenantAdminRoles.has(normalizedProfile);
-    const isHospitalityRoute=pathname==='/hotel-management'||pathname.startsWith('/hotel-management/')||pathname==='/pms'||pathname==='/housekeeping'||pathname==='/booking';
-    // Hospitality setup pages are tenant-admin pages, not platform-admin pages.
-    // Older builds incorrectly put Unit Types, Units, Inventory and Rate Plans
-    // in ADMIN_ONLY_ROUTES, which redirected custom Homestay Admin roles to '/'.
-    if(ADMIN_ONLY_ROUTES.some(r=>pathname===r||pathname.startsWith(r+'/')) && !ctx.isSuperAdmin && ctx.role!=='admin' && ctx.role!=='business_admin' && ctx.profileKey!=='business_admin'){router.replace('/');return;}
+    const routeParams=typeof window!=='undefined'?new URLSearchParams(window.location.search):new URLSearchParams();
+    const requestedType=normalizeHospitalityType(routeParams.get('type')||routeParams.get('hospitality_type'));
+    const configuredHospitality=!!requestedType&&(ctx.hospitalityTypes||[]).some(x=>normalizeHospitalityType(x)===requestedType);
+    const typeScopedStore=pathname==='/store-builder' && (routeParams.get('kind')==='hotel' || !!routeParams.get('hospitality_type'));
+    const isHospitalityRoute=pathname==='/hotel-management'||pathname.startsWith('/hotel-management/')||pathname==='/pms'||pathname==='/housekeeping'||pathname==='/booking'||pathname==='/booking-engine'||pathname==='/revenue-management'||typeScopedStore;
+    // Property-scoped Homestay/Camp/Guest House/Cottage workspaces belong to
+    // their tenant admins, including custom role keys such as homestay_admin.
+    // Keep platform-only users/roles screens restricted.
+    const adminOnlyRoute=ADMIN_ONLY_ROUTES.some(r=>pathname===r||pathname.startsWith(r+'/'));
+    const tenantAdminAllowed=adminOnlyRoute && isTenantAdmin && (pathname!=='/store-builder' || configuredHospitality || typeScopedStore);
+    if(adminOnlyRoute && !ctx.isSuperAdmin && !tenantAdminAllowed && ctx.role!=='admin' && ctx.role!=='business_admin' && ctx.profileKey!=='business_admin'){router.replace('/');return;}
     if(pathname===BUSINESS_SETTINGS_ROUTE && !ctx.isSuperAdmin && ctx.role!=='admin' && ctx.role!=='business_admin' && ctx.profileKey!=='business_admin'){router.replace('/');return;}
     if(ctx.isSuperAdmin)return;
     let plugin=PLUGIN_BY_ROUTE[pathname];
@@ -392,11 +405,10 @@ export function AppShell({children, active}) {
     if(hotelRoute && !businessIsHotel && !hasConfiguredHospitality) { router.replace('/'); return; }
     if(restaurantRoute && !restaurantAdded) { router.replace('/'); return; }
     if(pathname==='/restaurant-setup') plugin='restaurant-store';
-    const requestedTypeRaw=typeof window!=='undefined'?new URLSearchParams(window.location.search).get('type'):'';
-    const requestedType=normalizeHospitalityType(requestedTypeRaw);
-    if(pathname==='/hotel-management'||pathname.startsWith('/hotel-management/')) plugin=HOSPITALITY_PLUGIN[requestedType]||'hotel-management-suite';
-    const configuredHospitality = !!requestedType && (ctx.hospitalityTypes||[]).some(x=>normalizeHospitalityType(x)===requestedType);
-    const hospitalityPath = pathname==='/hotel-management' || pathname.startsWith('/hotel-management/') || pathname==='/pms' || pathname==='/housekeeping' || pathname==='/booking';
+    if(pathname==='/hotel-management'||pathname.startsWith('/hotel-management/')||pathname==='/booking-engine'||pathname==='/store-builder'){
+      if(requestedType) plugin=HOSPITALITY_PLUGIN[requestedType]||plugin;
+    }
+    const hospitalityPath = pathname==='/hotel-management' || pathname.startsWith('/hotel-management/') || pathname==='/pms' || pathname==='/housekeeping' || pathname==='/booking' || pathname==='/booking-engine' || typeScopedStore;
     // Hotel Guest CRM is an enterprise CRM workspace. Older tenants may not
     // have a dedicated `hotel_guest_crm` row in restaurant_plugins because the
     // module was historically governed by the parent CRM plugin. In that case

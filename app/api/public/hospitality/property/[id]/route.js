@@ -43,6 +43,17 @@ export async function GET(req,{params}){
       stores=data||[];
     }
     const preferredType=types.includes(requestedType)?requestedType:(types.find(t=>['camp','hotel','homestay','guest_house','cottage'].includes(t))||'hotel');
+    // For direct-stay properties, use the canonical stay-property record as
+    // the business identity. Never let the generic platform store name
+    // (for example, "Anaira Hotels") override the actual property name.
+    let stayProperty=null;
+    if(['homestay','guest_house','cottage','camp'].includes(preferredType)){
+      const {data,error}=await db.from('anaira_stay_properties')
+        .select('id,restaurant_id,stay_type,name,short_name,description,destination,address,city,state,country,logo_url,cover_image_url,gallery,check_in_time,check_out_time,cancellation_policy,child_policy,pet_policy,active,marketplace_visible')
+        .eq('restaurant_id',id).eq('stay_type',preferredType).eq('active',true).maybeSingle();
+      if(error) throw error;
+      stayProperty=data||null;
+    }
     const platformStore=stores.find(s=>s.hospitality_type===preferredType)
       || stores.find(s=>preferredType==='camp' && s.store_type==='hotel')
       || stores[0] || null;
@@ -51,31 +62,41 @@ export async function GET(req,{params}){
       : (members||[])[0] || null;
 
     const override=membership?.listing_override && typeof membership.listing_override==='object' ? membership.listing_override : {};
+    // For property-owned stay pages, the canonical property's name must win
+    // over the shared platform store or a stale membership title such as
+    // "Anaira Hotels". Keep listing overrides for normal hotel pages.
+    const propertyBrandedStay=['homestay','guest_house','cottage','camp'].includes(preferredType);
+    const canonicalPropertyName=stayProperty?.name||camp?.name||hms?.hotel_name||restaurant.name;
+    const resolvedPropertyTitle=propertyBrandedStay
+      ? (canonicalPropertyName||override.title||platformStore?.store_name||'ANAIRA Stay')
+      : (override.title||canonicalPropertyName||platformStore?.store_name||'ANAIRA Hotels');
     const property={
       ...restaurant,
-      title:override.title||platformStore?.store_name||camp?.name||hms?.hotel_name||restaurant.name,
+      title:resolvedPropertyTitle,
+      hotel_name:canonicalPropertyName,
       tagline:override.tagline||'',
-      description:override.description||camp?.description||hms?.description||restaurant.description||'',
-      logo_url:override.logo_url||platformStore?.logo_url||camp?.logo_url||hms?.logo_url||restaurant.logo||'',
-      cover_url:override.cover_url||platformStore?.cover_url||camp?.cover_image_url||hms?.cover_image_url||restaurant.cover_image||'',
-      cover_image_url:override.cover_url||platformStore?.cover_url||camp?.cover_image_url||hms?.cover_image_url||restaurant.cover_image||'',
+      description:override.description||stayProperty?.description||camp?.description||hms?.description||restaurant.description||'',
+      logo_url:override.logo_url||stayProperty?.logo_url||platformStore?.logo_url||camp?.logo_url||hms?.logo_url||restaurant.logo||'',
+      cover_url:override.cover_url||stayProperty?.cover_image_url||platformStore?.cover_url||camp?.cover_image_url||hms?.cover_image_url||restaurant.cover_image||'',
+      cover_image_url:override.cover_url||stayProperty?.cover_image_url||platformStore?.cover_url||camp?.cover_image_url||hms?.cover_image_url||restaurant.cover_image||'',
       gallery:Array.isArray(override.gallery)&&override.gallery.length ? override.gallery
+        : (Array.isArray(stayProperty?.gallery)&&stayProperty.gallery.length ? stayProperty.gallery
         : (Array.isArray(camp?.gallery)&&camp.gallery.length ? camp.gallery
         : (Array.isArray(hms?.gallery)&&hms.gallery.length ? hms.gallery
-        : (Array.isArray(restaurant.gallery)?restaurant.gallery:[]))),
-      address:override.address||camp?.address||hms?.address||restaurant.address,
-      city:override.city||camp?.city||hms?.city||restaurant.city,
+        : (Array.isArray(restaurant.gallery)?restaurant.gallery:[])))),
+      address:override.address||stayProperty?.address||camp?.address||hms?.address||restaurant.address,
+      city:override.city||stayProperty?.city||camp?.city||hms?.city||restaurant.city,
       phone:override.phone||hms?.phone||restaurant.phone,
       email:override.email||hms?.email||'',
       website:override.website||hms?.website||restaurant.website,
-      state:camp?.state||hms?.state||'',
+      state:stayProperty?.state||camp?.state||hms?.state||'',
       hospitality_type:restaurant.hospitality_type||preferredType,
       hospitality_types:types,
-      check_in_time:camp?.check_in_time||hms?.check_in_time||null,
-      check_out_time:camp?.check_out_time||hms?.check_out_time||null,
-      cancellation_policy:camp?.cancellation_policy||hms?.cancellation_policy||null,
-      child_policy:camp?.child_policy||hms?.child_policy||null,
-      pet_policy:camp?.pet_policy||hms?.pet_policy||null,
+      check_in_time:stayProperty?.check_in_time||camp?.check_in_time||hms?.check_in_time||null,
+      check_out_time:stayProperty?.check_out_time||camp?.check_out_time||hms?.check_out_time||null,
+      cancellation_policy:stayProperty?.cancellation_policy||camp?.cancellation_policy||hms?.cancellation_policy||null,
+      child_policy:stayProperty?.child_policy||camp?.child_policy||hms?.child_policy||null,
+      pet_policy:stayProperty?.pet_policy||camp?.pet_policy||hms?.pet_policy||null,
       marketplace_background_image_url:hms?.marketplace_background_image_url||'',
       marketplace_background_video_url:hms?.marketplace_background_video_url||'',
       marketplace_background_media_type:hms?.marketplace_background_media_type||'image',

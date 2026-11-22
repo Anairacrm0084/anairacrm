@@ -16,6 +16,29 @@ const defaults={
 
 function datePlus(days){const d=new Date();d.setDate(d.getDate()+days);return d.toISOString().slice(0,10)}
 
+function groupStayProperties(rows=[]){
+ const grouped=new Map();
+ for(const row of rows){
+   const key=row.property_id||row.restaurant_id||row.id;
+   if(!grouped.has(key)){
+     grouped.set(key,{...row,available_units:Number(row.available_units)||0,room_type_count:1,starting_rate:Number(row.rate)||0});
+     continue;
+   }
+   const current=grouped.get(key);
+   current.available_units+=Number(row.available_units)||0;
+   current.room_type_count+=1;
+   const candidate=Number(row.rate)||0;
+   if(candidate>0&&(!current.starting_rate||candidate<current.starting_rate)){
+     current.starting_rate=candidate;
+     current.rate=row.rate;
+     current.pricing_mode=row.pricing_mode;
+     current.rate_plan_id=row.rate_plan_id;
+   }
+   if(!current.cover_image_url&&row.cover_image_url)current.cover_image_url=row.cover_image_url;
+ }
+ return Array.from(grouped.values()).map(x=>({...x,rate:x.starting_rate}));
+}
+
 export default function Hotels(){
  const [settings,setSettings]=useState(defaults),[banners,setBanners]=useState([]),[destinations,setDestinations]=useState([]),
  [q,setQ]=useState(''),[inDate,setInDate]=useState(''),[outDate,setOutDate]=useState(''),[adults,setAdults]=useState(2),[children,setChildren]=useState(0),
@@ -48,8 +71,17 @@ export default function Hotels(){
      :requestedType==='camp'
        ?{p_check_in:next,p_check_out:after,p_adults:2,p_children:0,p_destination:destinationParam||null}
        :{p_stay_type:requestedType,p_check_in:next,p_check_out:after,p_adults:2,p_children:0,p_destination:destinationParam||null};
-   const {data:live}=await supabase.rpc(initialRpc,initialArgs);
-   setRows(live||[]);setLoading(false);
+   const {data:live,error:liveError}=await supabase.rpc(initialRpc,initialArgs);
+   if(liveError){
+     setRows([]);
+     setMsg(liveError.message||`Unable to load ${requestedType.replace('_',' ')} availability.`);
+   }else{
+     setRows(live||[]);
+     if(!(live||[]).length && requestedType!=='hotel' && requestedType!=='camp'){
+       setMsg(`No published ${requestedType.replace('_',' ')} listings with available rooms were found.`);
+     }
+   }
+   setLoading(false);
  })()},[]);
 
  useEffect(()=>{
@@ -71,7 +103,10 @@ export default function Hotels(){
    setLoading(false);
    if(error){setRows([]);setMsg(error.message);return}
    setRows(data||[]);
-   if(!(data||[]).length)setMsg(type==='camp'?`No published camps with live availability found${destination?` in ${destination}`:''}.`:`No published hotels with available room inventory were found${destination?` in ${destination}`:''}.`);
+   if(!(data||[]).length){
+     const label=type==='camp'?'camps':type==='hotel'?'hotels':type.replace('_',' ')+'s';
+     setMsg(`No published ${label} with live availability found${destination?` in ${destination}`:''}.`);
+   }
    document.getElementById('hotel-results')?.scrollIntoView({behavior:'smooth',block:'start'});
  }
  async function search(){return runSearch(stayType,q,inDate,outDate)}
@@ -84,6 +119,7 @@ export default function Hotels(){
   '--hotel-radius':`${settings.hotel_home_card_radius||22}px`,'--hotel-cols':settings.hotel_home_hotel_columns||3,
   '--hotel-dest-cols':settings.hotel_home_destination_columns||5,'--hotel-overlay':settings.hotel_home_hero_overlay||.48
  };
+ const displayRows=['homestay','guest_house','cottage'].includes(stayType)?groupStayProperties(rows):rows;
  return <main className="hotel-market-pro hotel-market-full" style={css}>
 
   <section className="hotel-pro-hero">
@@ -173,10 +209,10 @@ export default function Hotels(){
      </>}
     </div>
    </section>}   <section id="hotel-results">
-    <div className="hotel-pro-section-head"><div><small>LIVE {stayType.replace('_',' ').toUpperCase()} DISCOVERY</small><h2>{q?`${stayType.replace('_',' ')}s in ${q}`:`Featured ${stayType.replace('_',' ')}s with live availability`}</h2><p>{stayType==='hotel'?'Rooms, availability and booking flow are sourced from the canonical Hotel Management System.':'Live availability, guest-based pricing and booking flow are sourced from the canonical Anaira stay engine.'}</p></div><span>{rows.length?`${rows.length} live results`:'No matching live results'}</span></div>
+    <div className="hotel-pro-section-head"><div><small>LIVE {stayType.replace('_',' ').toUpperCase()} DISCOVERY</small><h2>{q?`${stayType.replace('_',' ')}s in ${q}`:`Featured ${stayType.replace('_',' ')}s with live availability`}</h2><p>{stayType==='hotel'?'Rooms, availability and booking flow are sourced from the canonical Hotel Management System.':'Live availability, guest-based pricing and booking flow are sourced from the canonical Anaira stay engine.'}</p></div><span>{rows.length?`${displayRows.length} live results`:'No matching live results'}</span></div>
     {msg&&<div className="hotel-pro-message">{msg}</div>}
     {loading?<div className="hotel-pro-empty"><Search size={30}/><h3>Finding available {stayType==='camp'?'camps':'hotels'}…</h3><p>Checking live {stayType==='camp'?'camp':'room'} inventory.</p></div>:
-     rows.length?<div className="hotel-pro-grid">{rows.map(x=>['homestay','guest_house','cottage'].includes(stayType)?<article className="hotel-pro-card" key={x.restaurant_id}><div className="hotel-pro-cover">{(x.cover_image_url||x.cover_image)?<img src={x.cover_image_url||x.cover_image} alt=""/>:<div><Home size={42}/></div>}<span>{stayType.replace('_',' ').toUpperCase()}</span><button aria-label="Stay property"><Star size={14}/></button></div><div className="hotel-pro-card-body"><div className="hotel-pro-location"><MapPin size={13}/>{x.destination||x.city||'Destination'}</div><h3>{x.property_name||x.name}</h3><p>Live availability · {x.pricing_mode==='per_person'?'Per-person pricing':'Per-unit pricing'} · Secure booking</p><div className="hotel-pro-stats"><span>{x.available_units||0} available</span><span>From ₹{Number(x.rate||0).toLocaleString('en-IN')} / {x.pricing_mode==='per_person'?'person':'unit'}</span></div><Link className="hotel-pro-book" href={`/property/${x.restaurant_id||x.property_id}?check_in=${inDate}&check_out=${outDate}&adults=${adults}&children=${children}`}>View property & book <ArrowRight size={15}/></Link></div></article>:stayType==='camp'?<article className="hotel-pro-card" key={x.restaurant_id}><div className="hotel-pro-cover">{(x.cover_image_url||x.cover_image)?<img src={x.cover_image_url||x.cover_image} alt=""/>:<div><Compass size={42}/></div>}<span>LIVE CAMP</span><button aria-label="Camping property"><Star size={14}/></button></div><div className="hotel-pro-card-body"><div className="hotel-pro-location"><MapPin size={13}/>{x.destination||x.city||x.address||'Destination'}</div><h3>{x.property_name||x.name||x.name}</h3><p>{x.description||'Live camps · Per-person pricing · Secure booking'}</p><div className="hotel-pro-stats">{x.unit_type_id?<><span>{x.available_units||0} available</span><span>From ₹{Number(x.rate||0).toLocaleString('en-IN')} / person</span></>:<><span>Property listed · Setup pending</span><span>Rates & tents being configured</span></>}</div><Link className="hotel-pro-book" href={`/property/${x.restaurant_id}?check_in=${inDate}&check_out=${outDate}&adults=${adults}&children=${children}`}>View property & book <ArrowRight size={15}/></Link></div></article>:<article className="hotel-pro-card" key={x.restaurant_id}><div className="hotel-pro-cover">{(x.listing_override?.cover_url||x.cover_image)?<img src={x.listing_override?.cover_url||x.cover_image} alt=""/>:<div><Hotel size={42}/></div>}<span>LIVE HOTEL</span><button aria-label="Featured hotel"><Star size={14}/></button></div><div className="hotel-pro-card-body"><div className="hotel-pro-location"><MapPin size={13}/>{x.city||x.address||'Destination'}</div><h3>{x.listing_override?.title||x.hotel_name}</h3><p>{x.listing_override?.tagline||'Live rooms · Direct booking · Secure guest journey'}</p><div className="hotel-pro-stats"><span>{x.available_room_types||0} room types</span><span>{inDate} → {outDate}</span></div><Link className="hotel-pro-book" href={`/property/${x.restaurant_id}?check_in=${inDate}&check_out=${outDate}&adults=${adults}&children=${children}`}>View rooms & book <ArrowRight size={15}/></Link></div></article>)}</div>:
+     displayRows.length?<div className="hotel-pro-grid">{displayRows.map(x=>['homestay','guest_house','cottage'].includes(stayType)?<article className="hotel-pro-card" key={x.restaurant_id}><div className="hotel-pro-cover">{(x.cover_image_url||x.cover_image)?<img src={x.cover_image_url||x.cover_image} alt=""/>:<div><Home size={42}/></div>}<span>{stayType.replace('_',' ').toUpperCase()}</span><button aria-label="Stay property"><Star size={14}/></button></div><div className="hotel-pro-card-body"><div className="hotel-pro-location"><MapPin size={13}/>{x.destination||x.city||'Destination'}</div><h3>{x.property_name||x.name}</h3><p>Live availability · {x.pricing_mode==='per_person'?'Per-person pricing':'Per-unit pricing'} · Secure booking</p><div className="hotel-pro-stats"><span>{x.available_units||0} available · {x.room_type_count||1} room types</span><span>From ₹{Number(x.rate||0).toLocaleString('en-IN')} / {x.pricing_mode==='per_person'?'person':'unit'}</span></div><Link className="hotel-pro-book" href={`/property/${x.restaurant_id||x.property_id}?check_in=${inDate}&check_out=${outDate}&adults=${adults}&children=${children}`}>View property & book <ArrowRight size={15}/></Link></div></article>:stayType==='camp'?<article className="hotel-pro-card" key={x.restaurant_id}><div className="hotel-pro-cover">{(x.cover_image_url||x.cover_image)?<img src={x.cover_image_url||x.cover_image} alt=""/>:<div><Compass size={42}/></div>}<span>LIVE CAMP</span><button aria-label="Camping property"><Star size={14}/></button></div><div className="hotel-pro-card-body"><div className="hotel-pro-location"><MapPin size={13}/>{x.destination||x.city||x.address||'Destination'}</div><h3>{x.property_name||x.name||x.name}</h3><p>{x.description||'Live camps · Per-person pricing · Secure booking'}</p><div className="hotel-pro-stats">{x.unit_type_id?<><span>{x.available_units||0} available</span><span>From ₹{Number(x.rate||0).toLocaleString('en-IN')} / person</span></>:<><span>Property listed · Setup pending</span><span>Rates & tents being configured</span></>}</div><Link className="hotel-pro-book" href={`/property/${x.restaurant_id}?check_in=${inDate}&check_out=${outDate}&adults=${adults}&children=${children}`}>View property & book <ArrowRight size={15}/></Link></div></article>:<article className="hotel-pro-card" key={x.restaurant_id}><div className="hotel-pro-cover">{(x.listing_override?.cover_url||x.cover_image)?<img src={x.listing_override?.cover_url||x.cover_image} alt=""/>:<div><Hotel size={42}/></div>}<span>LIVE HOTEL</span><button aria-label="Featured hotel"><Star size={14}/></button></div><div className="hotel-pro-card-body"><div className="hotel-pro-location"><MapPin size={13}/>{x.city||x.address||'Destination'}</div><h3>{x.listing_override?.title||x.hotel_name}</h3><p>{x.listing_override?.tagline||'Live rooms · Direct booking · Secure guest journey'}</p><div className="hotel-pro-stats"><span>{x.available_room_types||0} room types</span><span>{inDate} → {outDate}</span></div><Link className="hotel-pro-book" href={`/property/${x.restaurant_id}?check_in=${inDate}&check_out=${outDate}&adults=${adults}&children=${children}`}>View rooms & book <ArrowRight size={15}/></Link></div></article>)}</div>:
      <div className="hotel-pro-empty"><Hotel size={30}/><h3>Search live {stayType==='hotel'?'hotel':stayType==='camp'?'camping':stayType==='guest_house'?'guest house':stayType==='homestay'?'homestay':'cottage'} inventory</h3><p>Choose dates and a destination above. Results are always sourced from the published inventory for the selected stay type.</p></div>}
    </section>
   </section>

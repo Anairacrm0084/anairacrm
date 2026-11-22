@@ -60,7 +60,7 @@ function mergeStorePage(raw){
 }
 function StoreBuilder(){
  const router=useRouter(),searchParams=useSearchParams();
- const [session,setSession]=useState(undefined),[profile,setProfile]=useState(null),[property,setProperty]=useState(null),[rid,setRid]=useState(''),[kind,setKind]=useState('restaurant'),[availableKinds,setAvailableKinds]=useState(['restaurant']);
+ const [session,setSession]=useState(undefined),[profile,setProfile]=useState(null),[property,setProperty]=useState(null),[rid,setRid]=useState(''),[adminProperties,setAdminProperties]=useState([]),[kind,setKind]=useState('restaurant'),[availableKinds,setAvailableKinds]=useState(['restaurant']);
  const [store,setStore]=useState(null),[membership,setMembership]=useState(null),[settings,setSettings]=useState(null),[connections,setConnections]=useState([]),[activeHospitalityType,setActiveHospitalityType]=useState('hotel');
  const [form,setForm]=useState({title:'',tagline:'',description:'',logo_url:'',cover_url:'',gallery:[],phone:'',whatsapp:'',website:'',address:'',city:'',state:'',postal_code:'',delivery:true,pickup:true,dine_in:true,seo_title:'',seo_description:'',min_order_amount:0,delivery_fee:0,delivery_radius_km:'',tax_percent:0,payment_methods:'cod,pay_at_hotel',open_time:'09:00',close_time:'23:00',banner_title:'',banner_subtitle:'',banner_image_url:'',banner_mobile_image_url:'',banner_cta_label:'',banner_cta_url:'',theme_mode:'light',accent_color:'#0b6b4f',announcement:'',social_instagram:'',social_facebook:'',social_whatsapp:'',delivery_eta_minutes:45,service_fee:0,order_notes_enabled:true,show_popular:true,show_offers:true,show_gallery:true,show_reviews:false,hero_overlay:0.45,card_radius:20,store_background:'#f7f5ef',show_categories:true,show_search:true,show_cart:true,show_announcement:true,show_footer:true,hero_cta_label:'Order Now',hero_cta_url:'',gallery_title:'Our Restaurant Gallery',gallery_subtitle:'A glimpse inside the restaurant',about_title:'',about_subtitle:'',about_text:'',category_title:'Menu Categories',category_subtitle:'Explore dishes from our kitchen',popular_title:'Popular Dishes',offer_title:'Delicious Food, Special Moments',offer_text:'Enjoy special offers from this restaurant.',offer_cta:'Order Now',reservation_title:'Plan Your Visit',reservation_text:'Reserve your table for a delightful dining experience.',reservation_cta:'Book Now',reviews_title:'Customer Reviews',reviews_subtitle:'Real feedback from our guests',testimonials:[],menu_title:'Order from our kitchen',page_content:DEFAULT_PAGE_CONTENT});
  const [categories,setCategories]=useState([]),[items,setItems]=useState([]),[homeBanners,setHomeBanners]=useState([]),[featuredItems,setFeaturedItems]=useState([]),[storePage,setStorePage]=useState(DEFAULT_STORE_PAGE),[editingBannerId,setEditingBannerId]=useState(null),[storePageSaved,setStorePageSaved]=useState(false),[featureIcons,setFeatureIcons]=useState([{icon:'🍽️',title:'Fresh Food',text:'Quality food prepared with care'},{icon:'🚴',title:'Fast Delivery',text:'Hot & fresh to your doorstep'},{icon:'💳',title:'Secure Payments',text:'Multiple payment options'},{icon:'🎁',title:'Exclusive Offers',text:'Best deals for customers'}]),[liveMenu,setLiveMenu]=useState([]),[selectedItem,setSelectedItem]=useState(null),[variants,setVariants]=useState([]),[addons,setAddons]=useState([]),[newVariant,setNewVariant]=useState(blankOption),[newAddon,setNewAddon]=useState(blankOption);
@@ -71,15 +71,56 @@ function StoreBuilder(){
  useEffect(()=>{(async()=>{
    if(!supabase){setSession(null);return}
    const {data:{session}}=await supabase.auth.getSession();setSession(session);if(!session)return;
-   const {data:p}=await supabase.from('anaira_my_profile').select('restaurant_id,is_super_admin,role,full_name').eq('id',session.user.id).maybeSingle();
-   setProfile(p||{});
-   if(p?.is_super_admin){router.replace('/super-admin/stores');return}
-   if(p?.role!=='admin'){router.replace('/');return}
-   if(!p?.restaurant_id)return;
-   setRid(p.restaurant_id);
+   let {data:p, error:myProfileError}=await supabase.from('anaira_my_profile').select('restaurant_id,is_super_admin,role,full_name').eq('id',session.user.id).maybeSingle();
+   // Some tenant accounts are present in `profiles` but are not projected by
+   // the legacy ana ira_my_profile view. Fall back to the canonical profile row.
+   if(!p){
+     const {data:canonicalProfile,error:canonicalProfileError}=await supabase.from('profiles').select('restaurant_id,is_super_admin,role,full_name,status').eq('id',session.user.id).maybeSingle();
+     if(canonicalProfileError){setError(canonicalProfileError.message);return}
+     p=canonicalProfile;
+   }
+   // Custom tenant roles may be assigned through ana ira_user_profiles.
+   let profileKey=null;
+   if(p?.restaurant_id){
+     const {data:up}=await supabase.from('anaira_user_profiles').select('profile_key').eq('user_id',session.user.id).eq('restaurant_id',p.restaurant_id).maybeSingle();
+     profileKey=up?.profile_key||null;
+   }
+   setProfile({...p,profile_key:profileKey}||{});
+   // Super Admin can open a tenant's own My Homestay / Hotel Store for support
+   // and publishing. Tenant managers can open only the enabled hospitality store
+   // belonging to their assigned restaurant.
+   let targetRestaurantId=p?.restaurant_id||'';
+   if(p?.is_super_admin || p?.role==='super_admin'){
+     const {data:allProperties,error:propertiesError}=await supabase
+       .from('restaurants')
+       .select('id,name,status,city,hospitality_type,hospitality_types')
+       .order('name');
+     if(propertiesError){setError(propertiesError.message);return}
+     const list=allProperties||[];setAdminProperties(list);
+     const requestedId=searchParams.get('restaurant_id');
+     const preferred=list.find(x=>x.id===requestedId)
+       ||list.find(x=>x.id===targetRestaurantId)
+       ||list.find(x=>x.hospitality_type==='homestay'||(Array.isArray(x.hospitality_types)&&x.hospitality_types.includes('homestay')))
+       ||list[0];
+     targetRestaurantId=preferred?.id||'';
+   }else{
+     const allowedRoles=new Set(['admin','business_admin','owner','business_owner','tenant_admin','property_admin','hospitality_admin','hotel_admin','homestay_admin','guest_house_admin','cottage_admin','camp_admin']);
+     const normalizeRole=value=>String(value||'').trim().toLowerCase().replace(/[\s-]+/g,'_');
+     const role=normalizeRole(p?.role), profileRole=normalizeRole(profileKey);
+     const requestedHospitality=normalizeRole(searchParams.get('hospitality_type')||searchParams.get('kind'));
+     const pluginForType={hotel:'hotel-management-suite',homestay:'homestay-management',camp:'camping-management',guest_house:'guest-house-management',cottage:'cottage-management'};
+     let managerHasStoreAccess=false;
+     if(role==='manager' && p?.restaurant_id && pluginForType[requestedHospitality]){
+       const {data:tenantPlugin}=await supabase.from('restaurant_plugins').select('enabled').eq('restaurant_id',p.restaurant_id).eq('plugin_code',pluginForType[requestedHospitality]).maybeSingle();
+       managerHasStoreAccess=tenantPlugin?.enabled===true;
+     }
+     if(!allowedRoles.has(role)&&!allowedRoles.has(profileRole)&&!managerHasStoreAccess){router.replace('/');return}
+   }
+   if(!targetRestaurantId)return;
+   setRid(targetRestaurantId);
    const [{data:r},{data:pl}]=await Promise.all([
-     supabase.from('restaurants').select('id,name,status,city,address,logo,cover_image,cuisine,phone,website,delivery_enabled,hospitality_type,hospitality_types').eq('id',p.restaurant_id).maybeSingle(),
-     supabase.from('restaurant_plugins').select('plugin_code,enabled').eq('restaurant_id',p.restaurant_id)
+     supabase.from('restaurants').select('id,name,status,city,address,logo,cover_image,cuisine,phone,website,delivery_enabled,hospitality_type,hospitality_types').eq('id',targetRestaurantId).maybeSingle(),
+     supabase.from('restaurant_plugins').select('plugin_code,enabled').eq('restaurant_id',targetRestaurantId)
    ]);
    setProperty(r||null);
    const enabled=new Set((pl||[]).filter(x=>x.enabled).map(x=>x.plugin_code));
@@ -115,9 +156,10 @@ function StoreBuilder(){
    // All non-restaurant hospitality contexts still use the single canonical
    // ANAIRA hospitality platform store underneath.
    const requestedKind=searchParams.get('kind');
-   const nextKind=requestedKind==='restaurant'&&safe.includes('restaurant')
+   const normalizedRequestedKind=String(requestedKind||'').trim().toLowerCase().replace(/[\s-]+/g,'_');
+   const nextKind=normalizedRequestedKind==='restaurant'&&safe.includes('restaurant')
      ?'restaurant'
-     :(hospitalityKinds.includes(requestedKind)?requestedKind:nextType);
+     :(hospitalityKinds.includes(normalizedRequestedKind)?normalizedRequestedKind:nextType);
    setKind(nextKind);setActiveHospitalityType(nextKind==='restaurant'?nextType:nextKind);
    if(typeof window!=='undefined'){
      const u=new URL(window.location.href);
@@ -149,6 +191,7 @@ function StoreBuilder(){
      .eq('restaurant_id',rid)
      .eq('store_type',storeKind)
      .eq('is_platform_store',false)
+     .eq('hospitality_type',activeHospitalityType)
      .order('created_at',{ascending:true})
      .limit(1);
    if(queryError) throw new Error(error?.message ? `${error.message}; fallback: ${queryError.message}` : queryError.message);
@@ -182,13 +225,31 @@ function StoreBuilder(){
      ]);setCategories(cats||[]);setItems(mi||[]);setOrders(os||[]);setOffers(of||[]);
      const {data:hb}=await supabase.from('anaira_store_banners').select('*').eq('store_id',s.id).eq('restaurant_id',rid).order('display_order'); setHomeBanners(hb||[]); const {data:fi}=await supabase.from('anaira_marketplace_featured_items').select('*').eq('store_id',s.id).eq('restaurant_id',rid).order('display_order'); setFeaturedItems(fi||[]); try { if(m?.catalog_source==='restaurant_saas'){ const lr=await fetch('/api/marketplace/restaurant/'+rid,{cache:'no-store'}); const lj=await lr.json(); setLiveMenu(lj?.ok?(lj.data?.menu||[]):[]); } else setLiveMenu(mi||[]); } catch { setLiveMenu(mi||[]); }
    }else{
-     const [{data:rt},{data:rp},{data:inv},{data:rs}]=await Promise.all([
-       supabase.from('hms_room_types').select('id,name,code,short_description,description,base_rate,max_adults,max_children,max_guests,hospitality_type,active,image_urls,amenities').eq('restaurant_id',rid).eq('hospitality_type',activeHospitalityType).order('name'),
-       supabase.from('hms_rate_plans').select('id,name,code,room_type_id,board_type,rate,weekend_rate,seasonal_multiplier,active,refundable,deposit_percent,pricing_mode').eq('restaurant_id',rid).eq('hospitality_type',activeHospitalityType).order('name'),
-       supabase.from('hms_inventory').select('id,room_type_id,stay_date,total_rooms,sold_rooms,blocked_rooms,closed').eq('restaurant_id',rid).order('stay_date').limit(180),
-       supabase.from('hms_reservations').select('id,reservation_code,status,check_in,check_out,total_amount,created_at,room_type_id,rate_plan_id').eq('restaurant_id',rid).order('created_at',{ascending:false}).limit(12)
-     ]);
-     let finalRt=rt||[], finalRp=rp||[], finalInv=inv||[], finalRs=rs||[];
+     let finalRt=[], finalRp=[], finalInv=[], finalRs=[];
+     if(['homestay','guest_house','cottage'].includes(activeHospitalityType)){
+       // Alternative stays use the canonical ana ira_stay_* master tables,
+       // not the legacy hotel HMS room tables. This keeps My Homestay Store
+       // connected to the same units, rates, inventory and reservations that
+       // the Anaira Marketplace stay-search RPC reads.
+       const [{data:stayUnits},{data:stayRates},{data:stayInventory},{data:stayReservations}]=await Promise.all([
+         supabase.from('anaira_stay_unit_types').select('id,name,code,description,base_rate,max_adults,max_children,max_guests,active,image_urls,amenities,unit_count,property_id').eq('restaurant_id',rid).eq('active',true).order('name'),
+         supabase.from('anaira_stay_rate_plans').select('id,name,code,unit_type_id,rate,weekend_rate,seasonal_multiplier,active,refundable,deposit_percent,pricing_mode').eq('restaurant_id',rid).eq('active',true).order('name'),
+         supabase.from('anaira_stay_inventory').select('id,unit_type_id,stay_date,total_units,sold_units,held_units,blocked_units,closed').eq('restaurant_id',rid).order('stay_date').limit(180),
+         supabase.from('anaira_stay_reservations').select('id,reservation_code,status,check_in,check_out,total_amount,created_at,unit_type_id,rate_plan_id,guest_name').eq('restaurant_id',rid).eq('stay_type',activeHospitalityType).order('created_at',{ascending:false}).limit(12)
+       ]);
+       finalRt=(stayUnits||[]).map(x=>({...x,room_type_id:x.id,short_description:x.description||'',hospitality_type:activeHospitalityType}));
+       finalRp=(stayRates||[]).map(x=>({...x,room_type_id:x.unit_type_id,board_type:null}));
+       finalInv=(stayInventory||[]).map(x=>({...x,room_type_id:x.unit_type_id,total_rooms:x.total_units,sold_rooms:Number(x.sold_units||0)+Number(x.held_units||0),blocked_rooms:x.blocked_units}));
+       finalRs=(stayReservations||[]).map(x=>({...x,room_type_id:x.unit_type_id}));
+     }else{
+       const [{data:rt},{data:rp},{data:inv},{data:rs}]=await Promise.all([
+         supabase.from('hms_room_types').select('id,name,code,short_description,description,base_rate,max_adults,max_children,max_guests,hospitality_type,active,image_urls,amenities').eq('restaurant_id',rid).eq('hospitality_type',activeHospitalityType).order('name'),
+         supabase.from('hms_rate_plans').select('id,name,code,room_type_id,board_type,rate,weekend_rate,seasonal_multiplier,active,refundable,deposit_percent,pricing_mode').eq('restaurant_id',rid).eq('hospitality_type',activeHospitalityType).order('name'),
+         supabase.from('hms_inventory').select('id,room_type_id,stay_date,total_rooms,sold_rooms,blocked_rooms,closed').eq('restaurant_id',rid).order('stay_date').limit(180),
+         supabase.from('hms_reservations').select('id,reservation_code,status,check_in,check_out,total_amount,created_at,room_type_id,rate_plan_id').eq('restaurant_id',rid).order('created_at',{ascending:false}).limit(12)
+       ]);
+       finalRt=rt||[]; finalRp=rp||[]; finalInv=inv||[]; finalRs=rs||[];
+     }
 
      // Camping compatibility: the property may already have real data in the
      // legacy camp_* tables while the canonical HMS tables are empty/partial.
@@ -299,7 +360,7 @@ async function moveHeroSlide(id,direction){
  return <AppShell active="/store-builder">
   <div className="sb-page">
    <div className="sb-hero">
-    <div><div className="sb-eyebrow">ANAIRA BUSINESS STORE</div><h1>{storeName}</h1><p>Build and control your own customer-facing store. Restaurant SaaS remains the operational source of truth.</p></div>
+    <div><div className="sb-eyebrow">ANAIRA BUSINESS STORE</div><h1>{storeName}</h1><p>Build and control your own customer-facing store. Restaurant SaaS remains the operational source of truth.</p>{profile?.is_super_admin&&<label className="sb-admin-property-picker">Super Admin · Select property <select className="compact-input" value={rid} onChange={e=>{const id=e.target.value;window.location.href=`/store-builder?kind=${encodeURIComponent(kind)}&hospitality_type=${encodeURIComponent(activeHospitalityType)}&restaurant_id=${encodeURIComponent(id)}`;}}>{adminProperties.map(x=><option key={x.id} value={x.id}>{x.name} · {x.hospitality_type||'business'}</option>)}</select></label>}</div>
     <div className="sb-actions">{kind!=='restaurant'&&availableKinds.filter(k=>k!=='restaurant').length>1&&<select className="compact-input" value={activeHospitalityType} onChange={e=>{const next=e.target.value;setActiveHospitalityType(next);setKind(next);router.replace(`/store-builder?kind=${encodeURIComponent(next)}&hospitality_type=${encodeURIComponent(next)}`);}}>{availableKinds.filter(k=>k!=='restaurant').map(k=><option key={k} value={k}>{`My ${{hotel:'Hotel',camp:'Camping',homestay:'Homestay',guest_house:'Guest House',cottage:'Cottage'}[k]||'Hospitality'} Store`}</option>)}</select>}<a className="btn" href={publicUrl} target="_blank">Preview Store ↗</a><button className="btn primary" disabled={busy} onClick={saveStore}>{busy?'Saving…':'Save Changes'}</button></div>
    </div>
    {error&&<div className="notice error">{error}</div>}
