@@ -5,6 +5,23 @@ import {supabase} from '../lib/supabase';
 const modules=[['◉','Customer 360','Unified profile, value, preferences and history','/customer-360'],['⌂','Hotel Guest CRM','Bookings, stays, requests and VIP service','/hotel-guest-crm'],['♨','Restaurant CRM','Visits, spend, tables and food preferences','/restaurant'],['◆','Leads & Sales','Pipeline, quotations, tasks and conversion','/leads'],['▣','Corporate CRM','Companies, contracts, credit and negotiated rates','/corporate'],['♢','Partners','Agents, OTAs, planners and commissions','/partners'],['★','Loyalty','Tiers, points, rewards and referrals','/loyalty'],['◇','Offers','Coupons, eligibility and redemption','/marketing'],['✉','Campaigns','WhatsApp, SMS, email and journeys','/campaigns'],['◌','WhatsApp CRM','Templates, delivery and conversations','/integrations'],['⚠','Guest Relations','Complaints, SLA and service recovery','/guest-relations'],['₹','Revenue Manager','Dynamic rates, forecasts and demand','/revenue'],['▤','Analytics','LTV, retention, campaign and revenue BI','/analytics'],['✦','Event CRM','Wedding, banquet and corporate events','/events'],['✧','AI Insights','Next-best-action and churn intelligence','/ai'],['⚙','Integrations','PMS, POS, OTA and accounting connections','/integrations']];
 export default function Dashboard(){
  const [session,setSession]=useState(undefined),[stats,setStats]=useState(null),[error,setError]=useState('');
+ useEffect(()=>{
+  // Legacy My Homestay Store links may still open the CRM root with
+  // hospitality query parameters. Route those links to the actual store page.
+  const params=new URLSearchParams(window.location.search);
+  const kind=(params.get('kind')||'').toLowerCase();
+  const hospitalityType=(params.get('hospitality_type')||'').toLowerCase();
+  const supportedTypes=new Set(['hotel','camp','homestay','guest_house','cottage']);
+  const requestedType=supportedTypes.has(hospitalityType)?hospitalityType:(supportedTypes.has(kind)?kind:null);
+  if(requestedType){
+   const storeParams=new URLSearchParams();
+   storeParams.set('kind',requestedType);
+   storeParams.set('hospitality_type',requestedType);
+   // Do not carry tenant IDs from a public/root URL into a store-management route.
+   // Store Builder resolves the tenant from the authenticated profile only.
+   window.location.replace(`/store-builder?${storeParams.toString()}`);
+  }
+ },[]);
  useEffect(()=>{if(!supabase){setSession(null);return}let mounted=true;let subscription;(async()=>{const {data}=await supabase.auth.getSession();if(mounted)setSession(data.session);const res=supabase.auth.onAuthStateChange((_e,s)=>mounted&&setSession(s));subscription=res.data.subscription})();return()=>{mounted=false;subscription?.unsubscribe()}},[]);
  useEffect(()=>{if(!session||!supabase)return;let mounted=true;(async()=>{const tables=['crm_customers','crm_guest_stays','crm_restaurant_visits','crm_leads','crm_complaints'];const results=await Promise.all(tables.map(t=>supabase.from(t).select('*',{count:'exact',head:true})));const bad=results.find(r=>r.error);if(bad){setError(bad.error.message);return}if(mounted)setStats(Object.fromEntries(tables.map((t,i)=>[t,results[i].count||0])));})();return()=>{mounted=false}},[session]);
  if(!supabase)return <AppShell active="/"><div className="auth-card"><h1>Supabase is not configured</h1><p>Add your Supabase URL and publishable/anon key to <b>.env.local</b>, then restart.</p></div></AppShell>;

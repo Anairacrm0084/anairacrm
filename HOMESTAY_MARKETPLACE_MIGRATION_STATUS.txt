@@ -17,3 +17,19 @@ rate plans and date-based inventory. It does not duplicate room or inventory dat
 Local Next.js production build was not run in this environment because node_modules
 is not present in the supplied project archive. Run npm ci, then npm run build
 in the local project before deployment.
+
+
+Additional CRM My Homestay Store routing fix (2026-11-22):
+- Legacy URL /?kind=homestay&hospitality_type=homestay now redirects to
+  /store-builder?kind=homestay&hospitality_type=homestay.
+- Redirect accepts only known hospitality types (hotel, camp, homestay,
+  guest_house, cottage) and preserves optional restaurant_id/property_id.
+- Existing dynamic hospitality navigation already targets /store-builder;
+  no navigation permission checks were bypassed.
+- Regression check: tests/homestay-store-root-redirect-static.mjs PASS.
+- JavaScript syntax scan: 737/737 PASS.
+- Full Next.js build was not run because dependencies (node_modules) are
+  not installed in this archive.
+- Existing public-hospitality static test currently fails on an unrelated
+  expected-expression mismatch in the camping checkout availability test;
+  no changes were made to that test or camping checkout code.

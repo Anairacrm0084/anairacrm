@@ -1,6 +1,6 @@
 'use client';
 import {Suspense,useEffect,useMemo,useState} from 'react';
-import {useRouter,useSearchParams} from 'next/navigation';
+import {useRouter} from 'next/navigation';
 import {AppShell,Header,Section,Kpi,Pill} from '../components';
 import {supabase} from '../../lib/supabase';
 import MediaPicker from '../../components/anaira/MediaPicker';
@@ -59,7 +59,7 @@ function mergeStorePage(raw){
  return {...DEFAULT_STORE_PAGE,...p,visibility:{...DEFAULT_STORE_PAGE.visibility,...(p.visibility||{})},labels:{...DEFAULT_STORE_PAGE.labels,...(p.labels||{})},theme:{...DEFAULT_STORE_PAGE.theme,...(p.theme||{})},highlights:Array.isArray(p.highlights)?p.highlights:DEFAULT_STORE_PAGE.highlights,about_features:Array.isArray(p.about_features)?p.about_features:DEFAULT_STORE_PAGE.about_features,testimonials:Array.isArray(p.testimonials)?p.testimonials:[],section_order:Array.isArray(p.section_order)&&p.section_order.length?p.section_order:DEFAULT_STORE_PAGE.section_order,reservation:{...DEFAULT_STORE_PAGE.reservation,...(p.reservation||{})},footer:{...DEFAULT_STORE_PAGE.footer,...(p.footer||{})}};
 }
 function StoreBuilder(){
- const router=useRouter(),searchParams=useSearchParams();
+ const router=useRouter();
  const [session,setSession]=useState(undefined),[profile,setProfile]=useState(null),[property,setProperty]=useState(null),[rid,setRid]=useState(''),[adminProperties,setAdminProperties]=useState([]),[kind,setKind]=useState('restaurant'),[availableKinds,setAvailableKinds]=useState(['restaurant']);
  const [store,setStore]=useState(null),[membership,setMembership]=useState(null),[settings,setSettings]=useState(null),[connections,setConnections]=useState([]),[activeHospitalityType,setActiveHospitalityType]=useState('hotel');
  const [form,setForm]=useState({title:'',tagline:'',description:'',logo_url:'',cover_url:'',gallery:[],phone:'',whatsapp:'',website:'',address:'',city:'',state:'',postal_code:'',delivery:true,pickup:true,dine_in:true,seo_title:'',seo_description:'',min_order_amount:0,delivery_fee:0,delivery_radius_km:'',tax_percent:0,payment_methods:'cod,pay_at_hotel',open_time:'09:00',close_time:'23:00',banner_title:'',banner_subtitle:'',banner_image_url:'',banner_mobile_image_url:'',banner_cta_label:'',banner_cta_url:'',theme_mode:'light',accent_color:'#0b6b4f',announcement:'',social_instagram:'',social_facebook:'',social_whatsapp:'',delivery_eta_minutes:45,service_fee:0,order_notes_enabled:true,show_popular:true,show_offers:true,show_gallery:true,show_reviews:false,hero_overlay:0.45,card_radius:20,store_background:'#f7f5ef',show_categories:true,show_search:true,show_cart:true,show_announcement:true,show_footer:true,hero_cta_label:'Order Now',hero_cta_url:'',gallery_title:'Our Restaurant Gallery',gallery_subtitle:'A glimpse inside the restaurant',about_title:'',about_subtitle:'',about_text:'',category_title:'Menu Categories',category_subtitle:'Explore dishes from our kitchen',popular_title:'Popular Dishes',offer_title:'Delicious Food, Special Moments',offer_text:'Enjoy special offers from this restaurant.',offer_cta:'Order Now',reservation_title:'Plan Your Visit',reservation_text:'Reserve your table for a delightful dining experience.',reservation_cta:'Book Now',reviews_title:'Customer Reviews',reviews_subtitle:'Real feedback from our guests',testimonials:[],menu_title:'Order from our kitchen',page_content:DEFAULT_PAGE_CONTENT});
@@ -68,7 +68,7 @@ function StoreBuilder(){
  const [orders,setOrders]=useState([]),[offers,setOffers]=useState([]),[hotelRoomTypes,setHotelRoomTypes]=useState([]),[hotelRatePlans,setHotelRatePlans]=useState([]),[hotelInventory,setHotelInventory]=useState([]),[hotelReservations,setHotelReservations]=useState([]),[newOffer,setNewOffer]=useState({code:'',title:'',description:'',discount_type:'percent',discount_value:'',min_order_amount:0,active:true});
  const [error,setError]=useState(''),[saved,setSaved]=useState(false),[busy,setBusy]=useState(false),[storeTab,setStoreTab]=useState('overview');
 
- useEffect(()=>{(async()=>{
+ useEffect(()=>{const params=new URLSearchParams(typeof window!=='undefined'?window.location.search:'');(async()=>{
    if(!supabase){setSession(null);return}
    const {data:{session}}=await supabase.auth.getSession();setSession(session);if(!session)return;
    let {data:p, error:myProfileError}=await supabase.from('anaira_my_profile').select('restaurant_id,is_super_admin,role,full_name').eq('id',session.user.id).maybeSingle();
@@ -86,28 +86,18 @@ function StoreBuilder(){
      profileKey=up?.profile_key||null;
    }
    setProfile({...p,profile_key:profileKey}||{});
-   // Super Admin can open a tenant's own My Homestay / Hotel Store for support
-   // and publishing. Tenant managers can open only the enabled hospitality store
-   // belonging to their assigned restaurant.
-   let targetRestaurantId=p?.restaurant_id||'';
-   if(p?.is_super_admin || p?.role==='super_admin'){
-     const {data:allProperties,error:propertiesError}=await supabase
-       .from('restaurants')
-       .select('id,name,status,city,hospitality_type,hospitality_types')
-       .order('name');
-     if(propertiesError){setError(propertiesError.message);return}
-     const list=allProperties||[];setAdminProperties(list);
-     const requestedId=searchParams.get('restaurant_id');
-     const preferred=list.find(x=>x.id===requestedId)
-       ||list.find(x=>x.id===targetRestaurantId)
-       ||list.find(x=>x.hospitality_type==='homestay'||(Array.isArray(x.hospitality_types)&&x.hospitality_types.includes('homestay')))
-       ||list[0];
-     targetRestaurantId=preferred?.id||'';
-   }else{
+   // Super Admin manages the global ANAIRA marketplace, not tenant-owned stores.
+   // Never auto-select the first Homestay (or any other tenant) as a fallback.
+   if(p?.is_super_admin || String(p?.role||'').trim().toLowerCase()==='super_admin'){
+     router.replace('/super-admin/hotel-marketplace-settings');
+     return;
+   }
+   const targetRestaurantId=p?.restaurant_id||'';
+   {
      const allowedRoles=new Set(['admin','business_admin','owner','business_owner','tenant_admin','property_admin','hospitality_admin','hotel_admin','homestay_admin','guest_house_admin','cottage_admin','camp_admin']);
      const normalizeRole=value=>String(value||'').trim().toLowerCase().replace(/[\s-]+/g,'_');
      const role=normalizeRole(p?.role), profileRole=normalizeRole(profileKey);
-     const requestedHospitality=normalizeRole(searchParams.get('hospitality_type')||searchParams.get('kind'));
+     const requestedHospitality=normalizeRole(params.get('hospitality_type')||params.get('kind'));
      const pluginForType={hotel:'hotel-management-suite',homestay:'homestay-management',camp:'camping-management',guest_house:'guest-house-management',cottage:'cottage-management'};
      let managerHasStoreAccess=false;
      if(role==='manager' && p?.restaurant_id && pluginForType[requestedHospitality]){
@@ -149,13 +139,13 @@ function StoreBuilder(){
      kinds.push(t);
    }
    const safe=kinds.length?kinds:['restaurant'];setAvailableKinds(safe);
-   const requestedType=searchParams.get('hospitality_type');
+   const requestedType=params.get('hospitality_type');
    const hospitalityKinds=safe.filter(x=>x!=='restaurant');
    const nextType=requestedType&&hospitalityKinds.includes(requestedType)?requestedType:(hospitalityKinds[0]||'hotel');
    // `kind` is the customer-facing context (hotel/camp/homestay/etc).
    // All non-restaurant hospitality contexts still use the single canonical
    // ANAIRA hospitality platform store underneath.
-   const requestedKind=searchParams.get('kind');
+   const requestedKind=params.get('kind');
    const normalizedRequestedKind=String(requestedKind||'').trim().toLowerCase().replace(/[\s-]+/g,'_');
    const nextKind=normalizedRequestedKind==='restaurant'&&safe.includes('restaurant')
      ?'restaurant'
@@ -168,7 +158,7 @@ function StoreBuilder(){
      else u.searchParams.delete('hospitality_type');
      window.history.replaceState({},'',u.toString());
    }
- })()},[router,searchParams]);
+ })()},[]);
 
  useEffect(()=>{if(rid&&kind)load()},[rid,kind,activeHospitalityType]);
  const storeKind=kind==='restaurant'?'restaurant':'hotel';

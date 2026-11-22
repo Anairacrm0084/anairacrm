@@ -192,69 +192,63 @@ function stripStaticHospitalityItems(group){
 export function AppShell({children, active}) {
   const pathname=usePathname(); const router=useRouter();
   const [ctx,setCtx]=useState({loading:true,session:null,role:null,profileKey:null,isSuperAdmin:false,restaurantId:null,businessType:null,plugins:{},permissions:{},hospitalityType:null,hospitalityTypes:[]});
-  useEffect(()=>{let alive=true;(async()=>{
-    if(!supabase){if(alive)setCtx(x=>({...x,loading:false}));return;}
-    const {data:{session}}=await supabase.auth.getSession();
-    if(!session){if(alive)setCtx({loading:false,session:null,role:null,profileKey:null,isSuperAdmin:false,restaurantId:null,businessType:null,plugins:{},permissions:{}});return;}
-    const {data:p}=await supabase.from('anaira_my_profile').select('is_super_admin,role,restaurant_id,full_name').eq('id',session.user.id).maybeSingle();
-    const superAdmin=p?.is_super_admin===true||p?.role==='super_admin';
-    let plugins={},permissions={},hospitalityType=null,hospitalityTypes=[],businessType=null;
-    if(!superAdmin&&p?.restaurant_id){
-      const [{data:pl},{data:rp},{data:up},{data:prof},{data:biz}]=await Promise.all([
-        supabase.from('restaurant_plugins').select('plugin_code,enabled').eq('restaurant_id',p.restaurant_id),
-        supabase.from('anaira_role_permissions').select('permission_key').eq('role_key',p.role||'staff'),
-        supabase.from('anaira_user_permissions').select('permission_key,allowed').eq('user_id',session.user.id).eq('restaurant_id',p.restaurant_id),
-        supabase.from('anaira_user_profiles').select('profile_key').eq('user_id',session.user.id).eq('restaurant_id',p.restaurant_id).maybeSingle(),
-        supabase.from('restaurants').select('business_type,hospitality_type,hospitality_types').eq('id',p.restaurant_id).maybeSingle()
-      ]);
-      const pluginsMap=Object.fromEntries((pl||[]).map(x=>[x.plugin_code,x.enabled===true]));
-      // Resolve the tenant hospitality profile robustly. The sidebar must not
-      // disappear just because hospitality_types is null/empty or an older
-      // tenant only has hospitality_type populated.
-      businessType=String(biz?.business_type||'').trim().toLowerCase()||null;
-      const configured = readHospitalityTypes(biz?.hospitality_types,biz?.hospitality_type,businessType);
-      // A selected hospitality type is enabled by default when no explicit plugin assignment exists.
-      // Super Admin can still disable it by creating/updating the corresponding restaurant_plugins row to enabled=false.
-      for(const t of configured){const key=HOSPITALITY_PLUGIN[t];if(key && !Object.prototype.hasOwnProperty.call(pluginsMap,key))pluginsMap[key]=true;}
-      hospitalityTypes=[];
-      if(configured.length){
-        // Profile selections are authoritative for the core hospitality workspace.
-        // A stale/disabled plugin row must never make the property's selected
-        // Hotel/Camping/Homestay/Guest House/Cottage management disappear.
-        // Restaurant/commerce plugins remain controlled by restaurant_plugins.
-        for(const t of configured){
-          if(HOSPITALITY_PLUGIN[t]&&!hospitalityTypes.includes(t)) hospitalityTypes.push(t);
-        }
-      }else{
-        const [{data:hmsTypes},{data:campTypes}]=await Promise.all([
-          supabase.from('hms_room_types').select('hospitality_type').eq('restaurant_id',p.restaurant_id).eq('active',true),
-          supabase.from('camp_unit_types').select('id').eq('restaurant_id',p.restaurant_id).eq('active',true).limit(1)
-        ]);
-        for(const row of (hmsTypes||[])){const t=row?.hospitality_type;if(HOSPITALITY_PLUGIN[t]&&pluginsMap[HOSPITALITY_PLUGIN[t]]!==false&&!hospitalityTypes.includes(t))hospitalityTypes.push(t);}
-        if((campTypes||[]).length&&pluginsMap['camping-management']!==false&&!hospitalityTypes.includes('camp'))hospitalityTypes.push('camp');
-        // Legacy tenants can have no catalog rows yet. Fall back to the
-        // property's primary hospitality_type so the correct management
-        // workspace is still visible and usable.
-        // Primary hospitality type is authoritative for legacy and dedicated
-        // tenants too (e.g. business_type='homestay' with no catalog rows).
-        // Do not restrict this fallback to hotel_resort: that caused Homestay,
-        // Guest House and Cottage admins to be redirected to the dashboard.
-        if(!hospitalityTypes.length){
-          const fallbackTypes=readHospitalityTypes([],biz?.hospitality_type,businessType);
-          for(const fallbackType of fallbackTypes){
-            if(HOSPITALITY_PLUGIN[fallbackType]&&pluginsMap[HOSPITALITY_PLUGIN[fallbackType]]!==false&&!hospitalityTypes.includes(fallbackType)) hospitalityTypes.push(fallbackType);
-          }
-        }
+  useEffect(()=>{
+    let alive=true;
+    let requestId=0;
+    const loadContext=async(session)=>{
+      const current=++requestId;
+      if(!session){
+        if(alive)setCtx({loading:false,session:null,role:null,profileKey:null,isSuperAdmin:false,restaurantId:null,businessType:null,plugins:{},permissions:{},hospitalityType:null,hospitalityTypes:[]});
+        return;
       }
-      hospitalityType=hospitalityTypes[0]||null;
-      plugins=pluginsMap;
-      permissions=Object.fromEntries((rp||[]).map(x=>[x.permission_key,true]));
-      if(prof?.profile_key){ const {data:pp}=await supabase.from('anaira_profile_permissions').select('permission_key').eq('profile_key',prof.profile_key); (pp||[]).forEach(x=>{permissions[x.permission_key]=true}); }
-      (up||[]).forEach(x=>{permissions[x.permission_key]=x.allowed===true});
-      var profileKey=prof?.profile_key||null;
-    }
-    if(alive)setCtx({loading:false,session,role:p?.role||'staff',profileKey:typeof profileKey==='undefined'?null:profileKey,isSuperAdmin:superAdmin,restaurantId:p?.restaurant_id||null,businessType,plugins,permissions,hospitalityType,hospitalityTypes,fullName:p?.full_name||''});
-  })();return()=>{alive=false}},[]);
+      if(alive)setCtx(x=>({...x,loading:true,session}));
+      let {data:p}=await supabase.from('anaira_my_profile').select('is_super_admin,role,restaurant_id,full_name').eq('id',session.user.id).maybeSingle();
+      // Match Store Builder's canonical-profile fallback. The legacy view can
+      // intermittently omit newer/custom tenant profiles and must not trigger
+      // a false dashboard/login redirect.
+      if(!p){
+        const {data:canonical}=await supabase.from('profiles').select('is_super_admin,role,restaurant_id,full_name,status').eq('id',session.user.id).maybeSingle();
+        p=canonical;
+      }
+      const superAdmin=p?.is_super_admin===true||String(p?.role||'').trim().toLowerCase()==='super_admin';
+      let plugins={},permissions={},hospitalityType=null,hospitalityTypes=[],businessType=null,profileKey=null;
+      if(!superAdmin&&p?.restaurant_id){
+        const [{data:pl},{data:rp},{data:up},{data:prof},{data:biz}]=await Promise.all([
+          supabase.from('restaurant_plugins').select('plugin_code,enabled').eq('restaurant_id',p.restaurant_id),
+          supabase.from('anaira_role_permissions').select('permission_key').eq('role_key',p.role||'staff'),
+          supabase.from('anaira_user_permissions').select('permission_key,allowed').eq('user_id',session.user.id).eq('restaurant_id',p.restaurant_id),
+          supabase.from('anaira_user_profiles').select('profile_key').eq('user_id',session.user.id).eq('restaurant_id',p.restaurant_id).maybeSingle(),
+          supabase.from('restaurants').select('business_type,hospitality_type,hospitality_types').eq('id',p.restaurant_id).maybeSingle()
+        ]);
+        profileKey=prof?.profile_key||null;
+        const pluginsMap=Object.fromEntries((pl||[]).map(x=>[x.plugin_code,x.enabled===true]));
+        businessType=String(biz?.business_type||'').trim().toLowerCase()||null;
+        const configured=readHospitalityTypes(biz?.hospitality_types,biz?.hospitality_type,businessType);
+        for(const t of configured){const key=HOSPITALITY_PLUGIN[t];if(key&&!Object.prototype.hasOwnProperty.call(pluginsMap,key))pluginsMap[key]=true;}
+        if(configured.length){
+          hospitalityTypes=configured.filter((t,i,a)=>HOSPITALITY_PLUGIN[t]&&a.indexOf(t)===i);
+        }else{
+          const [{data:hmsTypes},{data:campTypes}]=await Promise.all([
+            supabase.from('hms_room_types').select('hospitality_type').eq('restaurant_id',p.restaurant_id).eq('active',true),
+            supabase.from('camp_unit_types').select('id').eq('restaurant_id',p.restaurant_id).eq('active',true).limit(1)
+          ]);
+          for(const row of (hmsTypes||[])){const t=row?.hospitality_type;if(HOSPITALITY_PLUGIN[t]&&pluginsMap[HOSPITALITY_PLUGIN[t]]!==false&&!hospitalityTypes.includes(t))hospitalityTypes.push(t);}
+          if((campTypes||[]).length&&pluginsMap['camping-management']!==false&&!hospitalityTypes.includes('camp'))hospitalityTypes.push('camp');
+          if(!hospitalityTypes.length){for(const t of readHospitalityTypes([],biz?.hospitality_type,businessType)){if(HOSPITALITY_PLUGIN[t]&&pluginsMap[HOSPITALITY_PLUGIN[t]]!==false&&!hospitalityTypes.includes(t))hospitalityTypes.push(t);}}
+        }
+        hospitalityType=hospitalityTypes[0]||null;
+        plugins=pluginsMap;
+        permissions=Object.fromEntries((rp||[]).map(x=>[x.permission_key,true]));
+        if(profileKey){const {data:pp}=await supabase.from('anaira_profile_permissions').select('permission_key').eq('profile_key',profileKey);(pp||[]).forEach(x=>{permissions[x.permission_key]=true;});}
+        (up||[]).forEach(x=>{permissions[x.permission_key]=x.allowed===true;});
+      }
+      if(alive&&current===requestId)setCtx({loading:false,session,role:p?.role||'staff',profileKey,isSuperAdmin:superAdmin,restaurantId:p?.restaurant_id||null,businessType,plugins,permissions,hospitalityType,hospitalityTypes,fullName:p?.full_name||''});
+    };
+    if(!supabase){setCtx(x=>({...x,loading:false}));return()=>{alive=false;};}
+    const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{void loadContext(session);});
+    supabase.auth.getSession().then(({data})=>loadContext(data.session));
+    return()=>{alive=false;subscription?.unsubscribe();};
+  },[]);
 
   const groups=useMemo(()=>{
     if(ctx.isSuperAdmin)return normalizeGroups(SUPER_GROUPS);
