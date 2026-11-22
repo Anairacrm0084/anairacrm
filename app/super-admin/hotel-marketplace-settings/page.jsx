@@ -28,7 +28,7 @@ export default function HotelMarketplaceSettings(){
 
  useEffect(()=>{(async()=>{const {data,error}=await supabase.from('anaira_platform_settings').select('key,value').in('key',Object.keys(defaults));if(error){setError(error.message);return}
   const x={...defaults};(data||[]).forEach(r=>x[r.key]=r.value?.value??r.value);setForm(x);
-  const {data:s}=await supabase.from('anaira_platform_stores').select('id,store_name').eq('store_type','hotel').maybeSingle();setStore(s||null);
+  const {data:s}=await supabase.from('anaira_platform_stores').select('id,store_name').eq('store_type','hotel').eq('is_platform_store',true).is('restaurant_id',null).maybeSingle();setStore(s||null);
   if(s){const [{data:b},{data:d}]=await Promise.all([
    supabase.from('anaira_hotel_store_banners').select('*').eq('store_id',s.id).order('display_order'),
    supabase.from('anaira_hotel_store_destinations').select('*').eq('store_id',s.id).order('display_order')

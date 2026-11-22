@@ -86,24 +86,15 @@ function StoreBuilder(){
      profileKey=up?.profile_key||null;
    }
    setProfile({...p,profile_key:profileKey}||{});
-   // Super Admin can open a tenant's own My Homestay / Hotel Store for support
-   // and publishing. Tenant managers can open only the enabled hospitality store
-   // belonging to their assigned restaurant.
+   // Super Admin owns the ANAIRA platform marketplace, not any tenant property.
+   // Tenant inventory, rates, branding and reservations are managed only by that
+   // tenant's own account. Route platform administration to its dedicated control.
+   if(p?.is_super_admin || String(p?.role||'').trim().toLowerCase()==='super_admin'){
+     router.replace('/super-admin/hotel-marketplace-settings');
+     return;
+   }
    let targetRestaurantId=p?.restaurant_id||'';
-   if(p?.is_super_admin || p?.role==='super_admin'){
-     const {data:allProperties,error:propertiesError}=await supabase
-       .from('restaurants')
-       .select('id,name,status,city,hospitality_type,hospitality_types')
-       .order('name');
-     if(propertiesError){setError(propertiesError.message);return}
-     const list=allProperties||[];setAdminProperties(list);
-     const requestedId=searchParams.get('restaurant_id');
-     const preferred=list.find(x=>x.id===requestedId)
-       ||list.find(x=>x.id===targetRestaurantId)
-       ||list.find(x=>x.hospitality_type==='homestay'||(Array.isArray(x.hospitality_types)&&x.hospitality_types.includes('homestay')))
-       ||list[0];
-     targetRestaurantId=preferred?.id||'';
-   }else{
+   {
      const allowedRoles=new Set(['admin','business_admin','owner','business_owner','tenant_admin','property_admin','hospitality_admin','hotel_admin','homestay_admin','guest_house_admin','cottage_admin','camp_admin']);
      const normalizeRole=value=>String(value||'').trim().toLowerCase().replace(/[\s-]+/g,'_');
      const role=normalizeRole(p?.role), profileRole=normalizeRole(profileKey);
