@@ -5,6 +5,7 @@ import {idempotencyKey} from '../../../../../lib/server/distribution/runtime';
 import {normalizeIncomingReservation} from '../../../../../lib/server/distribution/adapters/native.js';
 import {enforceRateLimit} from '../../../../../lib/server/rateLimit.js';
 import {verifyDistributionWebhook} from '../../../../../lib/server/webhookSecurity.js';
+import {requireOtaProperty} from '../../../../../lib/server/distribution/property-guard.js';
 export const runtime='nodejs';
 
 export async function POST(req,{params}){
@@ -21,7 +22,8 @@ export async function POST(req,{params}){
    .select('id,restaurant_id,platform_id,provider_account_ref,credentials_ciphertext,config,webhook_signature_required,webhook_enabled,status')
    .eq('platform_id',platform.id).eq('webhook_enabled',true).in('status',['configured','connected']);
   if(ce) throw ce;
-  const candidates=connections||[];
+  const candidates=[];
+  for(const candidate of connections||[]){try{await requireOtaProperty(s,candidate.restaurant_id);candidates.push(candidate)}catch{}}
   if(!candidates.length) return NextResponse.json({ok:false,error:'No active webhook connection is configured for this provider.'},{status:503});
   const envelope=body?.data||body?.payload||body?.event?.data||body?.reservation||body?.booking||body;
   const incomingAccount=String(envelope?.account_id||envelope?.property_id||envelope?.hotel_id||body?.account_id||body?.property_id||'').trim();

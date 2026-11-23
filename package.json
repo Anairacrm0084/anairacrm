@@ -43,7 +43,8 @@
     "business:identity-check": "node scripts/universal-business-identity-static.mjs",
     "ota:configuration-guard": "node scripts/ota-provider-configuration-guard.mjs",
     "public-hospitality:check": "node tests/public-hospitality-storefront-static.mjs",
-    "homestay:route-check": "node tests/regression/homestay-store-routing.mjs"
+    "homestay:route-check": "node tests/regression/homestay-store-routing.mjs",
+    "property-profile:check": "node tests/regression/property-profile-sidebar-admin-static.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

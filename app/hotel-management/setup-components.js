@@ -48,9 +48,17 @@ export function useTenantProperty(){
    const {data:{session}}=await supabase.auth.getSession();
    if(!alive||seq!==requestSeq.current)return;
    if(!session){setCtx(x=>({...x,loading:false,session:null}));return;}
-   const {data:p,error}=await supabase.from('anaira_my_profile').select('restaurant_id,is_super_admin,role').eq('id',session.user.id).maybeSingle();
+   let {data:p,error}=await supabase.from('anaira_my_profile').select('restaurant_id,is_super_admin,role').eq('id',session.user.id).maybeSingle();
    if(!alive||seq!==requestSeq.current)return;
-   if(error){setCtx(x=>({...x,loading:false,session,error:error.message}));return;}
+   // Fall back to the canonical profile if the compatibility view omits a
+   // tenant admin row. Property editing remains scoped to that profile's tenant.
+   if(!p){
+    const canonical=await supabase.from('profiles').select('restaurant_id,is_super_admin,role,status').eq('id',session.user.id).maybeSingle();
+    if(!alive||seq!==requestSeq.current)return;
+    if(canonical.error){setCtx(x=>({...x,loading:false,session,error:canonical.error.message}));return;}
+    p=canonical.data;
+   }
+   if(error&&!p){setCtx(x=>({...x,loading:false,session,error:error.message}));return;}
    const isSuper=p?.is_super_admin===true||p?.role==='super_admin';
    let properties=[];
    if(isSuper){

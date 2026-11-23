@@ -11,6 +11,6 @@ export async function GET(req,{params}){
    supabase.from('camp_rate_plans').select('*').eq('restaurant_id',id).eq('active',true).order('rate')
   ]);
   if(ce)throw ce;if(ue)throw ue;if(re)throw re;if(!camp)return json({ok:false,error:'Camping property not found.'},404);
-  return json({ok:true,camp,units:(units||[]).map(u=>({...u,rates:(rates||[]).filter(r=>r.unit_type_id===u.id)}))});
+  const unitIds=new Set((units||[]).map(u=>String(u.id)));return json({ok:true,camp,units:(units||[]).map(u=>({...u,rates:(rates||[]).filter(r=>unitIds.has(String(r.unit_type_id))&&String(r.unit_type_id)===String(u.id))}))});
  }catch(e){return json({ok:false,error:e?.message||'Camping property lookup failed.'},400)}
 }

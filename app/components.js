@@ -133,6 +133,13 @@ function businessTypeMenuFallback(type){
  const label=map[type]; if(!label)return null; return {title:label.toUpperCase(),items:[['▦',`${label} Dashboard`,`/business/${type}`,'business.settings'],['⚙',`${label} Setup`,`/business/${type}/setup`,'business.settings'],['▣','Catalog / Services',`/business/${type}/setup`,'business.settings'],['♙','Team / Staff',`/business/${type}/setup`,'business.settings'],['◉','Bookings / Enquiries',`/business/${type}/setup`,'business.settings'],['◈','Offers / Promotions',`/business/${type}/setup`,'business.settings'],['↗','Front Landing Page',`/business/${type}`,'business.settings']]};
 }
 
+const TENANT_ADMIN_ROLES = new Set(['admin','business_admin','owner','business_owner','tenant_admin','property_admin','hospitality_admin','hotel_admin','homestay_admin','guest_house_admin','cottage_admin','camp_admin']);
+function normalizeRoleKey(value){return String(value||'').trim().toLowerCase().replace(/[\s-]+/g,'_');}
+function isTenantAdminContext(role,profileKey){return TENANT_ADMIN_ROLES.has(normalizeRoleKey(role))||TENANT_ADMIN_ROLES.has(normalizeRoleKey(profileKey));}
+function hospitalityTypeForAdminRole(role,profileKey){
+ const aliases={hotel_admin:'hotel',camp_admin:'camp',camping_admin:'camp',homestay_admin:'homestay',guest_house_admin:'guest_house',guesthouse_admin:'guest_house',cottage_admin:'cottage'};
+ return aliases[normalizeRoleKey(role)]||aliases[normalizeRoleKey(profileKey)]||null;
+}
 function normalizeGroups(groups){return groups.map(g=>({...g,items:g.items.map(x=>({icon:x[0],label:x[1],href:x[2],permission:x[3],plugin:x[4]}))}));}
 
 function hospitalityManagementItems(type){
@@ -142,7 +149,7 @@ function hospitalityManagementItems(type){
   const unit={hotel:'Room',camp:'Camp',homestay:'Unit',guest_house:'Unit',cottage:'Cottage'}[type]||'Unit';
   return [
     ['▦',`${m.label} Dashboard`,`/hotel-management?type=${type}`,'hms.room.view',plugin],
-    ['⌂',`${m.label} Profile`,`/hotel-management/setup?type=${type}`,'business.settings',plugin],
+    ['✎',`Edit ${m.label} Property Profile`,`/hotel-management/setup?type=${type}`,'business.settings',plugin],
     ['▣',type==='hotel'?'Room Types':`${unitType} Types`,`/hotel-management/room-types?type=${type}`,'hms.room.view',plugin],
     ['▣',type==='hotel'?'Rooms':`${unit}s`,`/hotel-management/rooms?type=${type}`,'hms.room.view',plugin],
     ['▦',type==='hotel'?'Room Inventory':`${m.label} Inventory`,`/hotel-management/inventory?type=${type}`,'hms.room.view',plugin],
@@ -259,13 +266,15 @@ export function AppShell({children, active}) {
     const validUrlType=urlType&&HOSPITALITY_PLUGIN[urlType]?urlType:'';
     const configuredTypes=ctx.hospitalityTypes?.length?ctx.hospitalityTypes:[];
     const businessIsHotel=ctx.businessType==='hotel_resort'||ctx.businessType==='hotel_restaurant';
+    const adminRoleType=hospitalityTypeForAdminRole(ctx.role,ctx.profileKey);
+    const effectiveConfiguredTypes=configuredTypes.length?configuredTypes:(adminRoleType?[adminRoleType]:[]);
     const businessIsRestaurant=ctx.businessType==='restaurant_cafe'||ctx.businessType==='hotel_restaurant';
     // A configured hospitality profile is authoritative even when the tenant's
     // generic business_type is not hotel_resort (for example a homestay or cottage).
     // Keep the legacy hotel fallback only for older hotel tenants with no profile.
-    const hasConfiguredHospitality=configuredTypes.length>0;
+    const hasConfiguredHospitality=effectiveConfiguredTypes.length>0;
     const types=(businessIsHotel||hasConfiguredHospitality)
-      ?(validUrlType && configuredTypes.includes(validUrlType)?[validUrlType]:hasConfiguredHospitality?configuredTypes:['hotel'])
+      ?(validUrlType && effectiveConfiguredTypes.includes(validUrlType)?[validUrlType]:hasConfiguredHospitality?effectiveConfiguredTypes:['hotel'])
       :[];
     const mgGroups=types.map(type=>({
       title:(HOSPITALITY_MANAGEMENT_GROUPS[type]||HOSPITALITY_MANAGEMENT_GROUPS.hotel).title,
@@ -276,7 +285,7 @@ export function AppShell({children, active}) {
       items:hospitalityRevenueItems(type)
     }));
     const dynamicOps={title:'HOSPITALITY OPERATIONS',items:hospitalityOperationItems(types)};
-    const tenantAdmin=ctx.role==='admin'||ctx.role==='business_admin'||ctx.profileKey==='business_admin';
+    const tenantAdmin=isTenantAdminContext(ctx.role,ctx.profileKey);
     if(tenantAdmin){
       const base=BUSINESS_GROUPS.filter(g=>g.title!=='HOTEL MANAGEMENT').map(stripStaticHospitalityItems);
       // Restaurant administration is a tenant-level capability and must remain
@@ -354,10 +363,7 @@ export function AppShell({children, active}) {
     if(ctx.isSuperAdmin)return true;
     const hospitalityPluginKeys=Object.values(HOSPITALITY_PLUGIN);
     const hospitalityItem=item.plugin && hospitalityPluginKeys.includes(item.plugin);
-    const normalizedRole=String(ctx.role||'').trim().toLowerCase().replace(/[\\s-]+/g,'_');
-    const normalizedProfile=String(ctx.profileKey||'').trim().toLowerCase().replace(/[\\s-]+/g,'_');
-    const tenantAdminRoles=new Set(['admin','business_admin','owner','business_owner','tenant_admin','property_admin','hospitality_admin','hotel_admin','homestay_admin','guest_house_admin','cottage_admin','camp_admin']);
-    const isTenantAdmin=tenantAdminRoles.has(normalizedRole)||tenantAdminRoles.has(normalizedProfile);
+    const isTenantAdmin=isTenantAdminContext(ctx.role,ctx.profileKey);
     // Hospitality plugins are tenant-scoped. Their menu items must remain
     // visible for configured properties even when legacy plugin/permission
     // rows have not been backfilled for a custom Homestay Admin profile.
@@ -372,13 +378,12 @@ export function AppShell({children, active}) {
     if(pathname==='/admin' || pathname.startsWith('/admin/')){if(!ctx.isSuperAdmin)router.replace('/');return;}
     if(pathname==='/plugins' && !ctx.isSuperAdmin && ctx.role!=='admin' && ctx.profileKey!=='business_admin'){router.replace('/');return;}
     if(SUPER_ONLY_ROUTES.some(r=>pathname===r||pathname.startsWith(r+'/')) && !ctx.isSuperAdmin){router.replace('/');return;}
-    const normalizedRole=String(ctx.role||'').trim().toLowerCase().replace(/[\s-]+/g,'_');
-    const normalizedProfile=String(ctx.profileKey||'').trim().toLowerCase().replace(/[\s-]+/g,'_');
-    const tenantAdminRoles=new Set(['admin','business_admin','owner','business_owner','tenant_admin','property_admin','hospitality_admin','hotel_admin','homestay_admin','guest_house_admin','cottage_admin','camp_admin']);
-    const isTenantAdmin=tenantAdminRoles.has(normalizedRole)||tenantAdminRoles.has(normalizedProfile);
+    const isTenantAdmin=isTenantAdminContext(ctx.role,ctx.profileKey);
     const routeParams=typeof window!=='undefined'?new URLSearchParams(window.location.search):new URLSearchParams();
     const requestedType=normalizeHospitalityType(routeParams.get('type')||routeParams.get('hospitality_type'));
-    const configuredHospitality=!!requestedType&&(ctx.hospitalityTypes||[]).some(x=>normalizeHospitalityType(x)===requestedType);
+    const roleHospitalityType=hospitalityTypeForAdminRole(ctx.role,ctx.profileKey);
+    const effectiveHospitalityTypes=(ctx.hospitalityTypes||[]).length?ctx.hospitalityTypes:(roleHospitalityType?[roleHospitalityType]:[]);
+    const configuredHospitality=!!requestedType&&effectiveHospitalityTypes.some(x=>normalizeHospitalityType(x)===requestedType);
     const typeScopedStore=pathname==='/store-builder' && (routeParams.get('kind')==='hotel' || !!routeParams.get('hospitality_type'));
     const isHospitalityRoute=pathname==='/hotel-management'||pathname.startsWith('/hotel-management/')||pathname==='/pms'||pathname==='/housekeeping'||pathname==='/booking'||pathname==='/booking-engine'||pathname==='/revenue-management'||typeScopedStore;
     // Property-scoped Homestay/Camp/Guest House/Cottage workspaces belong to
@@ -393,7 +398,7 @@ export function AppShell({children, active}) {
     const restaurantAdded=ctx.plugins['restaurant-management']===true || ctx.plugins['restaurant-core']===true || ctx.plugins['restaurant-store']===true || ctx.plugins['anaira-pos']===true || ctx.plugins['restaurant-reservation']===true || ctx.plugins['food-delivery']===true;
     const businessIsHotel=ctx.businessType==='hotel_resort'||ctx.businessType==='hotel_restaurant';
     const businessIsRestaurant=ctx.businessType==='restaurant_cafe'||ctx.businessType==='hotel_restaurant';
-    const hasConfiguredHospitality=Array.isArray(ctx.hospitalityTypes)&&ctx.hospitalityTypes.length>0;
+    const hasConfiguredHospitality=effectiveHospitalityTypes.length>0;
     const hotelRoute=pathname==='/hotel-management'||pathname.startsWith('/hotel-management/')||pathname==='/pms'||pathname==='/housekeeping';
     const restaurantRoute=pathname==='/restaurant-setup'||pathname.startsWith('/restaurant-setup/');
     if(hotelRoute && !businessIsHotel && !hasConfiguredHospitality) { router.replace('/'); return; }

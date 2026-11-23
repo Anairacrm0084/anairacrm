@@ -1,0 +1,15 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+const source = fs.readFileSync(new URL('../../app/ota/OTAManager.jsx', import.meta.url), 'utf8');
+assert.match(source, /const uniqueById=\(rows=\[\]\)=>/);
+assert.match(source, /setRoomTypes\(uniqueById\(units\)\)/);
+assert.match(source, /setRatePlans\(uniqueById\(rates\)\)/);
+const helper = source.match(/const uniqueById=(\(rows=\[\]\)=>\{[\s\S]*?\});/);
+assert.ok(helper, 'uniqueById helper must be present');
+const uniqueById = vm.runInNewContext(`(${helper[1]})`);
+const id = 'bb8620db-afc2-45b0-b180-afbb6d5e31a1';
+const rows = [{ id, name: 'Room source' }, { id, name: 'Camp mirror' }, { id: 'other-id', name: 'Other' }];
+assert.deepEqual(Array.from(uniqueById(rows), x => x.id), [id, 'other-id']);
+assert.equal(uniqueById([{ name: 'missing id' }]).length, 0);
+console.log('OTA duplicate React key guard: 6 checks PASS');

@@ -1,0 +1,25 @@
+ANAIRA BOOKING ENGINE CLEAN-FLOW PATCH REPORT
+Date: 2026-11-22
+Scope: source ZIP patch; no production deployment.
+
+CHANGES
+1. Booking Engine Admin: removed silent Super Admin auto-selection of the first restaurant/tenant. Property must be explicitly selected. Tenant-scoped data is cleared when no property is selected. Mutations now require a selected property; inventory values must be non-negative whole numbers and updates include restaurant_id.
+2. Alternative Stay Engine: removed silent first-tenant selection for Super Admin; explicit property-account selection required. Unit, rate and inventory reads are scoped to the selected property's unit IDs. Reservation list is scoped by property_id. Date helpers use Asia/Kolkata.
+3. Public stay detail: rate plans are fetched only for the selected property's active unit IDs. Booking button requires a fresh availability check; changing dates or guest counts invalidates prior availability. Check-in must be today or future in Asia/Kolkata.
+4. Stay checkout: validates future dates, date order, rate-plan min/max stay and guest capacity before requesting a booking hold. Finalization now calls a server route that checks the reservation's tenant, guest contact and verified OTP challenge before invoking the finalization RPC.
+5. Added server route app/api/public/stay/finalize/route.js.
+6. Added migration 20261122143000_secure_public_stay_finalize.sql to restrict direct public execution of the finalize RPC to service_role. IMPORTANT: this migration is packaged but NOT applied to production. Apply only after deploying this ZIP so the new server route is active.
+
+CHECKS
+- JavaScript syntax: 738/738 PASS
+- Relative imports: PASS
+- Booking runtime closure: 29/29 PASS
+- P2 hotel booking static: 10/10 PASS
+- Next.js production build: NOT RUN (node_modules not installed in working environment)
+- Browser E2E / real OTP / payment gateway / OTA provider sync: NOT RUN
+- Supabase production ACL migration: NOT APPLIED; must be coordinated with deployment.
+
+DATA SAFETY
+- No production Supabase rows or inventory were changed by this patch.
+- No production deployment or Git push was performed.
+- Existing HMS / Anaira Stay catalogue records remain unchanged by this source-only patch.

@@ -29,7 +29,8 @@ export default function HospitalityPropertyLanding(){
  const gallery=Array.isArray(s.gallery)?s.gallery:[];
  const destination=s.city||b.city||c.destination||'';
  const address=s.address||b.address||c.address||'';
- const bookHref=`/book/${id}?stay_type=${encodeURIComponent(data?.type||'hotel')}&check_in=${encodeURIComponent(checkIn)}&check_out=${encodeURIComponent(checkOut)}&adults=${adults}&children=${children}`;
+ const requestedSource=search.get('booking_source')==='anaira-global-marketplace'?'anaira-global-marketplace':'anaira-property-store';
+ const bookHref=`/book/${id}?stay_type=${encodeURIComponent(data?.type||'hotel')}&check_in=${encodeURIComponent(checkIn)}&check_out=${encodeURIComponent(checkOut)}&adults=${adults}&children=${children}&booking_source=${requestedSource}`;
  if(loading)return <main className="property-loading">Loading property…</main>;
  if(error||!data)return <main className="property-loading">{error||'Property not found.'}</main>;
  return <main className="property-page">

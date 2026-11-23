@@ -32,7 +32,7 @@ check('server-side booking start API',file('app/api/public/booking/start/route.j
 check('privileged booking routes use service role',text('app/api/public/booking/ab/route.js').includes('adminDb') && text('app/api/public/booking/multi-room/route.js').includes('adminDb'));
 check('final booking security migration',file('supabase/migrations/20261003_booking_engine_security_final.sql'));
 check('hotel checkout uses canonical booking API',text('app/book/[id]/checkout/page.js').includes('/api/public/booking/start') && !text('app/book/[id]/checkout/page.js').includes('supabase.rpc(pricingRpc'));
-check('camp checkout uses canonical booking API',text('app/camping/[id]/checkout/page.js').includes('/api/public/booking/start'));
+check('camp checkout redirects to canonical hospitality checkout',text('app/camping/[id]/checkout/page.js').includes('/book/${encodeURIComponent(id)}/checkout') && text('app/book/[id]/checkout/page.js').includes('/api/public/booking/start'));
 check('stay checkout uses canonical booking API',text('app/stay/[type]/[id]/checkout/page.jsx').includes('/api/public/booking/start'));
 
 const failures=checks.filter(x=>x.status==='FAIL');

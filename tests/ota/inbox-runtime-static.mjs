@@ -6,17 +6,18 @@ const worker=read('../../app/api/distribution/sync/worker/route.js');
 const webhook=read('../../app/api/distribution/webhook/[provider]/route.js');
 const processRoute=read('../../app/api/distribution/inbox/process/route.js');
 const migration=read('../../supabase/migrations/20261105111000_ota_pms_import_and_cancellation.sql');
+const payloads=read('../../lib/server/distribution/payloads.js');
 for(const [name,condition] of [
- ['Super Admin property selector',manager.includes('Super Admin · Select property')],
- ['Incoming OTA inbox UI',manager.includes('Incoming OTA reservations')],
+ ['Super Admin is directed to property-scoped channel manager',manager.includes('Super Admin: select a property')&&manager.includes('/channel-manager')],
+ ['Incoming OTA inbox UI',manager.includes('Incoming OTA reservations') && manager.includes("processInbox(row,'import')")],
  ['PMS import action',manager.includes("processInbox(row,'import')")],
  ['PMS modification action',manager.includes("processInbox(row,'modify')")],
  ['Tenant-authenticated inbox route',processRoute.includes('requireTenant(req,restaurantId)')],
  ['Service-role RPC isolation',processRoute.includes("s.rpc('anaira_process_ota_reservation'")],
- ['Provider-account webhook routing',webhook.includes('provider account/property reference')],
+ ['Provider-account webhook routing',webhook.includes('provider account_id/property_id')],
  ['Ambiguous webhook rejection',webhook.includes("{status:409}")],
- ['Inbound room mapping',worker.includes("from('ota_room_mappings')")],
- ['Automatic OTA cancellation processing',worker.includes("p_action:'cancel'")],
+ ['Inbound room mapping',payloads.includes("from('ota_room_mappings')")],
+ ['Automatic OTA cancellation processing',migration.includes("if p_action='cancel' then")],
  ['Idempotent inbox identity',migration.includes('external_reference')&&migration.includes('for update')],
  ['Inventory availability guard',migration.includes('No available room inventory')],
  ['Reservation modification lifecycle',migration.includes("if p_action='modify'")],

@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {DISTRIBUTION_PROVIDERS,getDistributionProvider,validateProviderSetup} from '../../lib/server/distribution/provider-catalog.js';
+const required=['booking_com','airbnb','agoda','expedia','makemytrip','goibibo','trip_com','hostelworld','google_hotel_ads','google_hotel','siteminder','staah','gds','custom_api','anaira_booking_engine','anaira_marketplace'];
+for(const code of required) assert.ok(getDistributionProvider(code),`missing provider ${code}`);
+assert.equal(DISTRIBUTION_PROVIDERS.length,required.length);
+const incomplete=validateProviderSetup('booking_com',{base_url:'https://api.partner.example',auth_type:'oauth2',config:{}});
+assert.equal(incomplete.ok,false); assert.ok(incomplete.errors.length>=4);
+const complete=validateProviderSetup('booking_com',{base_url:'https://api.partner.example',auth_type:'oauth2',config:{test_path:'/health',inventory_path:'/inventory',rate_path:'/rates',reservation_path:'/reservations'}});
+assert.equal(complete.ok,true); assert.ok(complete.warnings.some(x=>x.includes('approval')));
+const meta=validateProviderSetup('google_hotel_ads',{base_url:'https://hotelcenter.example',auth_type:'oauth2',config:{test_path:'/health',inventory_path:'/prices',rate_path:'/rates'}});
+assert.ok(meta.warnings.some(x=>x.includes('not a general OTA')));
+assert.equal(validateProviderSetup('made_up',{}).ok,false);
+console.log(JSON.stringify({status:'PASS',checks:required.length+5,providers:required,scope:'catalogue and configuration validation only; no provider certification implied'},null,2));

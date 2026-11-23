@@ -15,6 +15,7 @@ const ICONS={hotel:['🛏️','🍽️','🧖','🚗'],camp:['⛺','🔥','🥾'
 
 export default function HospitalityStore(){
  const params=useParams(),router=useRouter(),key=params?.id||'';
+ const bookingSource=typeof window!=='undefined'&&new URLSearchParams(window.location.search).get('booking_source')==='anaira-global-marketplace'?'anaira-global-marketplace':'anaira-property-store';
  const [hotel,setHotel]=useState(null),[membership,setMembership]=useState(null),[settings,setSettings]=useState(null),[rooms,setRooms]=useState([]),[ratePlans,setRatePlans]=useState([]),[stayTypes,setStayTypes]=useState(['hotel']),[activeStayType,setActiveStayType]=useState('hotel');
  const [form,setForm]=useState({checkIn:'',checkOut:'',adults:2,children:0});
  const [msg,setMsg]=useState(''),[galleryIndex,setGalleryIndex]=useState(0),[busy,setBusy]=useState(false),[lightboxIndex,setLightboxIndex]=useState(null);
@@ -90,7 +91,7 @@ export default function HospitalityStore(){
    const {data,error}=await supabase.rpc('anaira_public_hms_room_availability',{p_restaurant_id:hotel.id,p_check_in:form.checkIn,p_check_out:form.checkOut,p_adults:Number(form.adults),p_children:Number(form.children),p_hospitality_type:activeStayType});
    if(error){setMsg(error.message);setBusy(false);return;}const map=new Map((data||[]).map(x=>[String(x.room_type_id),x]));setRooms(cur=>cur.map(r=>{const a=map.get(String(r.id||r.room_type_id));return {...r,available_rooms:a?.available_rooms??0,availability_known:true,room_type_id:r.room_type_id||r.id}}));setBusy(false);
  }
- function bookingUrl(stayType,roomTypeId,rateId,source,legacyUnitTypeId){const common=`check_in=${encodeURIComponent(form.checkIn||'')}&check_out=${encodeURIComponent(form.checkOut||'')}&adults=${Number(form.adults)||2}&children=${Number(form.children)||0}`;return `/book/${key}/checkout?stay_type=${encodeURIComponent(stayType)}&room_type=${encodeURIComponent(legacyUnitTypeId||roomTypeId)}&rate_plan=${encodeURIComponent(rateId||'')}&${common}`;}
+ function bookingUrl(stayType,roomTypeId,rateId,source,legacyUnitTypeId){const common=`check_in=${encodeURIComponent(form.checkIn||'')}&check_out=${encodeURIComponent(form.checkOut||'')}&adults=${Number(form.adults)||2}&children=${Number(form.children)||0}`;return `/book/${key}/checkout?stay_type=${encodeURIComponent(stayType)}&room_type=${encodeURIComponent(legacyUnitTypeId||roomTypeId)}&rate_plan=${encodeURIComponent(rateId||'')}&booking_source=${encodeURIComponent(bookingSource)}&${common}`;}
  if(!hotel)return <main className="hp"><div className="loading-card">{msg||'Loading hospitality experience…'}</div></main>;
  const cover=profile.cover_url||profile.cover_image_url||profile.cover_image||hotel.hms?.marketplace_background_image_url||hotel.hms?.cover_image_url||gallery[0]||'';
  const premiumIcons={

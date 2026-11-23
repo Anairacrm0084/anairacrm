@@ -7,14 +7,14 @@ const connection=read('../../app/api/distribution/connection/test/route.js');
 const inbox=read('../../app/api/distribution/inbox/process/route.js');
 const worker=read('../../app/api/distribution/sync/worker/route.js');
 const webhook=read('../../app/api/distribution/webhook/[provider]/route.js');
-const sql=read('../../supabase/migrations/20261105130000_ota_property_only_scope.sql');
+const sql=read('../../supabase/migrations/20261123131000_expand_ota_property_types.sql');
 for(const [name,ok] of [
- ['UI filters eligible businesses',manager.includes("(all||[]).filter(isOtaProperty)")],
- ['Eligible accommodation business types are explicit',guard.includes("'hotel_resort'")&&guard.includes("'hotel_restaurant'")&&guard.includes("'camping'")],
+ ['Existing-listing linking form is available to property admins',manager.includes('Connect an existing OTA listing')&&manager.includes('requestExistingListingLink')],
+ ['All accommodation profile types are eligible',guard.includes("'hotel_resort'")&&guard.includes("'hotel_restaurant'")&&guard.includes("'camping'")&&guard.includes("'homestay'")&&guard.includes("'guest_house'")&&guard.includes("'cottage'")],
  ['Connection test validates property type',connection.includes('requireOtaProperty(s,tenantId)')],
  ['Inbox processing validates property type',inbox.includes('requireOtaProperty(s,restaurantId)')],
  ['Sync worker validates property type',worker.includes('requireOtaProperty(s,connection.restaurant_id)')],
- ['Webhook routes only to eligible businesses',webhook.includes('OTA_PROPERTY_BUSINESS_TYPES')&&webhook.includes('eligibleIds.has(c.restaurant_id)')],
- ['Database enforces restrictive OTA scope policies',sql.includes('as restrictive')&&sql.includes('ota_property_scope_guard')]
+ ['Webhook routes only to eligible businesses',webhook.includes('requireOtaProperty(s,candidate.restaurant_id)')],
+ ['Database enforces restrictive expanded OTA scope policies',sql.includes('as restrictive')&&sql.includes('ota_property_scope_guard')&&sql.includes('homestay')&&sql.includes('guest_house')&&sql.includes('cottage')]
 ]) assert.ok(ok,`FAIL: ${name}`);
-console.log(JSON.stringify({status:'PASS',checks:7,scope:'OTA is restricted to accommodation business types'},null,2));
+console.log(JSON.stringify({status:'PASS',checks:7,scope:'OTA is restricted to accommodation business types including hotel, camp, homestay, guest house and cottage'},null,2));

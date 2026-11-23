@@ -1,0 +1,46 @@
+ANAIRA HOSPITALITY BOOKING FLOW COMPLETION PASS
+Date: 2026-11-22
+Scope: source ZIP updates only; no production deployment or Supabase mutation.
+
+PROPERTY TYPES COVERED
+- Hotel
+- Camp
+- Homestay
+- Guest House
+- Cottage
+
+ARCHITECTURE VERIFIED IN SOURCE
+- Global marketplace has distinct search types for hotel, camp, homestay, guest house and cottage.
+- Camp discovery uses ana ira marketplace camp search and camp availability RPC.
+- Homestay, guest house and cottage discovery uses ana ira marketplace stay search with selected stay_type.
+- Hotel/camp canonical booking storefront and alternative-stay detail/checkout routes are present.
+- All public booking-start operations route through the server-side booking start API.
+- Global marketplace and property direct booking channels now pass distinct source labels into booking-start transactions.
+
+SOURCE CHANGES IN THIS PASS
+1. Global marketplace property cards now label booking origin as ana ira-global-marketplace for all five property categories.
+2. Property landing page preserves marketplace origin through to the canonical property booking storefront; direct property entry defaults to ana ira-property-store.
+3. Hotel/camp checkout and homestay/guest-house/cottage checkout pass the correct booking source to the shared booking-start API.
+4. Public stay detail API now resolves the property first, then scopes units and rate plans to that property's restaurant_id and unit_type_ids.
+5. Added static regression assertions for tenant-scoped stay rates and channel provenance.
+
+CHECKS
+- JavaScript syntax scan: PASS (738/738)
+- Relative imports: PASS
+- Public hospitality storefront regression: PASS (25 assertions)
+- Camp business creation regression: PASS (7/7)
+- Homestay store routing regression: PASS
+- Booking runtime closure static checks: PASS (29/29)
+- P2 hotel booking static checks: to be run in the local project environment.
+
+NOT CERTIFIED / STILL REQUIRES LIVE ENVIRONMENT
+- Next.js production build has not been verified in this environment.
+- No real browser end-to-end tests were run against deployed URLs.
+- OTP delivery, payment provider callbacks/refunds and provider/OTA synchronization require live credentials and sandbox/live tests.
+- Cross-tenant RLS negative tests require actual tenant test accounts and the connected Supabase project.
+- Shared inventory race-condition / simultaneous booking tests require a live or isolated Supabase test database.
+- Existing secure public stay-finalize migration is packaged but was not applied to production. Deploy the server route first, then apply the migration in a controlled release.
+
+DATA SAFETY
+- No production data, inventory, reservations, settings or Supabase migrations were changed by this pass.
+- No Git push or Vercel deployment was performed.

@@ -1,0 +1,44 @@
+ANAIRA HOMESTAY FLOW FIX REPORT
+Date: 2026-11-22
+
+LIVE SUPABASE CHANGE APPLIED
+Project: bhptqdoteucuymmdzsmg
+Migration: sync_homestay_hms_catalogue_and_inventory
+
+For Home By (Justin), existing HMS catalogue and inventory were copied idempotently
+into the canonical Anaira Stay booking tables using the existing UUIDs:
+- 11 active hms_room_types -> 11 ana ira_stay_unit_types
+- 11 active hms_rate_plans -> 11 ana ira_stay_rate_plans
+- 1,980 hms_inventory rows -> 1,980 ana ira_stay_inventory rows
+- Existing HMS source records remain intact (11 room types, 11 rate plans, 1,980 inventory rows).
+- Inventory copied with total/sold/blocked/closed values; held units initialized to zero.
+- Existing image URLs and amenities were preserved from the HMS room catalogue.
+- Rate plans remain linked to their original room type IDs.
+- Migration is idempotent and uses upsert by stable record IDs / unique inventory key.
+
+LIVE VERIFICATION
+- Canonical stay availability RPC returned all 11 units for 2026-11-23 to 2026-11-24 for 2 adults.
+- Each unit returned 1 available unit on that date.
+- All 11 stay units have 180 inventory dates.
+- All 11 active stay rate plans are linked to the property's unit types.
+
+SOURCE FIXES
+- Stay detail page now loads the property first, then scopes unit and rate queries by the property's restaurant_id and property_id.
+- Checkout now validates the published property and scopes the selected unit/rate to the same tenant/property; mismatched rate-to-unit selections are rejected.
+- Existing server booking RPC continues to enforce tenant, property, unit, rate, guest capacity, OTP, and inventory checks.
+
+AUTOMATED CHECKS
+- JavaScript syntax: 737/737 PASS
+- Relative imports: PASS
+- Booking runtime closure: 29/29 PASS
+- Homestay routing regression: PASS
+- Public hospitality storefront: 21/21 PASS
+
+NOT VERIFIED
+- Next.js production build was not run; dependency installation/build environment was not available.
+- Browser-based customer checkout, real OTP delivery, and payment-provider callbacks were not exercised.
+- Live production deployment was not performed by this package operation.
+
+SAFETY
+- No HMS source records were deleted or overwritten.
+- No tenant records outside Home By (Justin) were modified by the data sync.

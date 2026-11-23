@@ -27,7 +27,17 @@ export async function GET(req,{params}){
     const types=Array.isArray(restaurant.hospitality_types)&&restaurant.hospitality_types.length
       ? restaurant.hospitality_types : [restaurant.hospitality_type||'hotel'];
     const isDirectStay=types.some(t=>['camp','homestay','guest_house','cottage'].includes(t));
-    if(!landing && !(camp && isDirectStay)) return NextResponse.json({ok:false,error:'This property has not been published for public booking.'},{status:404});
+    const preferredType=types.includes(requestedType)?requestedType:(types.find(t=>['camp','hotel','homestay','guest_house','cottage'].includes(t))||'hotel');
+    let stayProperty=null;
+    if(['homestay','guest_house','cottage','camp'].includes(preferredType)){
+      const {data,error}=await db.from('anaira_stay_properties')
+        .select('id,restaurant_id,stay_type,name,short_name,description,destination,address,city,state,country,logo_url,cover_image_url,gallery,check_in_time,check_out_time,cancellation_policy,child_policy,pet_policy,active,marketplace_visible')
+        .eq('restaurant_id',id).eq('stay_type',preferredType).eq('active',true).eq('marketplace_visible',true).maybeSingle();
+      if(error) throw error;
+      stayProperty=data||null;
+    }
+    const publishedDirectStay=Boolean(stayProperty || (preferredType==='camp' && camp));
+    if(!landing && !publishedDirectStay) return NextResponse.json({ok:false,error:'This property has not been published for public booking.'},{status:404});
 
     const {data:members,error:membersError}=await db.from('anaira_store_memberships')
       .select('store_id,enabled,listing_override,catalog_source,store_config')
@@ -42,18 +52,8 @@ export async function GET(req,{params}){
       if(error) throw error;
       stores=data||[];
     }
-    const preferredType=types.includes(requestedType)?requestedType:(types.find(t=>['camp','hotel','homestay','guest_house','cottage'].includes(t))||'hotel');
-    // For direct-stay properties, use the canonical stay-property record as
-    // the business identity. Never let the generic platform store name
-    // (for example, "Anaira Hotels") override the actual property name.
-    let stayProperty=null;
-    if(['homestay','guest_house','cottage','camp'].includes(preferredType)){
-      const {data,error}=await db.from('anaira_stay_properties')
-        .select('id,restaurant_id,stay_type,name,short_name,description,destination,address,city,state,country,logo_url,cover_image_url,gallery,check_in_time,check_out_time,cancellation_policy,child_policy,pet_policy,active,marketplace_visible')
-        .eq('restaurant_id',id).eq('stay_type',preferredType).eq('active',true).maybeSingle();
-      if(error) throw error;
-      stayProperty=data||null;
-    }
+    // For direct-stay properties, use the canonical published stay-property
+    // record as the business identity; tenant membership is optional enrichment.
     const platformStore=stores.find(s=>s.hospitality_type===preferredType)
       || stores.find(s=>preferredType==='camp' && s.store_type==='hotel')
       || stores[0] || null;

@@ -3,6 +3,7 @@ import {db} from '../../../../../lib/server/provider';
 import {requireCron} from '../../../../../lib/server/auth';
 import {executeSync,parseCredentials} from '../../../../../lib/server/distribution/runtime';
 import {buildCanonicalOutboundPayload} from '../../../../../lib/server/distribution/payloads';
+import {requireOtaProperty} from '../../../../../lib/server/distribution/property-guard';
 export const runtime='nodejs';
 
 async function runWorker(req){
@@ -10,6 +11,18 @@ async function runWorker(req){
  const s=db(); const now=new Date().toISOString();
  const scheduled=await s.rpc('anaira_distribution_enqueue_due_auto_sync');
  if(scheduled.error) throw scheduled.error;
+ // Recover jobs abandoned by a crashed worker. A lease older than 10 minutes
+ // is no longer considered active; exhausted jobs move to failed, others retry.
+ const staleBefore=new Date(Date.now()-10*60*1000).toISOString();
+ const staleQ=await s.from('ota_sync_events').select('id,attempt_count,max_attempts').eq('status','processing').lt('locked_at',staleBefore).limit(100);
+ if(staleQ.error) throw staleQ.error;
+ let recovered=0,exhausted=0;
+ for(const stale of staleQ.data||[]){
+  const dead=Number(stale.attempt_count||0)>=Number(stale.max_attempts||8);
+  const patch=dead?{status:'failed',error_message:'Worker lease expired after maximum attempts.',last_error:'Worker lease expired after maximum attempts.',locked_at:null,locked_by:null}:{status:'queued',next_attempt_at:now,error_message:'Previous worker lease expired; job safely re-queued.',last_error:'Previous worker lease expired; job safely re-queued.',locked_at:null,locked_by:null};
+  const q=await s.from('ota_sync_events').update(patch).eq('id',stale.id).eq('status','processing').lt('locked_at',staleBefore).select('id').maybeSingle();
+  if(q.error) throw q.error; if(q.data){if(dead)exhausted++;else recovered++;}
+ }
  const {data:jobs,error}=await s.from('ota_sync_events').select('*').eq('status','queued').lte('next_attempt_at',now).order('created_at').limit(20);
  if(error) throw error;
  let processed=0,failed=0,skipped=0; const results=[];
@@ -23,6 +36,7 @@ async function runWorker(req){
    if(job.channel_id){const q=await s.from('ota_channels').select('*').eq('id',job.channel_id).single();if(q.error)throw q.error;channel=q.data;}
    if(!connection&&channel){const q=await s.from('anaira_distribution_connections').select('*').eq('restaurant_id',channel.restaurant_id).eq('platform_id',channel.platform_id).maybeSingle();if(q.error)throw q.error;connection=q.data;}
    if(!connection||!['configured','connected'].includes(connection.status)) throw new Error('Distribution connection is not connected.');
+   await requireOtaProperty(s,connection.restaurant_id);
    const platformQ=await s.from('anaira_distribution_platforms').select('*').eq('id',connection.platform_id).single();if(platformQ.error)throw platformQ.error;
    const platform=platformQ.data;
    if(!platform?.active) throw new Error('Distribution platform is disabled.');
@@ -58,7 +72,7 @@ async function runWorker(req){
    failed++;results.push({id:job.id,error:message,retry_at:new Date(Date.now()+delay*1000).toISOString()});
   }
  }
- return NextResponse.json({ok:true,auto_sync_enqueued:Number(scheduled.data||0),processed,failed,skipped,count:(jobs||[]).length,results});
+ return NextResponse.json({ok:true,auto_sync_enqueued:Number(scheduled.data||0),recovered_stale_jobs:recovered,failed_stale_jobs:exhausted,processed,failed,skipped,count:(jobs||[]).length,results});
 }
 export async function POST(req){try{return await runWorker(req)}catch(e){return NextResponse.json({ok:false,error:e?.message||'Distribution worker failed'},{status:Number(e?.status||401)})}}
 export async function GET(req){try{return await runWorker(req)}catch(e){return NextResponse.json({ok:false,error:e?.message||'Distribution worker failed'},{status:Number(e?.status||401)})}}

@@ -37,7 +37,7 @@ export async function POST(req){
   await enforceRateLimit(req,{scope:'otp',limit:5,windowSeconds:60});
   
     const body=await req.json();
-    const tenantId=String(body.tenant_id||'').trim(), propertyType=body.property_type==='camp'?'camp':'hotel', channel=body.channel==='email'?'email':body.channel==='phone'?'phone':null;
+    const tenantId=String(body.tenant_id||'').trim(), propertyType=['camp','homestay','guest_house','cottage'].includes(String(body.property_type||'').toLowerCase())?String(body.property_type).toLowerCase():'hotel', channel=body.channel==='email'?'email':body.channel==='phone'?'phone':null;
     if(!tenantId||!channel) return appError('tenant_id and channel are required.');
     const destination=channel==='email'?normalizeEmail(body.email):normalizePhone(body.phone);
     if(channel==='email' && !/^\S+@\S+\.\S+$/.test(destination)) return appError('Enter a valid email address.');
@@ -49,9 +49,19 @@ export async function POST(req){
       return appError('Server Supabase credentials are not configured. Set SUPABASE_SERVICE_ROLE_KEY in the Vercel Production environment and redeploy.', 500);
     }
     let tenant;
-    if(propertyType==='camp'){ const {data,error}=await db.from('camp_properties').select('restaurant_id').eq('restaurant_id',tenantId).eq('active',true).eq('marketplace_visible',true).maybeSingle(); if(error) throw error; tenant=data; }
-    else { const {data,error}=await db.from('hms_settings').select('restaurant_id').eq('restaurant_id',tenantId).maybeSingle(); if(error) throw error; tenant=data; }
-    if(!tenant) return appError(propertyType==='camp'?'Camping configuration was not found.':'Hotel configuration was not found.',404);
+    if(propertyType==='camp'){
+      const {data,error}=await db.from('anaira_stay_properties').select('restaurant_id').eq('restaurant_id',tenantId).eq('stay_type','camp').eq('active',true).eq('marketplace_visible',true).maybeSingle();
+      if(error) throw error;
+      if(data) tenant=data;
+      else { const legacy=await db.from('camp_properties').select('restaurant_id').eq('restaurant_id',tenantId).eq('active',true).eq('marketplace_visible',true).maybeSingle(); if(legacy.error) throw legacy.error; tenant=legacy.data; }
+    } else if(['homestay','guest_house','cottage'].includes(propertyType)){
+      const {data,error}=await db.from('anaira_stay_properties').select('restaurant_id').eq('restaurant_id',tenantId).eq('stay_type',propertyType).eq('active',true).eq('marketplace_visible',true).maybeSingle();
+      if(error) throw error; tenant=data;
+    } else {
+      const {data,error}=await db.from('hms_settings').select('restaurant_id').eq('restaurant_id',tenantId).maybeSingle();
+      if(error) throw error; tenant=data;
+    }
+    if(!tenant) return appError(`${propertyType.replace('_',' ')} configuration is not published for guest verification.`,404);
     const destinationHash=hash(`${channel}:${destination}`);
     const {data:recent}=await db.from('anaira_guest_otp_challenges').select('last_sent_at').eq('tenant_id',tenantId).eq('destination_hash',destinationHash).order('created_at',{ascending:false}).limit(1).maybeSingle();
     if(recent?.last_sent_at && Date.now()-new Date(recent.last_sent_at).getTime()<60000) return appError('Please wait 60 seconds before requesting another OTP.',429);
