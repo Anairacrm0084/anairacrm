@@ -36,6 +36,37 @@ export async function GET(req,{params}){
       if(error) throw error;
       stayProperty=data||null;
     }
+    // Recover uploaded property media from the canonical storage folders when
+    // older property records have empty cover/gallery columns. Storage listing
+    // is server-side; only public URLs for this published property are returned.
+    const mediaBucket='anaira-media';
+    const listPropertyMedia=async(folder)=>{
+      const {data,error}=await db.storage.from(mediaBucket).list(`${id}/hotel/${folder}`,{
+        limit:100,sortBy:{column:'created_at',order:'desc'}
+      });
+      if(error) return [];
+      return (data||[]).filter(file=>file?.name&&!file.name.endsWith('/')&&
+        (!file.metadata?.mimetype||String(file.metadata.mimetype).startsWith('image/')))
+        .map(file=>({
+          name:file.name,
+          url:db.storage.from(mediaBucket).getPublicUrl(`${id}/hotel/${folder}/${file.name}`).data.publicUrl
+        }));
+    };
+    const [coverMedia,galleryMedia,roomMedia,detailMedia]=await Promise.all([
+      listPropertyMedia('cover'),listPropertyMedia('gallery'),
+      listPropertyMedia('rooms'),listPropertyMedia('homestay-details')
+    ]);
+    const storedCoverUrl=coverMedia[0]?.url||'';
+    const storedGalleryUrls=galleryMedia.map(x=>x.url);
+    const storedRoomUrls=roomMedia.map(x=>x.url);
+    const storedDetailUrls=detailMedia.map(x=>x.url);
+    const propertyGalleryFromDb=Array.isArray(stayProperty?.gallery)&&stayProperty.gallery.length
+      ? stayProperty.gallery : (Array.isArray(camp?.gallery)&&camp.gallery.length
+        ? camp.gallery : (Array.isArray(hms?.gallery)&&hms.gallery.length
+          ? hms.gallery : (Array.isArray(restaurant.gallery)?restaurant.gallery:[])));
+    const resolvedGallery=propertyGalleryFromDb.length?propertyGalleryFromDb:storedGalleryUrls;
+    const roomFallbackImages=storedRoomUrls.length?storedRoomUrls:storedDetailUrls;
+
     // Public storefront catalog is served from this server route because the
     // underlying HMS catalog tables intentionally grant read access only to
     // authenticated tenant users. Never expose tenant-wide table reads to anon.
@@ -73,10 +104,18 @@ export async function GET(req,{params}){
         if(error) throw error;
         stayRates=data||[];
       }
-      const mappedUnits=(stayUnits||[]).map(u=>({
+      const mappedUnits=(stayUnits||[]).map((u,index)=>({
         ...u,room_type_id:u.id,hospitality_type:preferredType,
         short_description:u.description||'',bed_type:null,number_of_beds:1,
-        extra_adult_price:0,extra_child_price:0,pricing_mode:'per_unit'
+        extra_adult_price:0,extra_child_price:0,pricing_mode:'per_unit',
+        // Keep room-specific uploads first; otherwise use a real uploaded
+        // property/room-detail photo as a visual fallback instead of a blank card.
+        image_urls:Array.isArray(u.image_urls)&&u.image_urls.length?u.image_urls:[
+          roomFallbackImages[index%Math.max(roomFallbackImages.length,1)]||
+          resolvedGallery[index%Math.max(resolvedGallery.length,1)]||storedCoverUrl
+        ].filter(Boolean),
+        fallback_image_url:roomFallbackImages[index%Math.max(roomFallbackImages.length,1)]||
+          resolvedGallery[index%Math.max(resolvedGallery.length,1)]||storedCoverUrl||''
       }));
       const mappedRates=stayRates.map(r=>({
         ...r,room_type_id:r.unit_type_id,hospitality_type:preferredType,
@@ -122,20 +161,24 @@ export async function GET(req,{params}){
     const resolvedPropertyTitle=propertyBrandedStay
       ? (canonicalPropertyName||override.title||platformStore?.store_name||'ANAIRA Stay')
       : (override.title||canonicalPropertyName||platformStore?.store_name||'ANAIRA Hotels');
+    const coverCandidates=[...new Set([
+      storedCoverUrl,
+      stayProperty?.cover_image_url,camp?.cover_image_url,hms?.cover_image_url,
+      restaurant.cover_image,platformStore?.cover_url,
+      ...resolvedGallery,...storedGalleryUrls,...storedDetailUrls,...storedRoomUrls
+    ].filter(x=>typeof x==='string'&&/^https?:\/\//i.test(x)))];
     const property={
       ...restaurant,
+      cover_image_candidates:coverCandidates,
       title:resolvedPropertyTitle,
       hotel_name:canonicalPropertyName,
       tagline:override.tagline||'',
       description:override.description||stayProperty?.description||camp?.description||hms?.description||restaurant.description||'',
       logo_url:override.logo_url||stayProperty?.logo_url||platformStore?.logo_url||camp?.logo_url||hms?.logo_url||restaurant.logo||'',
-      cover_url:override.cover_url||stayProperty?.cover_image_url||platformStore?.cover_url||camp?.cover_image_url||hms?.cover_image_url||restaurant.cover_image||'',
-      cover_image_url:override.cover_url||stayProperty?.cover_image_url||platformStore?.cover_url||camp?.cover_image_url||hms?.cover_image_url||restaurant.cover_image||'',
-      gallery:Array.isArray(override.gallery)&&override.gallery.length ? override.gallery
-        : (Array.isArray(stayProperty?.gallery)&&stayProperty.gallery.length ? stayProperty.gallery
-        : (Array.isArray(camp?.gallery)&&camp.gallery.length ? camp.gallery
-        : (Array.isArray(hms?.gallery)&&hms.gallery.length ? hms.gallery
-        : (Array.isArray(restaurant.gallery)?restaurant.gallery:[])))),
+      cover_url:override.cover_url||stayProperty?.cover_image_url||platformStore?.cover_url||camp?.cover_image_url||hms?.cover_image_url||restaurant.cover_image||storedCoverUrl||resolvedGallery[0]||'',
+      cover_image_url:override.cover_url||stayProperty?.cover_image_url||platformStore?.cover_url||camp?.cover_image_url||hms?.cover_image_url||restaurant.cover_image||storedCoverUrl||resolvedGallery[0]||'',
+      gallery:Array.isArray(override.gallery)&&override.gallery.length ? override.gallery : resolvedGallery,
+      media_gallery:[...new Set([...resolvedGallery,...storedDetailUrls])],
       address:override.address||stayProperty?.address||camp?.address||hms?.address||restaurant.address,
       city:override.city||stayProperty?.city||camp?.city||hms?.city||restaurant.city,
       phone:override.phone||hms?.phone||restaurant.phone,
