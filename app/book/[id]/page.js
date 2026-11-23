@@ -74,6 +74,10 @@ export default function HospitalityStore(){
  function changeStayType(type){setActiveStayType(type);setGalleryIndex(0);setLightboxIndex(null);setMsg('');setRooms(x=>x.map(r=>({...r,available_rooms:null,availability_known:false})));}
  useEffect(()=>{if(gallerySlides.length<=1)return;const t=setInterval(()=>setGalleryIndex(i=>(i+1)%gallerySlides.length),6500);return()=>clearInterval(t)},[gallerySlides.length]);
  useEffect(()=>{if(lightboxIndex===null)return;const onKey=e=>{if(e.key==='Escape')setLightboxIndex(null);if(e.key==='ArrowRight')setLightboxIndex(i=>i===null?0:(i+1)%gallery.length);if(e.key==='ArrowLeft')setLightboxIndex(i=>i===null?0:(i-1+gallery.length)%gallery.length)};window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey)},[lightboxIndex,gallery.length]);
+ function scrollToStayOptions(){
+   if(typeof window==='undefined')return;
+   window.setTimeout(()=>document.getElementById('stays')?.scrollIntoView({behavior:'smooth',block:'start'}),120);
+ }
  async function search(){
    if(!hotel||!form.checkIn||!form.checkOut){setMsg('Select check-in and check-out dates to check live availability.');return;}
    if(new Date(form.checkOut)<=new Date(form.checkIn)){setMsg('Check-out must be after check-in.');return;}
@@ -87,7 +91,7 @@ export default function HospitalityStore(){
      if(campAvailabilityError){setMsg(campAvailabilityError.message||'Camping availability could not be checked.');setBusy(false);return;}
      const by=new Map((campAvailability||[]).map(x=>[String(x.unit_type_id),x]));
      setRooms(cur=>cur.map(r=>{const a=by.get(String(r.id||r.room_type_id));return {...r,available_rooms:Number(a?.available_units??0),availability_known:true,room_type_id:r.room_type_id||r.id}}));
-     setBusy(false);return;
+     setBusy(false);scrollToStayOptions();return;
    }
    if(['homestay','guest_house','cottage'].includes(activeStayType)){
      const propertyId=hotel.stay_property?.id;
@@ -95,10 +99,10 @@ export default function HospitalityStore(){
      const {data,error}=await supabase.rpc('anaira_public_stay_availability',{p_restaurant_id:hotel.id,p_property_id:propertyId,p_stay_type:activeStayType,p_check_in:form.checkIn,p_check_out:form.checkOut,p_adults:Number(form.adults),p_children:Number(form.children)});
      if(error){setMsg(error.message);setBusy(false);return;}
      const map=new Map((data||[]).map(x=>[String(x.unit_type_id),x]));
-     setRooms(cur=>cur.map(r=>{const a=map.get(String(r.id||r.room_type_id));return {...r,available_rooms:Number(a?.available_units??0),availability_known:true,room_type_id:r.room_type_id||r.id}}));setBusy(false);return;
+     setRooms(cur=>cur.map(r=>{const a=map.get(String(r.id||r.room_type_id));return {...r,available_rooms:Number(a?.available_units??0),availability_known:true,room_type_id:r.room_type_id||r.id}}));setBusy(false);scrollToStayOptions();return;
    }
    const {data,error}=await supabase.rpc('anaira_public_hms_room_availability',{p_restaurant_id:hotel.id,p_check_in:form.checkIn,p_check_out:form.checkOut,p_adults:Number(form.adults),p_children:Number(form.children),p_hospitality_type:activeStayType});
-   if(error){setMsg(error.message);setBusy(false);return;}const map=new Map((data||[]).map(x=>[String(x.room_type_id),x]));setRooms(cur=>cur.map(r=>{const a=map.get(String(r.id||r.room_type_id));return {...r,available_rooms:a?.available_rooms??0,availability_known:true,room_type_id:r.room_type_id||r.id}}));setBusy(false);
+   if(error){setMsg(error.message);setBusy(false);return;}const map=new Map((data||[]).map(x=>[String(x.room_type_id),x]));setRooms(cur=>cur.map(r=>{const a=map.get(String(r.id||r.room_type_id));return {...r,available_rooms:a?.available_rooms??0,availability_known:true,room_type_id:r.room_type_id||r.id}}));setBusy(false);scrollToStayOptions();
  }
  function bookingUrl(stayType,roomTypeId,rateId,source,legacyUnitTypeId){const common=`check_in=${encodeURIComponent(form.checkIn||'')}&check_out=${encodeURIComponent(form.checkOut||'')}&adults=${Number(form.adults)||2}&children=${Number(form.children)||0}`;return `/book/${key}/checkout?stay_type=${encodeURIComponent(stayType)}&room_type=${encodeURIComponent(legacyUnitTypeId||roomTypeId)}&rate_plan=${encodeURIComponent(rateId||'')}&booking_source=${encodeURIComponent(bookingSource)}&${common}`;}
  if(!hotel)return <main className="hp"><div className="loading-card">{msg||'Loading hospitality experience…'}</div></main>;
