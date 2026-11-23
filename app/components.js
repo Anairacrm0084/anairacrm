@@ -133,11 +133,11 @@ function businessTypeMenuFallback(type){
  const label=map[type]; if(!label)return null; return {title:label.toUpperCase(),items:[['▦',`${label} Dashboard`,`/business/${type}`,'business.settings'],['⚙',`${label} Setup`,`/business/${type}/setup`,'business.settings'],['▣','Catalog / Services',`/business/${type}/setup`,'business.settings'],['♙','Team / Staff',`/business/${type}/setup`,'business.settings'],['◉','Bookings / Enquiries',`/business/${type}/setup`,'business.settings'],['◈','Offers / Promotions',`/business/${type}/setup`,'business.settings'],['↗','Front Landing Page',`/business/${type}`,'business.settings']]};
 }
 
-const TENANT_ADMIN_ROLES = new Set(['admin','business_admin','owner','business_owner','tenant_admin','property_admin','hospitality_admin','hotel_admin','homestay_admin','guest_house_admin','cottage_admin','camp_admin']);
+const TENANT_ADMIN_ROLES = new Set(['admin','business_admin','owner','business_owner','tenant_admin','property_admin','property_owner','hospitality_admin','hotel_admin','hotel_owner','homestay_admin','homestay_owner','homestay_manager','guest_house_admin','guest_house_owner','guest_house_manager','cottage_admin','cottage_owner','cottage_manager','camp_admin','camp_owner','camp_manager']);
 function normalizeRoleKey(value){return String(value||'').trim().toLowerCase().replace(/[\s-]+/g,'_');}
 function isTenantAdminContext(role,profileKey){return TENANT_ADMIN_ROLES.has(normalizeRoleKey(role))||TENANT_ADMIN_ROLES.has(normalizeRoleKey(profileKey));}
 function hospitalityTypeForAdminRole(role,profileKey){
- const aliases={hotel_admin:'hotel',camp_admin:'camp',camping_admin:'camp',homestay_admin:'homestay',guest_house_admin:'guest_house',guesthouse_admin:'guest_house',cottage_admin:'cottage'};
+ const aliases={hotel_admin:'hotel',hotel_owner:'hotel',camp_admin:'camp',camping_admin:'camp',camp_owner:'camp',camp_manager:'camp',homestay_admin:'homestay',homestay_owner:'homestay',homestay_manager:'homestay',guest_house_admin:'guest_house',guesthouse_admin:'guest_house',guest_house_owner:'guest_house',guest_house_manager:'guest_house',cottage_admin:'cottage',cottage_owner:'cottage',cottage_manager:'cottage'};
  return aliases[normalizeRoleKey(role)]||aliases[normalizeRoleKey(profileKey)]||null;
 }
 function normalizeGroups(groups){return groups.map(g=>({...g,items:g.items.map(x=>({icon:x[0],label:x[1],href:x[2],permission:x[3],plugin:x[4]}))}));}
@@ -166,6 +166,7 @@ function hospitalityRevenueItems(type){
   return [
     ['↔','Room / Rate Mapping',`/hotel-management/room-rate-mapping?type=${type}`,'booking.view',plugin],
     ['▤','Booking Source',`/hotel-management/booking-source?type=${type}`,'booking.view',plugin],
+    ['⇄','Channel / OTA Manager',`/channel-manager?type=${type}`,'ota.sync.view','channel-manager'],
     ['◇','Yield Management',`/revenue-management?type=${type}`,'report.revenue',plugin]
   ];
 }

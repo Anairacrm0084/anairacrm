@@ -50,4 +50,11 @@ assert.match(hospitalityCheckout, /source:bookingSource/, 'hotel and camp checko
 
 assert.match(hospitalityCheckout, /const availabilityOk=available===null\?await check\(\):Number\(available\)>0/, 'canonical hospitality checkout must block if availability check fails');
 
-console.log('PUBLIC HOSPITALITY STOREFRONT: 25/25 PASS');
+
+assert.match(publicProfileApi, /from\('hms_room_types'\)/, 'public profile API must fetch active HMS room catalog server-side for anonymous customers');
+assert.match(publicProfileApi, /from\('hms_rate_plans'\)/, 'public profile API must fetch active HMS rates server-side for anonymous customers');
+assert.match(publicProfileApi, /catalog:publicCatalog/, 'public profile API must return the property-scoped public catalog');
+assert.match(publicBookingPage, /publicPayload\.catalog\?\.rooms/, 'public booking page must render rooms from server-returned catalog, not tenant-only anon table reads');
+assert.doesNotMatch(publicBookingPage, /supabase\.from\('hms_room_types'\)/, 'public booking page must not query tenant-protected room catalog directly from anon browser');
+
+console.log('PUBLIC HOSPITALITY STOREFRONT: 30/30 PASS');

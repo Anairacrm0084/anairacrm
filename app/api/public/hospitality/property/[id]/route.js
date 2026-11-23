@@ -36,6 +36,28 @@ export async function GET(req,{params}){
       if(error) throw error;
       stayProperty=data||null;
     }
+    // Public storefront catalog is served from this server route because the
+    // underlying HMS catalog tables intentionally grant read access only to
+    // authenticated tenant users. Never expose tenant-wide table reads to anon.
+    const publicStayTypes=types.filter(t=>['hotel','homestay','guest_house','cottage','camp'].includes(t));
+    const [{data:publicRooms,error:publicRoomsError},{data:publicRates,error:publicRatesError}] = await Promise.all([
+      db.from('hms_room_types')
+        .select('id,name,code,description,short_description,max_adults,max_children,max_guests,base_rate,bed_type,number_of_beds,extra_adult_price,extra_child_price,weekend_price,tax_percent,amenities,image_urls,pricing_mode,hospitality_type,active')
+        .eq('restaurant_id',id).in('hospitality_type',publicStayTypes).eq('active',true)
+        .order('hospitality_type').order('name'),
+      db.from('hms_rate_plans')
+        .select('id,name,code,board_type,description,room_type_id,rate,occupancy,extra_adult,extra_child,min_stay,max_stay,weekend_rate,seasonal_multiplier,refundable,deposit_percent,cancellation_policy,pricing_mode,hospitality_type,active')
+        .eq('restaurant_id',id).in('hospitality_type',publicStayTypes).eq('active',true)
+        .order('created_at')
+    ]);
+    if(publicRoomsError) throw publicRoomsError;
+    if(publicRatesError) throw publicRatesError;
+    const publicRoomIds=new Set((publicRooms||[]).map(x=>x.id));
+    const publicCatalog={
+      rooms:publicRooms||[],
+      rates:(publicRates||[]).filter(x=>publicRoomIds.has(x.room_type_id))
+    };
+
     const publishedDirectStay=Boolean(stayProperty || (preferredType==='camp' && camp));
     if(!landing && !publishedDirectStay) return NextResponse.json({ok:false,error:'This property has not been published for public booking.'},{status:404});
 
@@ -102,7 +124,7 @@ export async function GET(req,{params}){
       marketplace_background_media_type:hms?.marketplace_background_media_type||'image',
       marketplace_background_overlay:hms?.marketplace_background_overlay??0.45
     };
-    return NextResponse.json({ok:true,property,membership:membership?{store_id:membership.store_id,listing_override:override,catalog_source:membership.catalog_source}:null,platformStore,hms:hms||{},camp:camp||null,landing:landing||null},{headers:{'Cache-Control':'no-store, max-age=0'}});
+    return NextResponse.json({ok:true,property,membership:membership?{store_id:membership.store_id,listing_override:override,catalog_source:membership.catalog_source}:null,platformStore,hms:hms||{},camp:camp||null,landing:landing||null,catalog:publicCatalog},{headers:{'Cache-Control':'no-store, max-age=0'}});
   }catch(error){
     return NextResponse.json({ok:false,error:error?.message||'Unable to load public property.'},{status:500});
   }

@@ -41,11 +41,12 @@ export default function HospitalityStore(){
    if(initial==='camp'&&!publicPayload.camp?.marketplace_visible){setMsg('Camping property is not currently published.');return;}
    const profileData={...r,...b,hms:h||{},gallery:Array.isArray(b?.gallery)?b.gallery:[],listing_override:m?.listing_override||{},hospitality_types:types,nearby_destinations:Array.isArray(b?.nearby_destinations)?b.nearby_destinations:[],nearby_activities:Array.isArray(b?.nearby_activities)?b.nearby_activities:[],hospitality_highlights:Array.isArray(b?.hospitality_highlights)?b.hospitality_highlights:[]};
    setHotel(profileData);setMembership(m||null);setSettings(s||null);setStayTypes(types);setActiveStayType(initial);
-   const [{data:catalog,error:e1},{data:rates,error:e2}]=await Promise.all([
-     supabase.from('hms_room_types').select('*').eq('restaurant_id',r.id).in('hospitality_type',types).eq('active',true).order('hospitality_type').order('name'),
-     supabase.from('hms_rate_plans').select('id,name,code,room_type_id,hospitality_type,board_type,rate,weekend_rate,active,refundable,deposit_percent,cancellation_policy,description,pricing_mode').eq('restaurant_id',r.id).in('hospitality_type',types).eq('active',true).order('created_at')
-   ]); if(e1)throw e1;if(e2)throw e2;
-   let unified=[...(catalog||[])],unifiedRates=[...(rates||[])];
+   // Read the public, property-scoped catalog from the server endpoint.
+   // Direct browser queries to hms_room_types / hms_rate_plans are tenant-RLS
+   // protected and therefore return no rows to anonymous customers.
+   const catalog=Array.isArray(publicPayload.catalog?.rooms)?publicPayload.catalog.rooms:[];
+   const rates=Array.isArray(publicPayload.catalog?.rates)?publicPayload.catalog.rates:[];
+   let unified=[...catalog],unifiedRates=[...rates];
    if(types.includes('camp')){
      const [{data:units},{data:legacyRates}]=await Promise.all([supabase.from('camp_unit_types').select('*').eq('restaurant_id',r.id).eq('active',true).order('name'),supabase.from('camp_rate_plans').select('*').eq('restaurant_id',r.id).eq('active',true).order('rate')]);
      const canonical=new Map(unified.filter(x=>x.hospitality_type==='camp').map(x=>[`${String(x.code||'').trim().toLowerCase()}|${String(x.name||'').trim().toLowerCase()}`,x]));const map=new Map();
