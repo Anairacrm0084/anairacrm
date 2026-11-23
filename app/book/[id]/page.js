@@ -39,7 +39,7 @@ export default function HospitalityStore(){
    const direct=['camp','homestay','guest_house','cottage'].includes(initial);
    if(!direct&&!platformStore){setMsg('Hotel marketplace store is not currently published.');return;}
    if(initial==='camp'&&!publicPayload.camp?.marketplace_visible){setMsg('Camping property is not currently published.');return;}
-   const profileData={...r,...b,hms:h||{},gallery:Array.isArray(b?.gallery)?b.gallery:[],listing_override:m?.listing_override||{},hospitality_types:types,nearby_destinations:Array.isArray(b?.nearby_destinations)?b.nearby_destinations:[],nearby_activities:Array.isArray(b?.nearby_activities)?b.nearby_activities:[],hospitality_highlights:Array.isArray(b?.hospitality_highlights)?b.hospitality_highlights:[]};
+   const profileData={...r,...b,hms:h||{},stay_property:publicPayload.stayProperty||null,gallery:Array.isArray(b?.gallery)?b.gallery:[],listing_override:m?.listing_override||{},hospitality_types:types,nearby_destinations:Array.isArray(b?.nearby_destinations)?b.nearby_destinations:[],nearby_activities:Array.isArray(b?.nearby_activities)?b.nearby_activities:[],hospitality_highlights:Array.isArray(b?.hospitality_highlights)?b.hospitality_highlights:[]};
    setHotel(profileData);setMembership(m||null);setSettings(s||null);setStayTypes(types);setActiveStayType(initial);
    // Read the public, property-scoped catalog from the server endpoint.
    // Direct browser queries to hms_room_types / hms_rate_plans are tenant-RLS
@@ -88,6 +88,14 @@ export default function HospitalityStore(){
      const by=new Map((campAvailability||[]).map(x=>[String(x.unit_type_id),x]));
      setRooms(cur=>cur.map(r=>{const a=by.get(String(r.id||r.room_type_id));return {...r,available_rooms:Number(a?.available_units??0),availability_known:true,room_type_id:r.room_type_id||r.id}}));
      setBusy(false);return;
+   }
+   if(['homestay','guest_house','cottage'].includes(activeStayType)){
+     const propertyId=hotel.stay_property?.id;
+     if(!propertyId){setMsg('Published stay property could not be resolved.');setBusy(false);return;}
+     const {data,error}=await supabase.rpc('anaira_public_stay_availability',{p_restaurant_id:hotel.id,p_property_id:propertyId,p_stay_type:activeStayType,p_check_in:form.checkIn,p_check_out:form.checkOut,p_adults:Number(form.adults),p_children:Number(form.children)});
+     if(error){setMsg(error.message);setBusy(false);return;}
+     const map=new Map((data||[]).map(x=>[String(x.unit_type_id),x]));
+     setRooms(cur=>cur.map(r=>{const a=map.get(String(r.id||r.room_type_id));return {...r,available_rooms:Number(a?.available_units??0),availability_known:true,room_type_id:r.room_type_id||r.id}}));setBusy(false);return;
    }
    const {data,error}=await supabase.rpc('anaira_public_hms_room_availability',{p_restaurant_id:hotel.id,p_check_in:form.checkIn,p_check_out:form.checkOut,p_adults:Number(form.adults),p_children:Number(form.children),p_hospitality_type:activeStayType});
    if(error){setMsg(error.message);setBusy(false);return;}const map=new Map((data||[]).map(x=>[String(x.room_type_id),x]));setRooms(cur=>cur.map(r=>{const a=map.get(String(r.id||r.room_type_id));return {...r,available_rooms:a?.available_rooms??0,availability_known:true,room_type_id:r.room_type_id||r.id}}));setBusy(false);

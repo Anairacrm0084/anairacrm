@@ -1,0 +1,15 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const root=new URL('../../',import.meta.url).pathname;
+const api=fs.readFileSync(`${root}app/api/public/hospitality/property/[id]/route.js`,'utf8');
+const checkout=fs.readFileSync(`${root}app/book/[id]/checkout/page.js`,'utf8');
+const store=fs.readFileSync(`${root}app/book/[id]/page.js`,'utf8');
+assert.match(api,/from\('anaira_stay_unit_types'\)/,'Public API must load canonical stay unit types');
+assert.match(api,/from\('anaira_stay_rate_plans'\)/,'Public API must load canonical stay rate plans');
+assert.match(api,/stayProperty,.*catalog:publicCatalog/s,'Public API must return canonical stay property and catalog');
+assert.match(checkout,/\['homestay','guest_house','cottage'\]/,'Checkout must branch for non-hotel stays');
+assert.match(checkout,/\/stay\/\$\{requestedStayType\}\/\$\{stayProperty\.id\}\/checkout/,'Checkout must route to canonical stay checkout');
+assert.match(checkout,/selectedRate\.room_type_id/,'Checkout must resolve the selected rate against its unit type');
+assert.match(store,/anaira_public_stay_availability/,'Homestay availability must use the stay inventory RPC');
+assert.match(store,/stay_property:publicPayload\.stayProperty/,'Store must retain the canonical stay property id');
+console.log('Homestay public checkout regression: 8/8 PASS');

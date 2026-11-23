@@ -53,10 +53,40 @@ export async function GET(req,{params}){
     if(publicRoomsError) throw publicRoomsError;
     if(publicRatesError) throw publicRatesError;
     const publicRoomIds=new Set((publicRooms||[]).map(x=>x.id));
-    const publicCatalog={
-      rooms:publicRooms||[],
-      rates:(publicRates||[]).filter(x=>publicRoomIds.has(x.room_type_id))
-    };
+    let catalogRooms=[...(publicRooms||[])];
+    let catalogRates=(publicRates||[]).filter(x=>publicRoomIds.has(x.room_type_id));
+
+    // Homestay / guest-house / cottage use the dedicated ANAIRA Stay catalogue.
+    // Bridge it into the public storefront contract on the server; never expose
+    // tenant-wide HMS tables to anonymous browser sessions.
+    if(stayProperty && ['homestay','guest_house','cottage'].includes(preferredType)){
+      const {data:stayUnits,error:stayUnitsError}=await db.from('anaira_stay_unit_types')
+        .select('id,restaurant_id,property_id,name,code,description,max_guests,max_adults,max_children,unit_count,base_rate,image_urls,amenities,active')
+        .eq('restaurant_id',id).eq('property_id',stayProperty.id).eq('active',true).order('name');
+      if(stayUnitsError) throw stayUnitsError;
+      const stayUnitIds=(stayUnits||[]).map(x=>x.id);
+      let stayRates=[];
+      if(stayUnitIds.length){
+        const {data,error}=await db.from('anaira_stay_rate_plans')
+          .select('id,restaurant_id,unit_type_id,name,code,pricing_mode,rate,weekend_rate,seasonal_multiplier,refundable,deposit_percent,cancellation_policy,min_stay,max_stay,active')
+          .eq('restaurant_id',id).in('unit_type_id',stayUnitIds).eq('active',true).order('name');
+        if(error) throw error;
+        stayRates=data||[];
+      }
+      const mappedUnits=(stayUnits||[]).map(u=>({
+        ...u,room_type_id:u.id,hospitality_type:preferredType,
+        short_description:u.description||'',bed_type:null,number_of_beds:1,
+        extra_adult_price:0,extra_child_price:0,pricing_mode:'per_unit'
+      }));
+      const mappedRates=stayRates.map(r=>({
+        ...r,room_type_id:r.unit_type_id,hospitality_type:preferredType,
+        board_type:r.code||'Standard',occupancy:null,extra_adult:0,extra_child:0
+      }));
+      catalogRooms=[...catalogRooms.filter(x=>x.hospitality_type!==preferredType),...mappedUnits];
+      const stayRoomIds=new Set(mappedUnits.map(x=>x.id));
+      catalogRates=[...catalogRates.filter(x=>x.hospitality_type!==preferredType),...mappedRates.filter(x=>stayRoomIds.has(x.room_type_id))];
+    }
+    const publicCatalog={rooms:catalogRooms,rates:catalogRates};
 
     const publishedDirectStay=Boolean(stayProperty || (preferredType==='camp' && camp));
     if(!landing && !publishedDirectStay) return NextResponse.json({ok:false,error:'This property has not been published for public booking.'},{status:404});
@@ -124,7 +154,7 @@ export async function GET(req,{params}){
       marketplace_background_media_type:hms?.marketplace_background_media_type||'image',
       marketplace_background_overlay:hms?.marketplace_background_overlay??0.45
     };
-    return NextResponse.json({ok:true,property,membership:membership?{store_id:membership.store_id,listing_override:override,catalog_source:membership.catalog_source}:null,platformStore,hms:hms||{},camp:camp||null,landing:landing||null,catalog:publicCatalog},{headers:{'Cache-Control':'no-store, max-age=0'}});
+    return NextResponse.json({ok:true,property,stayProperty,membership:membership?{store_id:membership.store_id,listing_override:override,catalog_source:membership.catalog_source}:null,platformStore,hms:hms||{},camp:camp||null,landing:landing||null,catalog:publicCatalog},{headers:{'Cache-Control':'no-store, max-age=0'}});
   }catch(error){
     return NextResponse.json({ok:false,error:error?.message||'Unable to load public property.'},{status:500});
   }

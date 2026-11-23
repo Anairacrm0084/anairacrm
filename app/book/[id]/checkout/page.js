@@ -20,7 +20,33 @@ function HotelBookingCheckout(){
  const [addons,setAddons]=useState([]),[selectedAddons,setSelectedAddons]=useState([]),[addonsLoading,setAddonsLoading]=useState(false),[compareQuotes,setCompareQuotes]=useState([]),[compareBusy,setCompareBusy]=useState(false);
  const [sessionId]=useState(()=>{try{return crypto.randomUUID()}catch{return `${Date.now()}-${Math.random().toString(36).slice(2)}`}});
  const [verificationId,setVerificationId]=useState(''),[verifyDestination,setVerifyDestination]=useState(''),[verifyMode,setVerifyMode]=useState('phone'),[verifySent,setVerifySent]=useState(false),[verifyToken,setVerifyToken]=useState(''),[verifyBusy,setVerifyBusy]=useState(false),[verified,setVerified]=useState(false);
- useEffect(()=>{(async()=>{try{const r=await resolveRestaurantId(key);if(!r)throw new Error('Property not found.');const [{data:h},{data:rt},{data:rps},{data:eng},{data:biz}]=await Promise.all([
+ useEffect(()=>{(async()=>{try{const r=await resolveRestaurantId(key);if(!r)throw new Error('Property not found.');
+  // Homestay / guest-house / cottage IDs belong to ana ira_stay_unit_types,
+  // not hms_room_types. Route these bookings to the canonical Stay checkout.
+  if(['homestay','guest_house','cottage'].includes(requestedStayType)){
+    const response=await fetch(`/api/public/hospitality/property/${encodeURIComponent(r.id)}?stay_type=${encodeURIComponent(requestedStayType)}`,{cache:'no-store'});
+    const payload=await response.json().catch(()=>({}));
+    if(!response.ok||!payload?.ok) throw new Error(payload?.error||'Published stay property could not be loaded.');
+    const stayProperty=payload.stayProperty;
+    if(!stayProperty?.id) throw new Error('Published accommodation property was not found.');
+    const catalog=payload.catalog||{};
+    const rooms=Array.isArray(catalog.rooms)?catalog.rooms:[];
+    const rates=Array.isArray(catalog.rates)?catalog.rates:[];
+    const requestedRoom=search.get('room_type');
+    const requestedRate=search.get('rate_plan');
+    const selectedRate=rates.find(x=>String(x.id)===String(requestedRate));
+    const selectedRoom=rooms.find(x=>String(x.id)===String(requestedRoom)||String(x.room_type_id)===String(requestedRoom))
+      ||(selectedRate?rooms.find(x=>String(x.id)===String(selectedRate.room_type_id)||String(x.room_type_id)===String(selectedRate.room_type_id)):null);
+    if(!selectedRoom) throw new Error('Selected accommodation is not active on this property. Please return to the room list and select again.');
+    const finalRate=selectedRate&&String(selectedRate.room_type_id)===String(selectedRoom.id)
+      ? selectedRate : rates.find(x=>String(x.room_type_id)===String(selectedRoom.id));
+    if(!finalRate) throw new Error('No active rate plan is configured for this accommodation.');
+    const qs=new URLSearchParams({unit_type:selectedRoom.id,rate_plan:finalRate.id});
+    for(const k of ['check_in','check_out','adults','children','booking_source']){const v=search.get(k);if(v)qs.set(k,v);}
+    router.replace(`/stay/${requestedStayType}/${stayProperty.id}/checkout?${qs.toString()}`);
+    return;
+  }
+  const [{data:h},{data:rt},{data:rps},{data:eng},{data:biz}]=await Promise.all([
   supabase.from('hms_settings').select('hotel_name,short_name,logo_url,cover_image_url,address,city,state,country,phone,whatsapp,currency').eq('restaurant_id',r.id).maybeSingle(),
   supabase.from('hms_room_types').select('*').eq('id',search.get('room_type')).eq('restaurant_id',r.id).eq('active',true).maybeSingle(),
   supabase.from('hms_rate_plans').select('*').eq('room_type_id',search.get('room_type')).eq('restaurant_id',r.id).eq('active',true).order('rate'),
