@@ -23,7 +23,7 @@ check('Custom DNS TXT ownership verification implemented',/resolveTxt\(/i.test(a
 check('Super Admin domain control is separately authorized',/Super Admin access required/i.test(adminApi)&&/profiles/i.test(adminApi));
 check('Next.js 16 proxy resolves custom hostnames',/export async function proxy/i.test(proxy)&&/resolve-domain/i.test(proxy)&&/NextResponse\.rewrite/i.test(proxy));
 check('Property domain management UI exists',/Add Domain/i.test(tenantUi)&&/Verify DNS/i.test(tenantUi)&&/pending until Super Admin verifies/i.test(tenantUi));
-check('Super Admin domain registry UI exists',/Property Store Domain Registry/i.test(adminUi)&&/Suspend/i.test(adminUi));
+check('Super Admin domain registry UI exists',/Property Custom Domain Registry/i.test(adminUi)&&/Suspend/i.test(adminUi));
 check('Marketplace and direct store publication are separate controls',/publish_marketplace/i.test(storeAdminApi)&&/publish_direct/i.test(storeAdminApi)&&/marketplace_approval_status/i.test(storeAdminApi));
 check('Marketplace RPCs require explicit Super Admin approval',/marketplace_approval_status='approved'/i.test(approvalMigration)&&/set search_path=''/i.test(approvalMigration));
 check('Browser clients cannot bypass DNS verification state',/adminDb\(\)/i.test(domainApi)&&/revoke insert,update,delete on public\.anaira_property_store_domains from anon,authenticated/i.test(read('supabase/migrations/20261127142215_property_store_domains_server_only_writes.sql')));

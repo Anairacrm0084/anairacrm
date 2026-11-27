@@ -11,12 +11,13 @@ const propertyRoomAlias = read('app/property/[id]/room/[room_type]/page.js');
 const roomDetails = read('app/book/[id]/room/[room_type]/page.js');
 
 assert.match(propertyPage, /HospitalityStorePage routeBase="\/property"/);
-assert.match(bookPage, /canonicalPropertyUrl\(id, '', query\)/);
+assert.match(bookPage, /HospitalityStorePage routeBase="\/book"/);
+assert.doesNotMatch(bookPage, /redirect\s*\(/);
 assert.match(shared, /function HospitalityStorePage\(\{routeBase='\/book'\}\)/);
 assert.match(shared, /return `\$\{routeBase\}\/\$\{key\}\/checkout\?/);
 assert.match(shared, /\$\{routeBase\}\/\$\{key\}\/room\//);
 assert.match(shared, /booking_source=\$\{encodeURIComponent\(bookingSource\)\}/);
-assert.match(propertyCheckout, /router\.push\(`\/property\/\$\{key\}/);
+assert.match(propertyCheckout, /HotelBookingCheckout routeBase="\/property"/);
 assert.match(propertyRoomAlias, /PropertyRoomDetails/);
 assert.match(roomDetails, /usePathname/);
 assert.ok(roomDetails.includes("const routeBase = pathname?.startsWith('/property/') ? '/property' : '/book';"));
