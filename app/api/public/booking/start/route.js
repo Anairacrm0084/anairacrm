@@ -5,7 +5,7 @@ import {adminDb} from '../../../../../lib/server/provider';
 export const runtime='nodejs';
 
 const HOTEL_RPC='anaira_start_verified_hotel_booking_transaction_v3';
-const CAMP_RPC='anaira_start_public_camp_booking';
+const CAMP_RPC='anaira_start_public_camp_booking_calendar';
 const STAY_RPC='anaira_start_public_stay_booking';
 
 function bad(message){return NextResponse.json({ok:false,error:message},{status:400})}

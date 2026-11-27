@@ -35,7 +35,12 @@ export default function BookingConfirmationPage(){
  }
  async function sharePdfOnWhatsApp(){
   setWhatsappBusy(true);setError('');
+<<<<<<< HEAD
   let waDigits=String(booking?.guest_phone||'').replace(/\\D/g,'').replace(/^0+/,'');if(waDigits.length===10)waDigits='91'+waDigits;
+=======
+  let waDigits=String(booking?.guest_phone||'').replace(/\D/g,'').replace(/^0+/,'');
+  if(waDigits.length===10)waDigits='91'+waDigits;
+>>>>>>> 1db34ac (Update booking confirmation WhatsApp PDF sharing)
   if(!waDigits){setError('Guest mobile number is missing. Add the booking phone number before sharing.');setWhatsappBusy(false);return;}
   const waUrl=`https://wa.me/${waDigits}?text=${encodeURIComponent(`Hello ${booking?.guest_name||'Guest'}, your ANAIRA booking confirmation is ready. Booking reference: ${booking?.booking_code||id}. Please find the PDF confirmation attached.`)}`;
   const popup=window.open('about:blank','_blank');
