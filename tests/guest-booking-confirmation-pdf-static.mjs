@@ -1,0 +1,20 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+
+const checkout=fs.readFileSync('components/booking/HotelBookingCheckout.jsx','utf8');
+const pdf=fs.readFileSync('app/api/public/booking/confirmation/pdf/route.js','utf8');
+assert.match(checkout,/async function downloadBookingConfirmation/);
+assert.match(checkout,/\/api\/public\/booking\/confirmation\/pdf/);
+assert.match(checkout,/BOOKING CONFIRMED/);
+assert.match(checkout,/BOOKING REFERENCE/);
+assert.match(checkout,/RESERVATION ID/);
+assert.match(checkout,/Download Booking Confirmation PDF/);
+assert.match(checkout,/Your booking reference is ready/);
+assert.match(checkout,/RESERVATION CREATED/);
+assert.match(checkout,/finalBookingStatus==='confirmed'/);
+assert.match(pdf,/anaira_public_booking_lookup/);
+assert.match(pdf,/p_booking_code:bookingCode/);
+assert.match(pdf,/p_guest_phone:phone/);
+assert.match(pdf,/application\/pdf/);
+assert.match(pdf,/content-disposition/);
+console.log('Guest booking confirmation + PDF static checks: PASS');
