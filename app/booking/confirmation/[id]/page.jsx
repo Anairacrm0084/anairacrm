@@ -35,7 +35,7 @@ export default function BookingConfirmationPage(){
  }
  async function sharePdfOnWhatsApp(){
   setWhatsappBusy(true);setError('');
-  const waDigits=String(booking?.guest_phone||'').replace(/\\D/g,'').replace(/^0+/,'');
+  let waDigits=String(booking?.guest_phone||'').replace(/\\D/g,'').replace(/^0+/,'');if(waDigits.length===10)waDigits='91'+waDigits;
   if(!waDigits){setError('Guest mobile number is missing. Add the booking phone number before sharing.');setWhatsappBusy(false);return;}
   const waUrl=`https://wa.me/${waDigits}?text=${encodeURIComponent(`Hello ${booking?.guest_name||'Guest'}, your ANAIRA booking confirmation is ready. Booking reference: ${booking?.booking_code||id}. Please find the PDF confirmation attached.`)}`;
   const popup=window.open('about:blank','_blank');
@@ -46,15 +46,10 @@ export default function BookingConfirmationPage(){
    if(!response.ok){const j=await response.json().catch(()=>({}));throw new Error(j.error||'PDF preparation failed.');}
    const blob=await response.blob();
    const file=new File([blob],`ANAIRA-Booking-${booking?.booking_code||id}.pdf`,{type:'application/pdf'});
-   if(navigator.share&&navigator.canShare?.({files:[file]})){
-    if(popup)popup.close();
-    await navigator.share({files:[file],title:'ANAIRA Booking Confirmation',text:`Booking confirmation for ${booking?.booking_code||id}`});
-    return;
-   }
    const objectUrl=URL.createObjectURL(blob);
    const a=document.createElement('a');a.href=objectUrl;a.download=file.name;document.body.appendChild(a);a.click();a.remove();
    if(popup)popup.location.href=waUrl;else window.location.href=waUrl;
-   setError('PDF downloaded and WhatsApp chat opened. Attach the downloaded PDF in WhatsApp and press Send.');
+   setError('WhatsApp chat opened for the guest. Attach the downloaded booking PDF and press Send.');
    window.setTimeout(()=>URL.revokeObjectURL(objectUrl),60000);
   }catch(e){if(popup)popup.close();setError(e.message||'WhatsApp sharing failed.');}
   finally{setWhatsappBusy(false);}
@@ -77,7 +72,7 @@ export default function BookingConfirmationPage(){
      <article><small><IndianRupee size={14}/> PAYMENT SUMMARY</small><b>{money(booking?.total_amount)}</b><span>Paid {money(booking?.paid_amount)}</span><span>Balance {money(booking?.balance_amount)}</span><em>Payment: {pretty(booking?.payment_status)}</em></article>
     </div>
     {error&&<div className="bc-inline-error">{error}</div>}
-    <div className="bc-actions"><button className="bc-primary" onClick={downloadPdf} disabled={!confirmed||downloading}><Download size={17}/>{downloading?'Preparing PDF…':'Download Confirmation PDF'}</button>{confirmed&&booking?.guest_phone&&<button className="bc-whatsapp" onClick={sharePdfOnWhatsApp} disabled={whatsappBusy}><Phone size={17}/>{whatsappBusy?'Preparing WhatsApp PDF…':'Share PDF on WhatsApp'}</button>}<button className="bc-secondary" onClick={()=>router.push('/booking-engine')}>Return to bookings</button></div>
+    <div className="bc-actions"><button className="bc-primary" onClick={downloadPdf} disabled={!confirmed||downloading}><Download size={17}/>{downloading?'Preparing PDF…':'Download Confirmation PDF'}</button>{confirmed&&booking?.guest_phone&&<button className="bc-whatsapp" onClick={sharePdfOnWhatsApp} disabled={whatsappBusy}><Phone size={17}/>{whatsappBusy?'Preparing WhatsApp PDF…':'Open WhatsApp & Attach PDF'}</button>}<button className="bc-secondary" onClick={()=>router.push('/booking-engine')}>Return to bookings</button></div>
     <div className="bc-foot"><ShieldCheck size={15}/> Verified from the property’s booking record · Keep your booking reference for check-in</div>
    </section>
   </div>
