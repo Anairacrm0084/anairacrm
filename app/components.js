@@ -8,7 +8,7 @@ const PLUGIN_BY_ROUTE = {
   '/loyalty':'crm','/marketing':'crm','/campaigns':'crm','/guest-relations':'crm','/complaints':'crm','/revenue':'crm',
   '/analytics':'crm','/events':'crm','/ai':'crm','/segmentation':'crm','/vip':'crm','/timeline':'crm','/upselling':'crm',
   '/forecasting':'crm','/competitors':'crm','/ota':'crm','/workflows':'crm','/intelligence':'crm','/guest-requests':'crm',
-  '/quotes':'crm','/partner-bookings':'crm','/reviews':'crm','/offers-coupons':'crm','/service-recovery':'crm','/service-tickets':'crm','/restaurant-crm':'crm','/customer-intelligence':'crm','/customer-ltv':'crm','/followups':'crm','/churn':'crm','/cross-selling':'crm','/reputation':'crm','/booking':'hotel-booking','/booking-engine':'hotel-booking','/hotel-management':'hotel-management-suite','/hotel-management/setup':'hotel-management-suite','/booking-engine/camping':'hotel-booking','/booking-engine/stays':'hotel-booking','/hotel-management/room-types':'hotel-management-suite','/hotel-management/rooms':'hotel-management-suite','/hotel-management/rates':'hotel-management-suite','/hotel-management/inventory':'hotel-management-suite','/hotel-management/rate-calendar':'hotel-management-suite','/pms':'hotel-pms','/reservation':'restaurant-reservation',
+  '/quotes':'crm','/partner-bookings':'crm','/reviews':'crm','/offers-coupons':'crm','/service-recovery':'crm','/service-tickets':'crm','/restaurant-crm':'crm','/customer-intelligence':'crm','/customer-ltv':'crm','/followups':'crm','/churn':'crm','/cross-selling':'crm','/reputation':'crm','/booking':'hotel-booking','/booking-engine':'hotel-booking','/hotel-management':'hotel-management-suite','/hotel-management/setup':'hotel-management-suite','/booking-engine/camping':'hotel-booking','/booking-engine/stays':'homestay-management','/hotel-management/room-types':'hotel-management-suite','/hotel-management/rooms':'hotel-management-suite','/hotel-management/rates':'hotel-management-suite','/hotel-management/inventory':'hotel-management-suite','/hotel-management/rate-calendar':'hotel-management-suite','/pms':'hotel-pms','/reservation':'restaurant-reservation',
   '/delivery':'food-delivery','/store':'restaurant-store','/restaurant-stores':'restaurant-store','/channel-manager':'channel-manager','/pos':'anaira-pos','/housekeeping':'hotel-pms','/seo':'seo-system','/plugins/seo-system/settings':'seo-system','/ai-reviews':'ai-review-system'
 };
 const PERMISSION_BY_ROUTE = {
@@ -20,13 +20,14 @@ const PERMISSION_BY_ROUTE = {
   '/delivery':'delivery.order.view','/store':'store.view','/channel-manager':'ota.sync.view','/pos':'pos.order.view','/housekeeping':'housekeeping.task.view','/my-work':'task.view','/team-tasks':'task.view',
   '/import-export':'customer.export','/activity':'staff.activity','/store-builder':'store.view','/plugins/seo-system/settings':'seo-system.configure'
 };
-const SUPER_ONLY_ROUTES = ['/super-admin','/anaira/super-admin','/admin','/properties','/business-admins','/audit','/platform-settings','/system','/super-admin/marketplace-settings','/super-admin/hotel-marketplace-settings','/super-admin/booking-engine','/super-admin/stores','/super-admin/anaira-store'];
+const SUPER_ONLY_ROUTES = ['/super-admin','/anaira/super-admin','/admin','/properties','/business-admins','/audit','/platform-settings','/system','/super-admin/marketplace-settings','/super-admin/hotel-marketplace-settings','/super-admin/booking-engine','/super-admin/stores','/super-admin/anaira-store','/super-admin/property-stores'];
 const ADMIN_ONLY_ROUTES = ['/store-builder','/users','/roles','/restaurant-setup'];
 const BUSINESS_SETTINGS_ROUTE='/business-settings';
 
 const SUPER_GROUPS = [
   {title:'COMMAND CENTER',items:[['▦','Dashboard','/admin'],['▦','Properties / Tenants','/properties'],['♙','Business Admins','/business-admins'],['♙','Users & Staff','/users'],['◆','Roles & Profiles','/roles'],['◇','Plugin Control Center','/plugins'],['⚙','Global Integrations','/super-admin/integrations'],['◆','SEO System','/seo'],['★','AI Review Automation','/ai-reviews'],['◫','Audit Logs','/audit'],['⚙','Platform Settings','/platform-settings'],['▣','Global Booking Engine','/super-admin/booking-engine'],['⌂','Hotel Profile / Setup','/hotel-management/setup'],['♨','Restaurant Profile / Setup','/restaurant-setup']]},
   {title:'ANAIRA STORES',items:[['◆','ANAIRA Store & QR','/super-admin/anaira-store'],['🏨','Hotel Marketplace Store','/anaira/hotels'],['⚙','Hotel Marketplace Settings','/super-admin/hotel-marketplace-settings'],['🍽','Restaurant Marketplace','/store'],['⚙','Restaurant Marketplace Settings','/super-admin/marketplace-settings']]},
+  {title:'ANAIRA BOOKING ENGINE',items:[['✓','Property Marketplace Approval','/super-admin/property-stores'],['⌂','All Stays Management','/booking-engine/stays'],['🏕','Camping Booking Engine','/booking-engine/camping'],['▣','Unified Booking & Payments','/booking-engine'],['▦','Hotel / Property Management','/hotel-management']]},
   {title:'CRM PLATFORM',items:[['◉','Customer 360','/customer-360'],['⌂','Hotel Guest CRM','/hotel-guest-crm'],['♨','Restaurant CRM','/restaurant'],['◆','Leads & Sales','/leads'],['▣','Corporate CRM','/corporate'],['♢','Partners','/partners'],['↔','Timeline / Interactions','/timeline'],['★','Guest Relations','/guest-relations'],['⚠','Complaints / Service Recovery','/complaints'],['★','Loyalty','/loyalty'],['◇','Segmentation','/segmentation'],['✦','VIP Management','/vip'],['◈','Offers & Coupons','/marketing'],['✉','Campaigns','/campaigns'],['◌','WhatsApp CRM','/whatsapp-crm'],['⚙','Workflows / Automation','/workflows'],['✦','Events & Upselling','/events']]},
   {title:'BUSINESS INTELLIGENCE',items:[['▤','Analytics','/analytics'],['₹','Revenue Management','/revenue'],['◈','Forecasting','/forecasting'],['◈','Competitor Intelligence','/competitors'],['⇄','OTA / Channel Performance','/ota'],['✧','AI Insights','/ai'],['✧','Decision Intelligence','/intelligence']]},
   {title:'OPERATIONS',items:[['⌂','Hotel Booking','/booking'],['▣','Booking Engine Control','/booking-engine'],['▦','Anaira Hotel Management','/hotel-management'],['▤','Hotel PMS','/pms'],['◫','Restaurant Reservation','/reservation'],['▣','Anaira POS','/pos'],['◉','Food Delivery','/delivery'],['⇄','Channel / OTA Manager','/channel-manager'],['⚙','Hotel Setup','/hotel-management/setup'],['♨','Restaurant Setup','/restaurant-setup']]},
@@ -180,6 +181,8 @@ function hospitalityOperationItems(types){
       ['🏨',`My ${m.label} Store`,'/store-builder?kind='+encodeURIComponent(type)+'&hospitality_type='+encodeURIComponent(type),'booking.view',plugin],
       ['▣',`${m.label} Booking Control`,`/booking-engine?type=${type}`,'booking.view',plugin]
     );
+    if(['homestay','guest_house','cottage'].includes(type)) out.push(['⌂','All Stays Management','/booking-engine/stays?type='+encodeURIComponent(type),'booking.view',plugin]);
+    if(type==='camp') out.push(['🏕','Camping Booking Engine','/booking-engine/camping','booking.view',plugin]);
   }
   return out;
 }
@@ -386,7 +389,7 @@ export function AppShell({children, active}) {
     const effectiveHospitalityTypes=(ctx.hospitalityTypes||[]).length?ctx.hospitalityTypes:(roleHospitalityType?[roleHospitalityType]:[]);
     const configuredHospitality=!!requestedType&&effectiveHospitalityTypes.some(x=>normalizeHospitalityType(x)===requestedType);
     const typeScopedStore=pathname==='/store-builder' && (routeParams.get('kind')==='hotel' || !!routeParams.get('hospitality_type'));
-    const isHospitalityRoute=pathname==='/hotel-management'||pathname.startsWith('/hotel-management/')||pathname==='/pms'||pathname==='/housekeeping'||pathname==='/booking'||pathname==='/booking-engine'||pathname==='/revenue-management'||typeScopedStore;
+    const isHospitalityRoute=pathname==='/hotel-management'||pathname.startsWith('/hotel-management/')||pathname==='/pms'||pathname==='/housekeeping'||pathname==='/booking'||pathname==='/booking-engine'||pathname==='/booking-engine/stays'||pathname==='/booking-engine/camping'||pathname==='/revenue-management'||typeScopedStore;
     // Property-scoped Homestay/Camp/Guest House/Cottage workspaces belong to
     // their tenant admins, including custom role keys such as homestay_admin.
     // Keep platform-only users/roles screens restricted.
@@ -405,10 +408,12 @@ export function AppShell({children, active}) {
     if(hotelRoute && !businessIsHotel && !hasConfiguredHospitality) { router.replace('/'); return; }
     if(restaurantRoute && !restaurantAdded) { router.replace('/'); return; }
     if(pathname==='/restaurant-setup') plugin='restaurant-store';
-    if(pathname==='/hotel-management'||pathname.startsWith('/hotel-management/')||pathname==='/booking-engine'||pathname==='/store-builder'){
+    if(pathname==='/hotel-management'||pathname.startsWith('/hotel-management/')||pathname==='/booking-engine'||pathname==='/booking-engine/stays'||pathname==='/booking-engine/camping'||pathname==='/store-builder'){
       if(requestedType) plugin=HOSPITALITY_PLUGIN[requestedType]||plugin;
+      else if(pathname==='/booking-engine/stays' && effectiveHospitalityTypes.some(t=>['homestay','guest_house','cottage'].includes(t))) plugin=HOSPITALITY_PLUGIN[effectiveHospitalityTypes.find(t=>['homestay','guest_house','cottage'].includes(t))]||plugin;
+      else if(pathname==='/booking-engine/camping' && configuredHospitality.includes('camp')) plugin=HOSPITALITY_PLUGIN.camp;
     }
-    const hospitalityPath = pathname==='/hotel-management' || pathname.startsWith('/hotel-management/') || pathname==='/pms' || pathname==='/housekeeping' || pathname==='/booking' || pathname==='/booking-engine' || typeScopedStore;
+    const hospitalityPath = pathname==='/hotel-management' || pathname.startsWith('/hotel-management/') || pathname==='/pms' || pathname==='/housekeeping' || pathname==='/booking' || pathname==='/booking-engine' || pathname==='/booking-engine/stays' || pathname==='/booking-engine/camping' || typeScopedStore;
     // Hotel Guest CRM is an enterprise CRM workspace. Older tenants may not
     // have a dedicated `hotel_guest_crm` row in restaurant_plugins because the
     // module was historically governed by the parent CRM plugin. In that case

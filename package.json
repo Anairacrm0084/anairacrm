@@ -44,7 +44,12 @@
     "ota:configuration-guard": "node scripts/ota-provider-configuration-guard.mjs",
     "public-hospitality:check": "node tests/public-hospitality-storefront-static.mjs",
     "homestay:route-check": "node tests/regression/homestay-store-routing.mjs",
-    "property-profile:check": "node tests/regression/property-profile-sidebar-admin-static.mjs"
+    "property-profile:check": "node tests/regression/property-profile-sidebar-admin-static.mjs",
+    "booking:marketplace-store-check": "node tests/public-hospitality-storefront-static.mjs",
+    "property-store-domains:check": "node tests/property-store-domains-static.mjs",
+    "booking:confirmation-check": "node tests/booking-confirmation-and-marketplace-ui-static.mjs",
+    "hospitality:luxury-ui-check": "node tests/luxury-hospitality-marketplace-storefront-static.mjs",
+    "marketplace:direct-property-booking-check": "node tests/global-marketplace-property-direct-booking.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

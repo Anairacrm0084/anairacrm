@@ -1,5 +1,6 @@
 'use client';
 import {useEffect,useMemo,useState} from 'react';
+import {useRouter} from 'next/navigation';
 import {AppShell,Header,Section,Pill,Kpi} from './components';
 import {supabase} from '../lib/supabase';
 
@@ -11,6 +12,7 @@ const addDays=(d,n)=>{const x=new Date(`${d}T12:00:00`);x.setDate(x.getDate()+n)
 function Field({label,children}){return <label className="hb-field"><span>{label}</span>{children}</label>}
 
 export default function HotelBookingAdmin(){
+ const router=useRouter();
  const [session,setSession]=useState(undefined),[profile,setProfile]=useState(null),[properties,setProperties]=useState([]),[rid,setRid]=useState(''),[rows,setRows]=useState([]),[selected,setSelected]=useState(null),[rooms,setRooms]=useState([]),[roomTypes,setRoomTypes]=useState([]),[rates,setRates]=useState([]),[loading,setLoading]=useState(false),[error,setError]=useState(''),[msg,setMsg]=useState(''),[search,setSearch]=useState(''),[showManual,setShowManual]=useState(false),[showAdvance,setShowAdvance]=useState(false),[showExtend,setShowExtend]=useState(false),[busy,setBusy]=useState(false),[proofBusy,setProofBusy]=useState(false);
  const [manual,setManual]=useState({roomTypeId:'',ratePlanId:'',roomId:'',checkIn:today(),checkOut:addDays(today(),1),adults:2,children:0,name:'',phone:'',email:'',notes:'',confirm:true});
  const [advance,setAdvance]=useState({amount:'',method:'cash',reference:'',proofUrl:'',notes:''});
@@ -27,7 +29,7 @@ export default function HotelBookingAdmin(){
  const manualRooms=useMemo(()=>rooms.filter(r=>r.room_type_id===manual.roomTypeId&&r.active&&['available','clean'].includes(r.status)&&['clean','inspected'].includes(r.housekeeping_status)),[rooms,manual.roomTypeId]);
  async function rpc(name,args){setBusy(true);setError('');setMsg('');try{const {data,error}=await supabase.rpc(name,args);if(error)throw error;if(data?.ok===false)throw new Error(data.error||'Operation failed');setMsg('Operation completed successfully.');await load();return data}catch(e){setError(e.message);throw e}finally{setBusy(false)}}
  async function updateTx(row,state){if(!row?.id)return;await supabase.from('crm_booking_transactions').update({state,updated_at:new Date().toISOString()}).eq('id',row.id).eq('tenant_id',row.tenant_id)}
- async function confirm(row){await rpc('anaira_hotel_confirm_reservation',{p_restaurant_id:row.tenant_id,p_reservation_id:row.hms_reservation_id,p_user_id:session.user.id});await updateTx(row,'confirmed')}
+ async function confirm(row){await rpc('anaira_hotel_confirm_reservation',{p_restaurant_id:row.tenant_id,p_reservation_id:row.hms_reservation_id,p_user_id:session.user.id});await updateTx(row,'confirmed');router.push(`/booking/confirmation/${encodeURIComponent(row.hms_reservation_id)}?restaurant_id=${encodeURIComponent(row.tenant_id)}&source=hms`)}
  async function cancel(row){if(!confirmBrowser('Cancel this booking and release its inventory?'))return;await rpc('anaira_hotel_cancel_reservation',{p_restaurant_id:row.tenant_id,p_reservation_id:row.hms_reservation_id,p_reason:'Cancelled manually from Hotel Booking',p_user_id:session.user.id});await updateTx(row,'cancelled')}
  function confirmBrowser(t){return window.confirm(t)}
  async function uploadProof(file,target='advance'){if(!file||!selected)return;setProofBusy(true);setError('');try{const fd=new FormData();fd.append('file',file);fd.append('restaurant_id',selected.tenant_id);const res=await fetch('/api/hotel/payment-proof',{method:'POST',body:fd});const j=await res.json();if(!res.ok||!j.ok)throw new Error(j.error||'Upload failed');if(target==='advance')setAdvance(x=>({...x,proofUrl:j.url}));}catch(e){setError(e.message)}finally{setProofBusy(false)}}

@@ -31,7 +31,7 @@
 - Confirm `anon` can execute the public hotel/HMS/camping search and booking RPCs, and public SELECT RLS exposes only active + marketplace-visible properties, active unit/rate catalogues, and safe availability fields.
 - Confirm the public booking RPCs enforce inventory holds atomically, prevent overbooking under concurrent checkout, validate property publication and rate validity, and expire abandoned holds.
 - `anaira_platform_stores` currently models `hotel` and `restaurant` platform store types. Alternative stays also have separate `anaira_stay_properties` / `camp_properties` records; these should remain the inventory source of truth rather than requiring a second duplicate Store record.
-- The hospitality marketplace UI currently searches one stay type at a time. A unified “All stays” search and filters across all stay types are a product enhancement, not a login fix.
+- Work 01 (2026-11-27) adds a unified “All stays” search that aggregates the existing hotel, camp, homestay, guest-house and cottage search RPCs. This is category aggregation over the current five supported hospitality types; it does not introduce new property types or replace their canonical inventory engines.
 
 ## Source archive / release blockers
 - The uploaded archive contains `.env.local` with `SUPABASE_SERVICE_ROLE_KEY`. This file is intentionally excluded from the patched delivery ZIP so a privileged database key is not redistributed. Copy your existing private `.env.local` into the extracted project locally; never commit or share it. `.env.example` remains included.
@@ -46,3 +46,8 @@
 - `app/hotel-store` was only a shell/links placeholder and did not provide a public customer catalogue.
 - `resolveRestaurantId()` previously rejected public property URLs when no enabled store membership existed, even though alternative stay properties have their own public publication records.
 - A static source audit cannot certify the connected Supabase schema, RLS policies, live records, payment provider callbacks, or production booking concurrency. Those require the correct project connection and runtime tests.
+
+
+## Work 01 source patch (2026-11-27)
+
+See `docs/WORK_01_CENTRAL_MARKETPLACE_PROPERTY_STORES_COMPLETION.md` for the exact file-level evidence and verification results. The property detail storefront now consumes the server-side public property API, and direct-store publication (`anaira_store_settings.published`) is treated separately from Central Marketplace publication (`anaira_platform_stores.published`). Draft store presentation settings are not exposed to anonymous visitors. No migration was added or applied by this patch.

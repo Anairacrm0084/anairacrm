@@ -1,5 +1,6 @@
 'use client';
 import {useEffect,useMemo,useState} from 'react';
+import {useRouter} from 'next/navigation';
 import {AppShell,Header,Section,Kpi,Table,Pill} from '../components';
 import {supabase} from '../../lib/supabase';
 const tabs=['Dashboard','Room Catalog','Reservations','Availability','Rates','Promotions','Packages','Add-ons','Engine Design','Policies','Reports'];
@@ -7,6 +8,7 @@ const money=v=>`₹${Number(v||0).toLocaleString('en-IN')}`;
 function Field({label,children}){return <label><span>{label}</span>{children}</label>}
 function Text({label,value,setValue,type='text'}){return <Field label={label}><input type={type} value={value??''} onChange={e=>setValue(e.target.value)}/></Field>}
 export default function Page(){
+ const router=useRouter();
  const [session,setSession]=useState(undefined),[profile,setProfile]=useState(null),[properties,setProperties]=useState([]),[rid,setRid]=useState(''),[tab,setTab]=useState('Dashboard'),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
  const [rooms,setRooms]=useState([]),[rates,setRates]=useState([]),[inventory,setInventory]=useState([]),[reservations,setReservations]=useState([]),[addons,setAddons]=useState([]),[promos,setPromos]=useState([]),[packages,setPackages]=useState([]);
  const [rateForm,setRateForm]=useState({name:'',code:'',room_type_id:'',board_type:'room_only',rate:0,cancellation_policy:'',active:true,min_stay:1});
@@ -43,6 +45,14 @@ export default function Page(){
     if(error)throw error;result=data;
    }
    if(result?.ok===false)throw new Error(result.error||'Reservation action was not accepted');
+   if(action==='approve'){
+    // Open a real confirmation page immediately after the database approval.
+    // Camping approvals use the original camp reservation ID; hotel approvals
+    // use the canonical HMS reservation ID returned by the confirmation RPC.
+    const confirmationId=camp?(result.reservation_id||row.id):(result.reservation_id||row.id);
+    router.push(`/booking/confirmation/${encodeURIComponent(confirmationId)}?restaurant_id=${encodeURIComponent(rid)}&source=${camp?'camp':'hms'}`);
+    return;
+   }
    await load();
   }catch(e){setError(e.message||'Reservation action failed')}finally{setBusy(false)}
  };

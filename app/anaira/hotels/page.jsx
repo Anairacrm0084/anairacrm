@@ -4,12 +4,32 @@ import Link from 'next/link';
 import {MapPin,Hotel,Home,House,CalendarDays,ArrowRight,ShieldCheck,Sparkles,ChevronRight,Star,Search,Compass,BadgeCheck,MapPinned,IndianRupee,CalendarCheck2,Headphones,SlidersHorizontal,LockKeyhole,BedDouble,Building2,CreditCard,FileCheck2,Bell,Heart,Globe2} from 'lucide-react';
 import {supabase} from '../../../lib/supabase';
 
+const STAY_TYPES=['hotel','camp','homestay','guest_house','cottage'];
+const TYPE_LABELS={all:'all stays',hotel:'hotels',camp:'camps',homestay:'homestays',guest_house:'guest houses',cottage:'cottages'};
+
+async function fetchMarketplaceRows(type,args){
+ const call=async(kind)=>{
+  const rpc=kind==='hotel'?'anaira_marketplace_hotel_search':kind==='camp'?'anaira_marketplace_camp_search':'anaira_marketplace_stay_search';
+  const rpcArgs=kind==='hotel'||kind==='camp'?args:{p_stay_type:kind,...args};
+  const {data,error}=await supabase.rpc(rpc,rpcArgs);
+  if(error)throw error;
+  return (data||[]).map(row=>({...row,_stay_type:kind}));
+ };
+ if(type!=='all')return {rows:await call(type),errors:[]};
+ const results=await Promise.allSettled(STAY_TYPES.map(call));
+ const rows=results.filter(x=>x.status==='fulfilled').flatMap(x=>x.value);
+ const errors=results.filter(x=>x.status==='rejected').map(x=>x.reason?.message||'A stay category could not be loaded.');
+ if(!rows.length&&errors.length===STAY_TYPES.length)throw new Error(errors[0]||'Unable to load marketplace availability.');
+ return {rows,errors};
+}
+
 const defaults={
- hotel_marketplace_enabled:true,hotel_home_title:'Exceptional stays. Beautiful destinations.',hotel_home_subtitle:'Discover verified hotels, live room availability and direct booking experiences across ANAIRA.',
+ hotel_marketplace_enabled:true,hotel_home_title:'Find a stay that feels like yours.',hotel_home_subtitle:'Thoughtfully selected hotels, homestays, cottages and camps. Discover beautiful places, compare live availability and book directly.',
  hotel_home_show_search:true,hotel_home_show_banners:true,hotel_home_show_destinations:true,hotel_home_show_trust:true,hotel_home_show_footer:true,
- hotel_home_hero_image:'',hotel_home_hero_mobile_image:'',hotel_home_hero_overlay:'0.48',hotel_home_background_media_type:'image',hotel_home_background_image:'',hotel_home_background_video:'',hotel_home_background_mobile_media_type:'image',hotel_home_background_mobile_image:'',hotel_home_background_mobile_video:'',hotel_home_background_overlay:'0',hotel_home_hero_cta:'Explore hotels',hotel_home_hero_cta_url:'#hotels',
+ hotel_home_hero_image:'',hotel_home_hero_mobile_image:'',hotel_home_hero_overlay:'0.48',hotel_home_background_media_type:'image',hotel_home_background_image:'',hotel_home_background_video:'',hotel_home_background_mobile_media_type:'image',hotel_home_background_mobile_image:'',hotel_home_background_mobile_video:'',hotel_home_background_overlay:'0',hotel_home_hero_cta:'Explore all stays',hotel_home_hero_cta_url:'#hotels',
  hotel_home_primary_color:'#17372b',hotel_home_accent_color:'#c7a15a',hotel_home_background_color:'#f6f3ed',hotel_home_surface_color:'#ffffff',hotel_home_text_color:'#20362d',
  hotel_home_container_width:1240,hotel_home_card_radius:22,hotel_home_hotel_columns:3,hotel_home_destination_columns:5,
+ hotel_home_show_why:false,hotel_home_show_about:false,hotel_home_show_stats:false,hotel_home_show_workflow:false,hotel_home_show_tech:false,
  hotel_home_destination_title:'Top destinations',hotel_home_destination_subtitle:'Explore the places guests are discovering across ANAIRA.',
  hotel_home_footer_text:'ANAIRA Hotels — discover stays, compare live availability and book with confidence.'
 };
@@ -19,13 +39,13 @@ function datePlus(days){const d=new Date();d.setDate(d.getDate()+days);return d.
 function groupStayProperties(rows=[]){
  const grouped=new Map();
  for(const row of rows){
-   const key=row.property_id||row.restaurant_id||row.id;
+   const key=`${row._stay_type||'stay'}:${row.property_id||row.restaurant_id||row.id}`;
    if(!grouped.has(key)){
-     grouped.set(key,{...row,available_units:Number(row.available_units)||0,room_type_count:1,starting_rate:Number(row.rate)||0});
+     grouped.set(key,{...row,available_units:Number(row.available_units??row.available_room_types)||0,room_type_count:1,starting_rate:Number(row.rate)||0});
      continue;
    }
    const current=grouped.get(key);
-   current.available_units+=Number(row.available_units)||0;
+   current.available_units+=Number(row.available_units??row.available_room_types)||0;
    current.room_type_count+=1;
    const candidate=Number(row.rate)||0;
    if(candidate>0&&(!current.starting_rate||candidate<current.starting_rate)){
@@ -42,13 +62,14 @@ function groupStayProperties(rows=[]){
 export default function Hotels(){
  const [settings,setSettings]=useState(defaults),[banners,setBanners]=useState([]),[destinations,setDestinations]=useState([]),
  [q,setQ]=useState(''),[inDate,setInDate]=useState(''),[outDate,setOutDate]=useState(''),[adults,setAdults]=useState(2),[children,setChildren]=useState(0),
- [rows,setRows]=useState([]),[loading,setLoading]=useState(false),[msg,setMsg]=useState(''),[bannerIndex,setBannerIndex]=useState(0),[stayType,setStayType]=useState('hotel');
+ [rows,setRows]=useState([]),[loading,setLoading]=useState(false),[msg,setMsg]=useState(''),[bannerIndex,setBannerIndex]=useState(0),[stayType,setStayType]=useState('all');
  const bannerSlides=banners.length?banners.map((_,i)=>[0,1,2].map(offset=>banners[(i+offset)%banners.length])):[];
 
  useEffect(()=>{(async()=>{
    const params=typeof window!=='undefined'?new URLSearchParams(window.location.search):null;
    const destinationParam=params?.get('destination')||'';
-   const requestedType=['camp','homestay','guest_house','cottage'].includes(params?.get('stay_type'))?params.get('stay_type'):'hotel';
+   const requestedParam=params?.get('stay_type')||'all';
+   const requestedType=['all',...STAY_TYPES].includes(requestedParam)?requestedParam:'all';
    setStayType(requestedType);
    const {data}=await supabase.from('anaira_platform_settings').select('key,value').in('key',Object.keys(defaults));
    const x={...defaults};(data||[]).forEach(r=>x[r.key]=r.value?.value??r.value);setSettings(x);
@@ -65,22 +86,13 @@ export default function Hotels(){
    }
    const next=datePlus(1),after=datePlus(2);setInDate(next);setOutDate(after);
    setLoading(true);
-   const initialRpc=requestedType==='hotel'?'anaira_marketplace_hotel_search':requestedType==='camp'?'anaira_marketplace_camp_search':'anaira_marketplace_stay_search';
-   const initialArgs=requestedType==='hotel'
-     ?{p_check_in:next,p_check_out:after,p_adults:2,p_children:0,p_destination:destinationParam||null}
-     :requestedType==='camp'
-       ?{p_check_in:next,p_check_out:after,p_adults:2,p_children:0,p_destination:destinationParam||null}
-       :{p_stay_type:requestedType,p_check_in:next,p_check_out:after,p_adults:2,p_children:0,p_destination:destinationParam||null};
-   const {data:live,error:liveError}=await supabase.rpc(initialRpc,initialArgs);
-   if(liveError){
-     setRows([]);
-     setMsg(liveError.message||`Unable to load ${requestedType.replace('_',' ')} availability.`);
-   }else{
-     setRows(live||[]);
-     if(!(live||[]).length && requestedType!=='hotel' && requestedType!=='camp'){
-       setMsg(`No published ${requestedType.replace('_',' ')} listings with available rooms were found.`);
-     }
-   }
+   const initialArgs={p_check_in:next,p_check_out:after,p_adults:2,p_children:0,p_destination:destinationParam||null};
+   try{
+     const result=await fetchMarketplaceRows(requestedType,initialArgs);
+     setRows(result.rows);
+     if(result.errors.length)setMsg(`${result.errors.length} category search(es) could not be loaded. Showing available results from the remaining categories.`);
+     else if(!result.rows.length)setMsg(`No published ${TYPE_LABELS[requestedType]||requestedType} with live availability were found.`);
+   }catch(liveError){setRows([]);setMsg(liveError.message||`Unable to load ${TYPE_LABELS[requestedType]||requestedType} availability.`)}
    setLoading(false);
  })()},[]);
 
@@ -96,17 +108,14 @@ export default function Hotels(){
    if(!checkIn||!checkOut){setMsg('Select check-in and check-out dates.');return}
    if(checkOut<=checkIn){setMsg('Check-out must be after check-in.');return}
    setLoading(true);setMsg('');
-   const rpc=type==='hotel'?'anaira_marketplace_hotel_search':type==='camp'?'anaira_marketplace_camp_search':'anaira_marketplace_stay_search';
    const commonArgs={p_check_in:checkIn,p_check_out:checkOut,p_adults:Math.max(1,Number(adults)||1),p_children:Math.max(0,Number(children)||0),p_destination:destination||null};
-   const rpcArgs=type==='hotel'||type==='camp'?commonArgs:{p_stay_type:type,...commonArgs};
-   const {data,error}=await supabase.rpc(rpc,rpcArgs);
+   try{
+     const result=await fetchMarketplaceRows(type,commonArgs);
+     setRows(result.rows);
+     if(result.errors.length)setMsg(`${result.errors.length} category search(es) failed. Showing results from the available search services.`);
+     else if(!result.rows.length)setMsg(`No published ${TYPE_LABELS[type]||type} with live availability found${destination?` in ${destination}`:''}.`);
+   }catch(error){setRows([]);setMsg(error.message||'Marketplace search failed.');}
    setLoading(false);
-   if(error){setRows([]);setMsg(error.message);return}
-   setRows(data||[]);
-   if(!(data||[]).length){
-     const label=type==='camp'?'camps':type==='hotel'?'hotels':type.replace('_',' ')+'s';
-     setMsg(`No published ${label} with live availability found${destination?` in ${destination}`:''}.`);
-   }
    document.getElementById('hotel-results')?.scrollIntoView({behavior:'smooth',block:'start'});
  }
  async function search(){return runSearch(stayType,q,inDate,outDate)}
@@ -119,9 +128,12 @@ export default function Hotels(){
   '--hotel-radius':`${settings.hotel_home_card_radius||22}px`,'--hotel-cols':settings.hotel_home_hotel_columns||3,
   '--hotel-dest-cols':settings.hotel_home_destination_columns||5,'--hotel-overlay':settings.hotel_home_hero_overlay||.48
  };
- const displayRows=['homestay','guest_house','cottage'].includes(stayType)?groupStayProperties(rows):rows;
+ // One card per property across every category. The RPCs return room/unit-level
+ // rows for some stay types, so grouping only alternative stays created duplicate
+ // cards and made the All Stays view look incomplete.
+ const displayRows=groupStayProperties(rows);
  return <main className="hotel-market-pro hotel-market-full" style={css}>
-
+  <header className="anaira-stays-topbar"><Link href="/anaira/hotels" className="anaira-stays-wordmark"><span className="anaira-stays-mark">A</span><span>ANAIRA <small>STAYS & EXPERIENCES</small></span></Link><nav><a href="#hotel-results">Explore stays</a><a href="#destinations">Destinations</a><a href="/anaira/platform">About ANAIRA</a></nav><a className="anaira-host-link" href="/login">List your property <ArrowRight size={14}/></a></header>
   <section className="hotel-pro-hero">
    {(settings.hotel_home_background_media_type==='video'&&settings.hotel_home_background_video)||settings.hotel_home_background_image||settings.hotel_home_background_mobile_image||settings.hotel_home_background_mobile_video?
     <div className="hotel-pro-hero-background" aria-hidden="true">
@@ -136,36 +148,36 @@ export default function Hotels(){
     </div>:null}
    <div className="hotel-pro-hero-grid">
     <div className="hotel-pro-copy">
-     <div className="hotel-pro-kicker"><Sparkles size={14}/> {stayType==='hotel'?'HOTELS':stayType==='camp'?'CAMPS':stayType==='homestay'?'HOMESTAYS':stayType==='guest_house'?'GUEST HOUSES':'COTTAGES'} • LIVE AVAILABILITY</div>
+     <div className="hotel-pro-kicker"><Sparkles size={14}/> {stayType==='all'?'ALL STAYS':stayType==='hotel'?'HOTELS':stayType==='camp'?'CAMPS':stayType==='homestay'?'HOMESTAYS':stayType==='guest_house'?'GUEST HOUSES':'COTTAGES'} • LIVE AVAILABILITY</div>
      <h1>{settings.hotel_home_title}</h1><p>{settings.hotel_home_subtitle}</p>
      {settings.hotel_home_show_search!==false&&<div className="hotel-pro-search-wrap" id="hotel-search">
-     <div className="hotel-stay-switch" role="tablist" aria-label="Stay type">{[['hotel','Hotels',Hotel],['camp','Camps',Compass],['homestay','Homestays',Home],['guest_house','Guest Houses',Building2],['cottage','Cottages',House]].map(([v,l,I])=><button key={v} type="button" className={stayType===v?'active':''} onClick={()=>switchStayType(v)}><I size={16}/> {l}</button>)}</div>
+     <div className="hotel-stay-switch" role="tablist" aria-label="Stay type">{[['all','All stays',Globe2],['hotel','Hotels',Hotel],['camp','Camps',Compass],['homestay','Homestays',Home],['guest_house','Guest Houses',Building2],['cottage','Cottages',House]].map(([v,l,I])=><button key={v} type="button" className={stayType===v?'active':''} onClick={()=>switchStayType(v)}><I size={16}/> {l}</button>)}</div>
      <div className="hotel-pro-search">
       <label><MapPin size={17}/><span>Destination<input value={q} onChange={e=>setQ(e.target.value)} placeholder="Kullu, Manali, Goa…"/></span></label>
       <label><CalendarDays size={17}/><span>Check-in<input type="date" value={inDate} onChange={e=>setInDate(e.target.value)}/></span></label>
       <label><CalendarDays size={17}/><span>Check-out<input type="date" value={outDate} onChange={e=>setOutDate(e.target.value)}/></span></label>
       <label>{stayType==='camp'?<Compass size={17}/>:<Hotel size={17}/>}<span>Guests<div className="hotel-pro-guests"><div className="hotel-pro-guest-field"><small>Adults</small><input aria-label="Adults" type="number" min="1" value={adults} onChange={e=>setAdults(e.target.value)}/></div><div className="hotel-pro-guest-field"><small>Children</small><input aria-label="Children" type="number" min="0" value={children} onChange={e=>setChildren(e.target.value)}/></div></div></span></label>
-      <button onClick={search} disabled={loading}>{loading?'Searching…':`Search ${stayType==='hotel'?'hotels':stayType==='camp'?'camps':stayType==='guest_house'?'guest houses':stayType==='homestay'?'homestays':'cottages'}`} <ArrowRight size={16}/></button>
+      <button onClick={search} disabled={loading}>{loading?'Searching…':`Search ${TYPE_LABELS[stayType]||stayType}`} <ArrowRight size={16}/></button>
      </div></div>}
-     <a className="hotel-pro-cta" href={settings.hotel_home_hero_cta_url||'#hotel-results'}>{settings.hotel_home_hero_cta||'Explore hotels'} <ChevronRight size={16}/></a>
+     <a className="hotel-pro-cta" href={settings.hotel_home_hero_cta_url||'#hotel-results'}>{settings.hotel_home_hero_cta||(stayType==='all'?'Explore all stays':'Explore stays')} <ChevronRight size={16}/></a>
     </div>
-    {(settings.hotel_home_hero_media_type==='video'&&settings.hotel_home_hero_video)||settings.hotel_home_hero_image?
+    {(settings.hotel_home_hero_media_type==='video'&&settings.hotel_home_hero_video)||settings.hotel_home_hero_image||settings.hotel_home_hero_mobile_image||settings.hotel_home_hero_mobile_video?
       <div className="hotel-pro-hero-media">
        {(settings.hotel_home_hero_mobile_media_type==='video'&&settings.hotel_home_hero_mobile_video)?
          <video className="hotel-pro-hero-media-mobile" src={settings.hotel_home_hero_mobile_video} autoPlay muted loop playsInline/>:
          (settings.hotel_home_hero_mobile_image||settings.hotel_home_hero_image)?<img className="hotel-pro-hero-media-mobile" src={settings.hotel_home_hero_mobile_image||settings.hotel_home_hero_image} alt="ANAIRA Hotels"/>:null}
        {settings.hotel_home_hero_media_type==='video'&&settings.hotel_home_hero_video?
          <video className="hotel-pro-hero-media-desktop" src={settings.hotel_home_hero_video} autoPlay muted loop playsInline/>:
-         settings.hotel_home_hero_image?<img className="hotel-pro-hero-media-desktop" src={settings.hotel_home_hero_image} alt="ANAIRA Hotels"/>:null}
+         (settings.hotel_home_hero_image||settings.hotel_home_hero_mobile_image)?<img className="hotel-pro-hero-media-desktop" src={settings.hotel_home_hero_image||settings.hotel_home_hero_mobile_image} alt="ANAIRA Hotels"/>:null}
       </div>:
-      <div className="hotel-pro-hero-placeholder"><div><Compass size={46}/><b>ANAIRA HOTELS</b><span>Curated stays • Live availability • Direct booking</span></div></div>}
+      <div className="hotel-pro-hero-placeholder"><div><Compass size={46}/><b>ANAIRA STAYS</b><span>Hotels • Homestays • Cottages • Camps • Live availability</span></div></div>}
    </div>
   </section>
 
-  {settings.hotel_home_show_trust!==false&&<div className="hotel-pro-trust"><span><ShieldCheck size={16}/> Verified {stayType==='hotel'?'hotel':stayType==='camp'?'camp':stayType==='homestay'?'homestay':stayType==='guest_house'?'guest house':'cottage'} listings</span><span><CalendarDays size={16}/> Live availability</span><span><Hotel size={16}/> Direct inventory</span><span><Sparkles size={16}/> ANAIRA customer continuity</span></div>}
+  {settings.hotel_home_show_trust!==false&&<div className="hotel-pro-trust"><span><ShieldCheck size={16}/> Verified {stayType==='all'?'stay':stayType==='hotel'?'hotel':stayType==='camp'?'camp':stayType==='homestay'?'homestay':stayType==='guest_house'?'guest house':'cottage'} listings</span><span><CalendarDays size={16}/> Live availability</span><span><Hotel size={16}/> Direct inventory</span><span><Sparkles size={16}/> ANAIRA customer continuity</span></div>}
 
   <section className="hotel-pro-wrap">
-   {settings.hotel_home_show_destinations!==false&&destinations.length>0&&<section className="hotel-pro-destinations">
+   {settings.hotel_home_show_destinations!==false&&destinations.length>0&&<section className="hotel-pro-destinations" id="destinations">
     <div className="hotel-pro-section-head"><div><small>EXPLORE BY DESTINATION</small><h2>{settings.hotel_home_destination_title}</h2><p>{settings.hotel_home_destination_subtitle}</p></div><span>{destinations.length} curated places</span></div>
     <div className="hotel-destination-grid">
      {destinations.map(d=><button className="hotel-destination-card" key={d.id} onClick={()=>chooseDestination(d.name)}>
@@ -176,10 +188,10 @@ export default function Hotels(){
    </section>}
 
 
-   <section className="hotel-pro-why" aria-label="Why book with Anaira Hotel and Camping Marketplace">
-    <div className="hotel-pro-section-center"><small>EXPLORE · BOOK · STAY · WITH ANAIRA</small><h2>Why Book with Anaira Hotel & Camping Marketplace?</h2><p>More destinations, better stays, camps and a smoother booking experience for every traveler.</p></div>
+   {settings.hotel_home_show_why===true&&<section className="hotel-pro-why" aria-label="Why book with Anaira Hotel and Camping Marketplace">
+    <div className="hotel-pro-section-center"><small>EXPLORE · BOOK · STAY · WITH ANAIRA</small><h2>Thoughtfully chosen stays. Seamless booking.</h2><p>More destinations, better stays, camps and a smoother booking experience for every traveler.</p></div>
     <div className="hotel-pro-feature-grid">
-     <article><i><BadgeCheck size={22}/></i><b>Verified Hotels & Camps</b><span>Handpicked and verified properties</span></article>
+     <article><i><BadgeCheck size={22}/></i><b>Verified Hospitality Properties</b><span>Handpicked and verified properties</span></article>
      <article><i><MapPinned size={22}/></i><b>Top Destinations</b><span>Explore the best Himalayan locations</span></article>
      <article><i><IndianRupee size={22}/></i><b>Best Price Guarantee</b><span>Compare rates, plans and offers</span></article>
      <article><i><CalendarCheck2 size={22}/></i><b>Real-time Availability</b><span>Live room inventory and instant booking</span></article>
@@ -188,7 +200,7 @@ export default function Hotels(){
      <article><i><LockKeyhole size={22}/></i><b>Safe & Secure</b><span>Trusted booking and payment flow</span></article>
      <article><i><Compass size={22}/></i><b>Hotels, Camps & Experiences</b><span>Stay, camp and local experiences</span></article>
     </div>
-   </section>
+   </section>}
 
    {settings.hotel_home_show_banners!==false&&banners.length>0&&<section className="hotel-pro-banner-carousel" aria-label="Hotel promotions">
     <div className="hotel-pro-banner-viewport">
@@ -208,18 +220,38 @@ export default function Hotels(){
       <div className="hotel-banner-dots">{bannerSlides.map((_,i)=><button type="button" key={i} className={i===bannerIndex?'active':''} onClick={()=>setBannerIndex(i)} aria-label={`Show banner set ${i+1}`}/>)}</div>
      </>}
     </div>
-   </section>}   <section id="hotel-results">
-    <div className="hotel-pro-section-head"><div><small>LIVE {stayType.replace('_',' ').toUpperCase()} DISCOVERY</small><h2>{q?`${stayType.replace('_',' ')}s in ${q}`:`Featured ${stayType.replace('_',' ')}s with live availability`}</h2><p>{stayType==='hotel'?'Rooms, availability and booking flow are sourced from the canonical Hotel Management System.':'Live availability, guest-based pricing and booking flow are sourced from the canonical Anaira stay engine.'}</p></div><span>{rows.length?`${displayRows.length} live results`:'No matching live results'}</span></div>
+   </section>}
+   <section id="hotel-results">
+    <div className="hotel-pro-section-head"><div><small>CURATED ANAIRA COLLECTION · {stayType==='all'?'ALL STAYS':stayType.replace('_',' ').toUpperCase()}</small><h2>{q?`${TYPE_LABELS[stayType]||stayType} in ${q}`:`${stayType==='all'?'Explore all stays':`Featured ${TYPE_LABELS[stayType]||stayType}`} with live availability`}</h2><p>{stayType==='all'?'Compare hotels, homestays, guest houses, cottages and camps in one search. Results are sourced from each category’s live inventory engine.':stayType==='hotel'?'Rooms, availability and booking flow are sourced from the canonical Hotel Management System.':'Live availability, guest-based pricing and booking flow are sourced from the canonical Anaira stay engine.'}</p></div><span>{rows.length?`${displayRows.length} live properties`:'No matching live results'}</span></div>
+    {stayType==='all'&&<div className="hotel-pro-category-counts">{STAY_TYPES.map(category=><span key={category}><b>{displayRows.filter(x=>x._stay_type===category).length}</b>{TYPE_LABELS[category]}</span>)}</div>}
+    {stayType==='all'&&<p className="hotel-pro-approval-note">All five categories are searched. Only active, marketplace-approved properties with live availability appear in this public collection; each property’s direct store remains independent.</p>}
     {msg&&<div className="hotel-pro-message">{msg}</div>}
-    {loading?<div className="hotel-pro-empty"><Search size={30}/><h3>Finding available {stayType==='camp'?'camps':'hotels'}…</h3><p>Checking live {stayType==='camp'?'camp':'room'} inventory.</p></div>:
-     displayRows.length?<div className="hotel-pro-grid">{displayRows.map(x=>['homestay','guest_house','cottage'].includes(stayType)?<article className="hotel-pro-card" key={x.restaurant_id}><div className="hotel-pro-cover">{(x.cover_image_url||x.cover_image)?<img src={x.cover_image_url||x.cover_image} alt=""/>:<div><Home size={42}/></div>}<span>{stayType.replace('_',' ').toUpperCase()}</span><button aria-label="Stay property"><Star size={14}/></button></div><div className="hotel-pro-card-body"><div className="hotel-pro-location"><MapPin size={13}/>{x.destination||x.city||'Destination'}</div><h3>{x.property_name||x.name}</h3><p>Live availability · {x.pricing_mode==='per_person'?'Per-person pricing':'Per-unit pricing'} · Secure booking</p><div className="hotel-pro-stats"><span>{x.available_units||0} available · {x.room_type_count||1} room types</span><span>From ₹{Number(x.rate||0).toLocaleString('en-IN')} / {x.pricing_mode==='per_person'?'person':'unit'}</span></div><Link className="hotel-pro-book" href={`/stay/${stayType}/${x.property_id}?check_in=${inDate}&check_out=${outDate}&adults=${adults}&children=${children}&booking_source=anaira-global-marketplace`}>View property & book <ArrowRight size={15}/></Link></div></article>:stayType==='camp'?<article className="hotel-pro-card" key={x.restaurant_id}><div className="hotel-pro-cover">{(x.cover_image_url||x.cover_image)?<img src={x.cover_image_url||x.cover_image} alt=""/>:<div><Compass size={42}/></div>}<span>LIVE CAMP</span><button aria-label="Camping property"><Star size={14}/></button></div><div className="hotel-pro-card-body"><div className="hotel-pro-location"><MapPin size={13}/>{x.destination||x.city||x.address||'Destination'}</div><h3>{x.property_name||x.name||x.name}</h3><p>{x.description||'Live camps · Per-person pricing · Secure booking'}</p><div className="hotel-pro-stats">{x.unit_type_id?<><span>{x.available_units||0} available</span><span>From ₹{Number(x.rate||0).toLocaleString('en-IN')} / person</span></>:<><span>Property listed · Setup pending</span><span>Rates & tents being configured</span></>}</div><Link className="hotel-pro-book" href={`/property/${x.restaurant_id}?check_in=${inDate}&check_out=${outDate}&adults=${adults}&children=${children}&booking_source=anaira-global-marketplace`}>View property & book <ArrowRight size={15}/></Link></div></article>:<article className="hotel-pro-card" key={x.restaurant_id}><div className="hotel-pro-cover">{(x.listing_override?.cover_url||x.cover_image)?<img src={x.listing_override?.cover_url||x.cover_image} alt=""/>:<div><Hotel size={42}/></div>}<span>LIVE HOTEL</span><button aria-label="Featured hotel"><Star size={14}/></button></div><div className="hotel-pro-card-body"><div className="hotel-pro-location"><MapPin size={13}/>{x.city||x.address||'Destination'}</div><h3>{x.listing_override?.title||x.hotel_name}</h3><p>{x.listing_override?.tagline||'Live rooms · Direct booking · Secure guest journey'}</p><div className="hotel-pro-stats"><span>{x.available_room_types||0} room types</span><span>{inDate} → {outDate}</span></div><Link className="hotel-pro-book" href={`/property/${x.restaurant_id}?check_in=${inDate}&check_out=${outDate}&adults=${adults}&children=${children}&booking_source=anaira-global-marketplace`}>View rooms & book <ArrowRight size={15}/></Link></div></article>)}</div>:
-     <div className="hotel-pro-empty"><Hotel size={30}/><h3>Search live {stayType==='hotel'?'hotel':stayType==='camp'?'camping':stayType==='guest_house'?'guest house':stayType==='homestay'?'homestay':'cottage'} inventory</h3><p>Choose dates and a destination above. Results are always sourced from the published inventory for the selected stay type.</p></div>}
+    {loading?<div className="hotel-pro-empty"><Search size={30}/><h3>Finding available {TYPE_LABELS[stayType]||stayType}…</h3><p>Checking live inventory across the selected accommodation categories.</p></div>:
+     displayRows.length?<div className="hotel-pro-grid">{displayRows.map((x,index)=>{
+       const kind=x._stay_type||stayType;
+       const isAlternative=['homestay','guest_house','cottage'].includes(kind);
+       const isCamp=kind==='camp';
+       const propertyId=isAlternative?x.property_id:x.restaurant_id;
+       const href=isAlternative?`/stay/${kind}/${propertyId}`:`/property/${propertyId}`;
+       const title=isAlternative?(x.property_name||x.name):(isCamp?(x.property_name||x.name):(x.listing_override?.title||x.hotel_name));
+       const image=isAlternative?(x.cover_image_url||x.cover_image):(isCamp?(x.cover_image_url||x.cover_image):(x.listing_override?.cover_url||x.cover_image));
+       const category=kind.replace('_',' ').toUpperCase();
+       return <article className="hotel-pro-card" key={`${kind}:${propertyId||index}`}>
+        <div className="hotel-pro-cover">{image?<img src={image} alt={title||category}/>:<div>{isAlternative?<Home size={42}/>:isCamp?<Compass size={42}/>:<Hotel size={42}/>}</div>}<span>{category}</span></div>
+        <div className="hotel-pro-card-body"><div className="hotel-pro-location"><MapPin size={13}/>{x.destination||x.city||x.address||'Destination'}</div><h3>{title||'Hospitality Property'}</h3>
+         <p>{isAlternative?`Live availability · ${x.pricing_mode==='per_person'?'Per-person pricing':'Per-unit pricing'} · Secure booking`:isCamp?(x.description||'Live camps · Per-person pricing · Secure booking'):(x.listing_override?.tagline||'Live rooms · Direct booking · Secure guest journey')}</p>
+         <div className="hotel-pro-stats">{isCamp?<><span>{x.available_units||0} available · {x.room_type_count||1} unit types</span><span>{x.rate?`From ₹${Number(x.rate).toLocaleString('en-IN')} / ${x.pricing_mode==='per_person'?'person':'unit'}`:'Check live rates'}</span></>:isAlternative?<><span>{x.available_units||0} available · {x.room_type_count||1} unit types</span><span>From ₹{Number(x.rate||0).toLocaleString('en-IN')} / {x.pricing_mode==='per_person'?'person':'unit'}</span></>:<><span>{x.available_units||0} room types</span><span>{inDate} → {outDate}</span></>}</div>
+         <Link className="hotel-pro-book" href={`${href}?${!isAlternative?`stay_type=${kind}&`:''}check_in=${inDate}&check_out=${outDate}&adults=${adults}&children=${children}&booking_source=anaira-global-marketplace`}>View property & book <ArrowRight size={15}/></Link>
+        </div>
+       </article>;
+     })}</div>:
+     <div className="hotel-pro-empty"><Hotel size={30}/><h3>Search live {TYPE_LABELS[stayType]||stayType} inventory</h3><p>Choose dates and a destination above. Results are sourced from the published inventory for the selected accommodation categories.</p></div>}
    </section>
   </section>
 
-  <section className="hotel-pro-about" aria-label="About Anaira Hotel Engine">
+  {settings.hotel_home_show_about===true&&<section className="hotel-pro-about" aria-label="About Anaira Hotel Engine">
    <div className="hotel-pro-about-copy">
-    <small>ABOUT ANAIRA HOTEL & CAMPING ENGINE</small>
+    <small>ABOUT ANAIRA STAYS MARKETPLACE</small>
     <h2>A New Generation<br/>Hospitality Platform</h2>
     <div className="hotel-pro-gold-line"/>
     <p><strong>Anaira Graphics & Digital Solution</strong> is a technology and digital solutions company established in <strong>2013</strong>, serving businesses with creative, digital, web and technology solutions.</p>
@@ -231,16 +263,16 @@ export default function Hotels(){
     {settings.hotel_home_hero_media_type==='video'&&settings.hotel_home_hero_video?<video className="hotel-about-desktop" src={settings.hotel_home_hero_video} autoPlay muted loop playsInline/>:settings.hotel_home_hero_image?<img className="hotel-about-desktop" src={settings.hotel_home_hero_image} alt="Anaira Hotel Engine"/>:null}
     {settings.hotel_home_hero_mobile_media_type==='video'&&settings.hotel_home_hero_mobile_video?<video className="hotel-about-mobile" src={settings.hotel_home_hero_mobile_video} autoPlay muted loop playsInline/>:(settings.hotel_home_hero_mobile_image||settings.hotel_home_hero_image)?<img className="hotel-about-mobile" src={settings.hotel_home_hero_mobile_image||settings.hotel_home_hero_image} alt="Anaira Hotel Engine"/>:null}
    </div>
-  </section>
+  </section>}
 
-  <div className="hotel-pro-about-stats">
+  {settings.hotel_home_show_stats===true&&<div className="hotel-pro-about-stats">
    <article><i><CalendarCheck2 size={20}/></i><div><b>2013</b><span>Company established</span></div></article>
    <article><i><Building2 size={20}/></i><div><b>100+ Hotels</b><span>Connected hotel partners</span></div></article>
    <article><i><Compass size={20}/></i><div><b>50+ Camps</b><span>Camping stays across destinations</span></div></article>
    <article><i><Heart size={20}/></i><div><b>Thousands of Travelers</b><span>Hotels, camps and experiences</span></div></article>
-  </div>
+  </div>}
 
-  <section className="hotel-pro-workflow" aria-label="Anaira Hotel and Camping Engine workflow">
+  {settings.hotel_home_show_workflow===true&&<section className="hotel-pro-workflow" aria-label="Anaira Hotel and Camping Engine workflow">
    <div className="hotel-pro-section-center"><small>HOW ANAIRA WORKS</small><h2>From Search to Stay / Camp — Simplified</h2><p>A complete booking experience for hotels and camps, with real-time availability, flexible pricing and secure booking.</p></div>
    <div className="hotel-pro-workflow-grid">
     <article><i><Search size={21}/></i><b>Search Destinations</b><span>Find hotels in your favorite locations</span></article>
@@ -252,17 +284,17 @@ export default function Hotels(){
     <article><i><Bell size={21}/></i><b>Manage Your Stay</b><span>Modify or cancel when needed</span></article>
     <article><i><Heart size={21}/></i><b>Enjoy Your Journey</b><span>Comfortable stays, camps and great experiences</span></article>
    </div>
-  </section>
+  </section>}
 
-  <section className="hotel-pro-tech">
+  {settings.hotel_home_show_tech===true&&<section className="hotel-pro-tech">
    <div><small>OUR HOSPITALITY TECHNOLOGY</small><h2>One connected hotel & camping ecosystem.</h2><p>Hotel rooms and camping tents use separate operational inventory, while the marketplace connects destination search, live availability, pricing, guest verification, payments, confirmations and booking management through one consistent guest journey.</p></div>
    <div className="hotel-pro-tech-pills"><span><MapPinned size={16}/> Destination search</span><span><BedDouble size={16}/> Rooms & rates</span><span><Compass size={16}/> Camps & tents</span><span><CalendarCheck2 size={16}/> Live availability</span><span><IndianRupee size={16}/> Smart pricing</span><span><CreditCard size={16}/> Payments</span><span><ShieldCheck size={16}/> Secure booking</span></div>
-  </section>
+  </section>}
 
   {settings.hotel_home_show_footer!==false&&<footer className="hotel-pro-footer"><b>ANAIRA HOTELS</b><span>{settings.hotel_home_footer_text}</span><Link href="/anaira/platform">ANAIRA Platform</Link></footer>}
 
 <style jsx>{`
-.hotel-pro-search-wrap{width:100%}.hotel-stay-switch{display:flex;gap:6px;margin:0 0 8px}.hotel-stay-switch button{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.92);color:#17372b;border-radius:999px;padding:8px 14px;font:800 11px Montserrat,Arial,sans-serif;cursor:pointer}.hotel-stay-switch button.active{background:#17372b;color:#fff;border-color:#17372b}.hotel-pro-search{display:grid;grid-template-columns:minmax(235px,1.35fr) minmax(155px,1fr) minmax(155px,1fr) minmax(170px,1.05fr) auto;align-items:stretch;padding:9px;gap:8px;border:1px solid rgba(255,255,255,.5);border-radius:22px;background:rgba(255,255,255,.96);box-shadow:0 22px 65px rgba(0,0,0,.24),0 4px 16px rgba(0,0,0,.10);backdrop-filter:blur(14px);overflow:hidden}
+.hotel-pro-search-wrap{width:100%}.hotel-stay-switch{display:flex;gap:6px;margin:0 0 8px;flex-wrap:wrap}.hotel-stay-switch button{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.92);color:#17372b;border-radius:999px;padding:8px 14px;font:800 11px Montserrat,Arial,sans-serif;cursor:pointer}.hotel-stay-switch button.active{background:#17372b;color:#fff;border-color:#17372b}.hotel-pro-search{display:grid;grid-template-columns:minmax(235px,1.35fr) minmax(155px,1fr) minmax(155px,1fr) minmax(170px,1.05fr) auto;align-items:stretch;padding:9px;gap:8px;border:1px solid rgba(255,255,255,.5);border-radius:22px;background:rgba(255,255,255,.96);box-shadow:0 22px 65px rgba(0,0,0,.24),0 4px 16px rgba(0,0,0,.10);backdrop-filter:blur(14px);overflow:hidden}
 .hotel-pro-search label{min-width:0;margin:0;border:1px solid #e7ece7;border-radius:15px;background:#fff;padding:10px 13px;display:flex;align-items:center;gap:10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.8);transition:border-color .2s ease,box-shadow .2s ease}
 .hotel-pro-search label:focus-within{border-color:#c7a15a;box-shadow:0 0 0 3px rgba(199,161,90,.12)}
 .hotel-pro-search label>svg{flex:0 0 auto;color:#a17b32}
