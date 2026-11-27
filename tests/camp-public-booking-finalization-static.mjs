@@ -1,0 +1,17 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const read=p=>fs.readFileSync(new URL(p,import.meta.url),'utf8');
+const payment=read('../app/api/public/booking/payment/route.js');
+const checkout=read('../components/booking/HotelBookingCheckout.jsx');
+const pdf=read('../app/api/public/booking/confirmation/pdf/route.js');
+assert.match(payment,/anaira_finalize_public_camp_booking/,'camp payment must call the existing camp finalizer');
+assert.match(payment,/camp_reservations/,'camp payment must lookup camp reservation, not booking_reservations');
+assert.match(payment,/destination_hash/,'camp payment must verify OTP destination');
+assert.match(checkout,/hospitality_type:'camp'/,'checkout must identify camp payment requests');
+assert.match(checkout,/setPay\(finalized\)/,'default pay-at-property booking should show confirmation after finalization');
+assert.match(checkout,/downloadGuestConfirmation/,'guest confirmation PDF action must exist');
+assert.match(checkout,/error\.retryable/,'booking create must retry idempotently after transient network/server errors');
+assert.match(pdf,/camp_reservations/,'guest PDF must load camp reservation');
+assert.match(pdf,/anaira_guest_otp_challenges/,'guest PDF must require verified contact');
+assert.match(pdf,/application\/pdf/,'guest PDF endpoint must return PDF');
+console.log('Camp public booking finalization static checks: 10/10 PASS');

@@ -56,7 +56,7 @@
     "book:footer-map-check": "node tests/book-footer-google-maps-static.mjs",
     "property:book-footer-branding-check": "node tests/property-book-footer-branding-contact-static.mjs",
     "platform:domain-routing-check": "node tests/platform-domain-routing-control-static.mjs",
-    "booking:guest-confirmation-check": "node tests/guest-booking-confirmation-pdf-static.mjs"
+    "booking:camp-public-finalization-check": "node tests/camp-public-booking-finalization-static.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
