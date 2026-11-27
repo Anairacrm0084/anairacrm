@@ -30,10 +30,11 @@ assert.match(marketplace, /is_platform_store',true/, 'store banners must resolve
 const publicProfileApi = read('app/api/public/hospitality/property/[id]/route.js');
 const propertyStorefront = read('app/property/[id]/page.js');
 const publicBookingPage = read('app/book/[id]/page.js');
-const hospitalityCheckout = read('app/book/[id]/checkout/page.js');
+const sharedHospitalityPage = read('app/_components/HospitalityStorePage.jsx');
+const hospitalityCheckout = read('components/booking/HotelBookingCheckout.jsx');
 const campCheckout = read('app/camping/[id]/checkout/page.js');
-assert.match(publicBookingPage, /api\/public\/hospitality\/property\//, 'public booking page must load published profile enrichment through server API');
-assert.match(publicBookingPage, /profile\.cover_url\|\|profile\.cover_image_url\|\|profile\.cover_image/, 'public hero must use membership/store cover image');
+assert.match(sharedHospitalityPage, /api\/public\/hospitality\/property\//, 'public booking page must load published profile enrichment through server API');
+assert.match(sharedHospitalityPage, /profile\.cover_url\|\|profile\.cover_image_url\|\|profile\.cover_image/, 'public hero must use membership/store cover image');
 assert.match(publicProfileApi, /cover_url:override\.cover_url/, 'public profile API must return the published membership cover image');
 assert.match(publicProfileApi, /published=true|published',true|published', true/, 'public profile API must enforce published content');
 assert.match(publicProfileApi, /publishedDirectStay=Boolean\(stayProperty/, 'direct stay publication must use its canonical stay-property record');
@@ -45,7 +46,7 @@ const marketplaceSettings = read('app/super-admin/hotel-marketplace-settings/pag
 assert.match(marketplaceSettings, /eq\('is_platform_store',true\)\.is\('restaurant_id',null\)/, 'Super Admin settings must resolve only the global platform store');
 assert.match(hospitalityCheckout, /property_type:bookingMode==='canonical_stay'\?stayType:\(stayType==='camp'\?'camp':'hotel'\)/, 'camp checkout OTP must validate against camping property');
 assert.match(hospitalityCheckout, /const availabilityOk=available===null\?await check\(\):Number\(available\)>0/, 'hospitality checkout must block if availability check fails');
-assert.match(campCheckout, /redirect\(`\/book\/\$\{encodeURIComponent\(id\)\}\/checkout\?\$\{values\.toString\(\)\}`\)/, 'legacy camp checkout must route to the canonical hospitality checkout');
+assert.match(campCheckout, /canonicalPropertyUrl\(id, '\/checkout', checkoutQuery\)/, 'legacy camp checkout must preserve its selected unit and route to the canonical property checkout');
 const stayDetailApi = read('app/api/public/stay/[type]/[id]/route.js');
 assert.match(stayDetailApi, /eq\('restaurant_id',property\.restaurant_id\)/, "stay detail API must scope units and rates to the property tenant");
 assert.match(stayDetailApi, /in\('unit_type_id',unitIds\)/, "stay detail API must only return rates for this property unit types");
@@ -64,11 +65,11 @@ assert.match(publicProfileApi, /eq\('is_platform_store',false\)/, 'property stor
 assert.match(publicProfileApi, /publishedDirectStore=Boolean\(/, 'direct property store publication must be independently controlled by its store settings');
 assert.match(publicProfileApi, /publishedMarketplaceStore=Boolean\(/, 'central marketplace publication must remain a separate Super Admin-controlled state');
 assert.match(publicProfileApi, /storeSettings\?\.published/, 'public property store must require an explicitly published store settings record');
-assert.match(propertyStorefront, /api\/public\/hospitality\/property\//, 'property storefront must load through the server-side public property API');
-assert.match(propertyStorefront, /search\.get\('booking_source'\)==='anaira-global-marketplace'/, 'property storefront must preserve central marketplace attribution when entered from the marketplace');
-assert.match(propertyStorefront, /'anaira-property-store'/, 'property storefront must default direct visits to direct-store attribution');
-assert.match(propertyStorefront, /public_store_config/, 'property storefront must use its own safe theme configuration');
-assert.match(publicBookingPage, /publicPayload\.catalog\?\.rooms/, 'public booking page must render rooms from server-returned catalog, not tenant-only anon table reads');
-assert.doesNotMatch(publicBookingPage, /supabase\.from\('hms_room_types'\)/, 'public booking page must not query tenant-protected room catalog directly from anon browser');
+assert.match(sharedHospitalityPage, /api\/public\/hospitality\/property\//, 'property storefront must load through the server-side public property API');
+assert.match(sharedHospitalityPage, /window\.location\.search\)\.get\('booking_source'\)==='anaira-global-marketplace'/, 'property storefront must preserve central marketplace attribution when entered from the marketplace');
+assert.match(sharedHospitalityPage, /'anaira-property-store'/, 'property storefront must default direct visits to direct-store attribution');
+assert.match(sharedHospitalityPage, /publicPayload\.storeSettings/, 'shared property and book storefront must load the published property settings');
+assert.match(sharedHospitalityPage, /publicPayload\.catalog\?\.rooms/, 'public booking page must render rooms from server-returned catalog, not tenant-only anon table reads');
+assert.doesNotMatch(sharedHospitalityPage, /supabase\.from\('hms_room_types'\)/, 'public booking page must not query tenant-protected room catalog directly from anon browser');
 
 console.log('PUBLIC HOSPITALITY STOREFRONT: STATIC ASSERTIONS PASS');

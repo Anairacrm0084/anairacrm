@@ -24,7 +24,8 @@ function publicStoreConfig(value={}){
     show_amenities:c.show_amenities!==false,
     show_location:c.show_location!==false,
     hero_cta_label:typeof c.hero_cta_label==='string'?c.hero_cta_label.slice(0,60):'Check availability',
-    footer_text:typeof c.footer_text==='string'?c.footer_text.slice(0,300):''
+    footer_text:typeof c.footer_text==='string'?c.footer_text.slice(0,300):'',
+    google_maps_url:(()=>{try{const u=new URL(String(c.google_maps_url||''));const host=u.hostname.toLowerCase();return u.protocol==='https:'&&(['google.com','www.google.com','maps.google.com','maps.app.goo.gl','goo.gl'].includes(host)||host.endsWith('.google.com'))?u.toString().slice(0,2048):'';}catch{return '';}})()
   };
 }
 

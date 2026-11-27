@@ -49,7 +49,12 @@
     "property-store-domains:check": "node tests/property-store-domains-static.mjs",
     "booking:confirmation-check": "node tests/booking-confirmation-and-marketplace-ui-static.mjs",
     "hospitality:luxury-ui-check": "node tests/luxury-hospitality-marketplace-storefront-static.mjs",
-    "marketplace:direct-property-booking-check": "node tests/global-marketplace-property-direct-booking.mjs"
+    "marketplace:direct-property-booking-check": "node tests/global-marketplace-property-direct-booking.mjs",
+    "property:book-page-parity-check": "node tests/property-book-page-parity-static.mjs",
+    "booking:route-preservation-check": "node tests/book-checkout-route-preservation-static.mjs",
+    "property-store:google-maps-check": "node tests/property-store-google-maps-settings-static.mjs",
+    "book:footer-map-check": "node tests/book-footer-google-maps-static.mjs",
+    "property:book-footer-branding-check": "node tests/property-book-footer-branding-contact-static.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

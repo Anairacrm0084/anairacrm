@@ -1,35 +1,28 @@
 import { redirect } from 'next/navigation';
+import { canonicalPropertyUrl } from '../../../../lib/legacyPropertyRoute';
 
-/**
- * Keep the legacy camping checkout URL working, but send customers to the
- * canonical premium hospitality checkout. The canonical checkout supports
- * legacy camp_unit_types and camp_rate_plans through stay_type=camp.
- */
+/** Legacy camping checkout: resolve to the canonical property-store journey. */
 export default async function CampingCheckoutRedirect({ params, searchParams }) {
-  const { id } = await params;
-  const query = await searchParams;
+  const [{ id }, query] = await Promise.all([params, searchParams]);
   const unitType = query?.unit_type || query?.room_type;
 
-  // Without a selected tent/unit, return to the public camping store so the
-  // guest can choose an available unit before entering checkout.
   if (!unitType) {
-    const browse = new URLSearchParams({ stay_type: 'camp' });
-    for (const key of ['check_in', 'check_out', 'adults', 'children']) {
-      const value = query?.[key];
-      if (typeof value === 'string' && value) browse.set(key, value);
-    }
-    redirect(`/book/${encodeURIComponent(id)}?${browse.toString()}`);
+    const browseQuery = { ...query, stay_type: 'camp' };
+    delete browseQuery.unit_type;
+    delete browseQuery.room_type;
+    delete browseQuery.rate_plan;
+    delete browseQuery.rate_plan_id;
+    redirect(canonicalPropertyUrl(id, '', browseQuery));
   }
 
-  const values = new URLSearchParams({
+  const checkoutQuery = {
+    ...query,
     stay_type: 'camp',
     room_type: String(unitType),
-  });
+  };
+  delete checkoutQuery.unit_type;
   const ratePlan = query?.rate_plan || query?.rate_plan_id;
-  if (typeof ratePlan === 'string' && ratePlan) values.set('rate_plan', ratePlan);
-  for (const key of ['check_in', 'check_out', 'adults', 'children']) {
-    const value = query?.[key];
-    if (typeof value === 'string' && value) values.set(key, value);
-  }
-  redirect(`/book/${encodeURIComponent(id)}/checkout?${values.toString()}`);
+  if (ratePlan) checkoutQuery.rate_plan = String(ratePlan);
+  delete checkoutQuery.rate_plan_id;
+  redirect(canonicalPropertyUrl(id, '/checkout', checkoutQuery));
 }

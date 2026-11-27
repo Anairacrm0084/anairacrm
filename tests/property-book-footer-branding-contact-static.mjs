@@ -1,0 +1,14 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const component = fs.readFileSync('app/_components/HospitalityStorePage.jsx', 'utf8');
+const storeBuilder = fs.readFileSync('app/store-builder/page.js', 'utf8');
+assert.match(component, /footer-mark[\s\S]{0,220}profile\.logo_url\|\|profile\.logo/);
+assert.match(component, /alt="ANAIRA logo"/);
+assert.match(component, /\/assets\/anaira-logo\.webp/);
+assert.match(component, /href=\{googleMapsLink\}/);
+assert.match(component, /href=\{`tel:\$\{profile\.phone\}`\}/);
+assert.match(component, /href=\{`mailto:\$\{profile\.email\}`\}/);
+assert.match(component, /footer-powered/);
+assert.match(storeBuilder, /Property Logo/);
+assert.match(storeBuilder, /Google Maps Link \(Property \+ Book Footer\)/);
+console.log('Property + Book footer branding/contact checks: 9/9 PASS');

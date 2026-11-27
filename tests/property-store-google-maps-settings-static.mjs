@@ -1,0 +1,16 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const read=p=>fs.readFileSync(new URL(p,import.meta.url),'utf8');
+const builder=read('../app/store-builder/page.js');
+const api=read('../app/api/public/hospitality/property/[id]/route.js');
+const page=read('../app/_components/HospitalityStorePage.jsx');
+assert.match(builder,/label="Google Maps Link \(Property \+ Book Footer\)"/,'Store Builder exposes Google Maps Link');
+assert.match(builder,/google_maps_url:sc\.google_maps_url/,'Store Builder loads saved Google Maps URL');
+assert.match(builder,/google_maps_url:form\.google_maps_url/,'Store Builder persists Google Maps URL');
+assert.match(api,/google_maps_url:/,'Public API exposes the safe Google Maps URL');
+assert.match(api,/u\.protocol==='https:'/,'Public API only allows HTTPS map links');
+assert.match(page,/publicPayload\.public_store_config\|\|publicPayload\.storeSettings/,'Storefront reads the public config response');
+assert.match(page,/href=\{googleMapsLink\}/,'Footer location opens configured Google Maps URL');
+assert.match(page,/src=\{googleMapsEmbed\}/,'Footer renders embedded Google Map');
+assert.match(page,/settings\?\.show_location!==false/,'Map respects Show location setting');
+console.log('Property Store Google Maps settings: 9/9 PASS');

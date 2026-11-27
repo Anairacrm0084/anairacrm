@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { resolveRestaurantId } from '../../../../../lib/publicProperty';
 import { supabase } from '../../../../../lib/supabase';
 
@@ -36,6 +36,8 @@ export default function RoomDetails() {
   const params = useParams();
   const router = useRouter();
   const search = useSearchParams();
+  const pathname = usePathname();
+  const routeBase = pathname?.startsWith('/property/') ? '/property' : '/book';
   const key = params?.id || '';
   const roomId = params?.room_type || '';
   const [stayType] = useState(() => {
@@ -150,7 +152,7 @@ export default function RoomDetails() {
     children: search.get('children') || '0',
   }).toString();
 
-  const bookingUrl = `/book/${key}/checkout?${bookingQuery}`;
+  const bookingUrl = `${routeBase}/${key}/checkout?${bookingQuery}`;
 
   const images = parseList(room.image_urls || room.photos);
   const amenities = parseList(room.amenities);
@@ -166,7 +168,7 @@ export default function RoomDetails() {
   return (
     <main className="rd">
       <div className="rd-top">
-        <button onClick={() => router.push(`/book/${key}?stay_type=${encodeURIComponent(stayType)}`)}>← Back to rooms</button>
+        <button onClick={() => router.push(`${routeBase}/${key}?stay_type=${encodeURIComponent(stayType)}&booking_source=${encodeURIComponent(search.get('booking_source')||'anaira-property-store')}`)}>← Back to rooms</button>
         <span>{hotel?.hotel_name || 'Property'}</span>
       </div>
 

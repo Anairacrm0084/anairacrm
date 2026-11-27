@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const read=p=>fs.readFileSync(new URL(p,import.meta.url),'utf8');
+const book=read('../app/book/[id]/page.js');
+const property=read('../app/property/[id]/page.js');
+const shared=read('../app/_components/HospitalityStorePage.jsx');
+const builder=read('../app/store-builder/page.js');
+assert.match(book,/HospitalityStorePage routeBase=\"\/book\"/,'Book ID page uses shared hospitality storefront');
+assert.match(property,/HospitalityStorePage routeBase=\"\/property\"/,'Property ID page uses shared hospitality storefront');
+assert.match(shared,/footer-map/,'Shared footer contains embedded map');
+assert.match(shared,/googleMapsLink/,'Shared footer links to configured Google Maps location');
+assert.match(builder,/Property Store \+ Book ID/,'Store Builder explains map setting applies to both route families');
+console.log('Book ID footer Google Maps parity: 5/5 PASS');
