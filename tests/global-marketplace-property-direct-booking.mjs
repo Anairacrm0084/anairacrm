@@ -18,4 +18,7 @@ assert.match(api,/camp_rate_plans/,'public property API must bridge legacy camp 
 assert.match(api,/requestedTypeIsSupported/,'requested camp type must not be overwritten by a generic restaurant type');
 assert.match(globalSettings,/Global Marketplace Booking Journey/,'the existing global marketplace settings page must document the direct property flow');
 assert.match(marketplace,/`\/property\/\$\{propertyId\}`/,'camp global marketplace cards must open the property storefront');
+assert.match(marketplace,/const propertyId=x\.restaurant_id\|\|x\.property_id\|\|x\.id/,'marketplace must use the tenant restaurant id for the shared property storefront');
+assert.match(marketplace,/href=\{`\$\{href\}\?stay_type=\$\{kind\}/,'all accommodation categories must preserve stay_type on the property URL');
+assert.doesNotMatch(marketplace,/`\/stay\/\$\{kind\}\//,'marketplace must not send alternative stays to the legacy /stay route');
 console.log('Global Marketplace → Property Store → Direct Checkout: PASS');

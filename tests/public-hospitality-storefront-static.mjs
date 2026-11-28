@@ -10,8 +10,8 @@ const staysAdmin = read('app/booking-engine/stays/page.jsx');
 const membershipPolicy = read('supabase/migrations/20261105084338_fix_public_store_membership_rls_scope.sql');
 assert.match(hotelStore, /redirect\('\/anaira\/hotels'\)/, 'hotel-store must be a public customer entry');
 assert.match(staysAlias, /redirect\('\/anaira\/hotels'\)/, 'stays alias must lead to public marketplace');
-assert.match(marketplace, /const href=isAlternative\?`\/stay\/\$\{kind\}\/\$\{propertyId\}`:`\/property\/\$\{propertyId\}`/, 'marketplace cards must route to the correct property-specific storefront by accommodation type');
-assert.match(marketplace, /\/stay\/\$\{kind\}\/\$\{propertyId\}/, 'alternative stays must open the canonical stay-property detail page');
+assert.match(marketplace, /const href=`\/property\/\$\{propertyId\}`/, 'all marketplace stay cards must route to the shared property storefront');
+assert.doesNotMatch(marketplace, /`\/stay\/\$\{kind\}\//, 'marketplace cards must not route alternative stays through the legacy /stay path');
 assert.match(camp, /redirect\(`\/book\//, 'legacy camp storefront must redirect to the canonical direct-booking store');
 assert.match(resolver, /membership is optional profile enrichment/i, 'public property resolution must not require a store membership');
 assert.match(staysAdmin, /useState\(undefined\)/, 'operator stay engine must wait for auth resolution');
@@ -24,7 +24,7 @@ assert.match(marketplace, /const STAY_TYPES=\['hotel','camp','homestay','guest_h
 assert.match(marketplace, /Promise\.allSettled\(STAY_TYPES\.map\(call\)\)/, 'All Stays search must aggregate category RPCs without discarding successful categories');
 assert.match(marketplace, /\['all','All stays',Globe2\]/, 'Marketplace must expose an All Stays category tab');
 assert.match(marketplace, /p_stay_type:kind/, 'stay search must pass the selected stay type');
-assert.match(marketplace, /property_id/, 'stay search results must route by canonical property id');
+assert.match(marketplace, /const propertyId=x\.restaurant_id\|\|x\.property_id\|\|x\.id/, 'marketplace cards must prefer the tenant restaurant id accepted by the shared property storefront');
 assert.match(marketplace, /is_platform_store',true/, 'store banners must resolve the platform store, not an arbitrary tenant store');
 
 const publicProfileApi = read('app/api/public/hospitality/property/[id]/route.js');
@@ -51,7 +51,7 @@ const stayDetailApi = read('app/api/public/stay/[type]/[id]/route.js');
 assert.match(stayDetailApi, /eq\('restaurant_id',property\.restaurant_id\)/, "stay detail API must scope units and rates to the property tenant");
 assert.match(stayDetailApi, /in\('unit_type_id',unitIds\)/, "stay detail API must only return rates for this property unit types");
 assert.match(marketplace, /booking_source=anaira-global-marketplace/, 'all marketplace property cards must mark marketplace booking origin');
-assert.match(marketplace, /stay_type=\$\{kind\}/, 'hotel and camp detail routes must preserve the selected property category');
+assert.match(marketplace, /href=\{`\$\{href\}\?stay_type=\$\{kind\}/, 'every property storefront link must preserve the selected stay type');
 assert.match(hospitalityCheckout, /source:bookingSource/, 'hotel and camp checkout must preserve booking channel');
 
 assert.match(hospitalityCheckout, /const availabilityOk=available===null\?await check\(\):Number\(available\)>0/, 'canonical hospitality checkout must block if availability check fails');

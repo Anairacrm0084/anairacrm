@@ -1,0 +1,26 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const source=fs.readFileSync('components/booking/HotelBookingCheckout.jsx','utf8');
+const grid=source.slice(source.indexOf('<div className="checkout-grid">'),source.indexOf('</div></>}{booking&&<section className="payment-box box">'));
+const summary=grid.indexOf('className="box summary"');
+const stay=grid.indexOf('className="box form booking-panel"');
+const guestPanel=grid.indexOf('className="box guest-details-panel"');
+assert.ok(summary>=0 && stay>summary && guestPanel>stay,'three booking panels must render in summary, stay, guest order');
+for(const field of ['Check-in','Check-out','Adults','Children','className="rate-section"','className="addons-panel"','className="availability"'])assert.ok(grid.includes(field),`stay panel missing ${field}`);
+for(const field of ['Guest Information','Guest full name','Mobile number','Email address','className="guest-preferences"','className="verify-box"','Confirm Booking'])assert.ok(grid.includes(field),`guest panel missing ${field}`);
+assert.ok(grid.includes('Compare all available rates'),'rate comparison remains available');
+assert.ok(source.includes('grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)'),'desktop uses three equal-width columns');
+assert.ok(source.includes('@media(min-width:1200px)'),'desktop-only compact layout is applied');
+assert.ok(source.includes('@media(max-width:1099px)'),'tablet and mobile layout remains responsive');
+assert.ok(source.includes('className="booking-fields-panel"'),'date and guest controls must share a distinct aligned panel');
+assert.ok(source.includes('align-items:stretch;gap:8px;min-width:0;width:100%'),'desktop middle-column controls must stretch to the full container width');
+assert.ok(source.includes("quote?.rate_basis==='per person'"),'calendar occupancy quote must preserve per-person rate display');
+assert.ok(source.includes("calendarPerPerson?'person'"),'calendar per-person quotes must retain the person unit label');
+
+for(const handler of ['async function check()','async function sendVerification()','async function confirmBooking()','async function submitPayment()'])assert.ok(source.includes(handler),`booking handler missing: ${handler}`);
+console.log('ANAIRA desktop 3-column checkout + booking flow regression: PASS');
+assert.ok(!source.includes('</div</section>'),'checkout grid must not contain malformed JSX closing tags');
+assert.ok(source.includes('grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)'),'large desktop checkout must keep summary, stay and guest panels in three equal columns');
+const marketplace = fs.readFileSync('app/anaira/hotels/page.jsx','utf8');
+assert.ok(marketplace.includes('.hotel-pro-footer{position:relative;left:50%;width:100vw'),'ANAIRA Hotels marketplace footer must span the viewport');
+console.log('Checkout JSX closure and full-width marketplace footer regression: PASS');

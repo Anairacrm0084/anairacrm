@@ -25,6 +25,10 @@ function publicStoreConfig(value={}){
     show_location:c.show_location!==false,
     hero_cta_label:typeof c.hero_cta_label==='string'?c.hero_cta_label.slice(0,60):'Check availability',
     footer_text:typeof c.footer_text==='string'?c.footer_text.slice(0,300):'',
+    social_instagram:typeof c.social_instagram==='string'?c.social_instagram.slice(0,2048):'',
+    social_facebook:typeof c.social_facebook==='string'?c.social_facebook.slice(0,2048):'',
+    social_linkedin:typeof c.social_linkedin==='string'?c.social_linkedin.slice(0,2048):'',
+    social_whatsapp:typeof c.social_whatsapp==='string'?c.social_whatsapp.slice(0,2048):'',
     google_maps_url:(()=>{try{const u=new URL(String(c.google_maps_url||''));const host=u.hostname.toLowerCase();return u.protocol==='https:'&&(['google.com','www.google.com','maps.google.com','maps.app.goo.gl','goo.gl'].includes(host)||host.endsWith('.google.com'))?u.toString().slice(0,2048):'';}catch{return '';}})()
   };
 }
@@ -84,11 +88,19 @@ export async function GET(req,{params}){
     const storedGalleryUrls=galleryMedia.map(x=>x.url);
     const storedRoomUrls=roomMedia.map(x=>x.url);
     const storedDetailUrls=detailMedia.map(x=>x.url);
-    const propertyGalleryFromDb=Array.isArray(stayProperty?.gallery)&&stayProperty.gallery.length
-      ? stayProperty.gallery : (Array.isArray(camp?.gallery)&&camp.gallery.length
-        ? camp.gallery : (Array.isArray(hms?.gallery)&&hms.gallery.length
-          ? hms.gallery : (Array.isArray(restaurant.gallery)?restaurant.gallery:[])));
-    const resolvedGallery=propertyGalleryFromDb.length?propertyGalleryFromDb:storedGalleryUrls;
+    // Merge every saved media source. Legacy stay rows may hold a stale
+    // one-image gallery; never let that hide the canonical HMS gallery.
+    const asPublicImages=value=>Array.isArray(value)
+      ? value.filter(url=>typeof url==='string'&&/^https?:\/\//i.test(url))
+      : [];
+    const resolvedGallery=[...new Set([
+      ...asPublicImages(stayProperty?.gallery),
+      ...asPublicImages(camp?.gallery),
+      ...asPublicImages(hms?.gallery),
+      ...asPublicImages(restaurant.gallery),
+      ...storedGalleryUrls,
+      ...storedDetailUrls
+    ])];
     const roomFallbackImages=storedRoomUrls.length?storedRoomUrls:storedDetailUrls;
 
     // Public storefront catalog is served from this server route because the
@@ -119,6 +131,12 @@ export async function GET(req,{params}){
         .select('id,restaurant_id,property_id,name,code,description,max_guests,max_adults,max_children,unit_count,base_rate,image_urls,amenities,active')
         .eq('restaurant_id',id).eq('property_id',stayProperty.id).eq('active',true).order('name');
       if(stayUnitsError) throw stayUnitsError;
+      // ANAIRA Stay and HMS room rows share unit UUIDs. Restore images from the
+      // matching HMS row when an older Stay row has an empty image_urls array.
+      const {data:hmsStayMedia,error:hmsStayMediaError}=await db.from('hms_room_types')
+        .select('id,image_urls').eq('restaurant_id',id).eq('hospitality_type',preferredType).eq('active',true);
+      if(hmsStayMediaError) throw hmsStayMediaError;
+      const hmsMediaByUnit=new Map((hmsStayMedia||[]).map(x=>[String(x.id),x]));
       const stayUnitIds=(stayUnits||[]).map(x=>x.id);
       let stayRates=[];
       if(stayUnitIds.length){
@@ -128,19 +146,21 @@ export async function GET(req,{params}){
         if(error) throw error;
         stayRates=data||[];
       }
-      const mappedUnits=(stayUnits||[]).map((u,index)=>({
-        ...u,room_type_id:u.id,hospitality_type:preferredType,
-        short_description:u.description||'',bed_type:null,number_of_beds:1,
-        extra_adult_price:0,extra_child_price:0,pricing_mode:'per_unit',
-        // Keep room-specific uploads first; otherwise use a real uploaded
-        // property/room-detail photo as a visual fallback instead of a blank card.
-        image_urls:Array.isArray(u.image_urls)&&u.image_urls.length?u.image_urls:[
-          roomFallbackImages[index%Math.max(roomFallbackImages.length,1)]||
-          resolvedGallery[index%Math.max(resolvedGallery.length,1)]||storedCoverUrl
-        ].filter(Boolean),
-        fallback_image_url:roomFallbackImages[index%Math.max(roomFallbackImages.length,1)]||
-          resolvedGallery[index%Math.max(resolvedGallery.length,1)]||storedCoverUrl||''
-      }));
+      const mappedUnits=(stayUnits||[]).map((u,index)=>{
+        const stayImages=Array.isArray(u.image_urls)?u.image_urls:[];
+        const hmsImages=Array.isArray(hmsMediaByUnit.get(String(u.id))?.image_urls)?hmsMediaByUnit.get(String(u.id)).image_urls:[];
+        // The room's own HMS media is authoritative when the parallel Stay
+        // mirror has an empty/default image array. Do not use one room's photo
+        // as a generic fallback for other room cards.
+        const roomImages=[...new Set([...(hmsImages.length?hmsImages:stayImages)].filter(x=>typeof x==='string'&&/^https?:\/\//i.test(x)))];
+        return {
+          ...u,room_type_id:u.id,hospitality_type:preferredType,
+          short_description:u.description||'',bed_type:null,number_of_beds:1,
+          extra_adult_price:0,extra_child_price:0,pricing_mode:'per_unit',
+          image_urls:roomImages,room_image_urls:roomImages,
+          fallback_image_url:roomImages[0]||''
+        };
+      });
       const mappedRates=stayRates.map(r=>({
         ...r,room_type_id:r.unit_type_id,hospitality_type:preferredType,
         board_type:r.code||'Standard',occupancy:null,extra_adult:0,extra_child:0
@@ -236,10 +256,10 @@ export async function GET(req,{params}){
       ? (canonicalPropertyName||override.title||platformStore?.store_name||'ANAIRA Stay')
       : (override.title||canonicalPropertyName||platformStore?.store_name||'ANAIRA Hotels');
     const coverCandidates=[...new Set([
-      storedCoverUrl,
+      override.cover_url,storedCoverUrl,
       stayProperty?.cover_image_url,camp?.cover_image_url,hms?.cover_image_url,
       restaurant.cover_image,platformStore?.cover_url,
-      ...resolvedGallery,...storedGalleryUrls,...storedDetailUrls,...storedRoomUrls
+      ...resolvedGallery,...storedRoomUrls
     ].filter(x=>typeof x==='string'&&/^https?:\/\//i.test(x)))];
     const property={
       ...restaurant,
@@ -249,10 +269,10 @@ export async function GET(req,{params}){
       tagline:override.tagline||'',
       description:override.description||stayProperty?.description||camp?.description||hms?.description||restaurant.description||'',
       logo_url:override.logo_url||stayProperty?.logo_url||platformStore?.logo_url||camp?.logo_url||hms?.logo_url||restaurant.logo||'',
-      cover_url:override.cover_url||stayProperty?.cover_image_url||platformStore?.cover_url||camp?.cover_image_url||hms?.cover_image_url||restaurant.cover_image||storedCoverUrl||resolvedGallery[0]||'',
-      cover_image_url:override.cover_url||stayProperty?.cover_image_url||platformStore?.cover_url||camp?.cover_image_url||hms?.cover_image_url||restaurant.cover_image||storedCoverUrl||resolvedGallery[0]||'',
-      gallery:Array.isArray(override.gallery)&&override.gallery.length ? override.gallery : resolvedGallery,
-      media_gallery:[...new Set([...resolvedGallery,...storedDetailUrls])],
+      cover_url:coverCandidates[0]||'',
+      cover_image_url:coverCandidates[0]||'',
+      gallery:[...new Set([...asPublicImages(override.gallery),...resolvedGallery])],
+      media_gallery:[...new Set([...asPublicImages(override.gallery),...resolvedGallery,...storedRoomUrls])],
       address:override.address||stayProperty?.address||camp?.address||hms?.address||restaurant.address,
       city:override.city||stayProperty?.city||camp?.city||hms?.city||restaurant.city,
       phone:override.phone||hms?.phone||restaurant.phone,

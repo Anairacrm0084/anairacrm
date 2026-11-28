@@ -29,6 +29,14 @@ const defaults={
  hotel_home_hero_image:'',hotel_home_hero_mobile_image:'',hotel_home_hero_overlay:'0.48',hotel_home_background_media_type:'image',hotel_home_background_image:'',hotel_home_background_video:'',hotel_home_background_mobile_media_type:'image',hotel_home_background_mobile_image:'',hotel_home_background_mobile_video:'',hotel_home_background_overlay:'0',hotel_home_hero_cta:'Explore all stays',hotel_home_hero_cta_url:'#hotels',
  hotel_home_primary_color:'#17372b',hotel_home_accent_color:'#c7a15a',hotel_home_background_color:'#f6f3ed',hotel_home_surface_color:'#ffffff',hotel_home_text_color:'#20362d',
  hotel_home_container_width:1240,hotel_home_card_radius:22,hotel_home_hotel_columns:3,hotel_home_destination_columns:5,
+ hotel_home_show_featured:true,hotel_home_show_why:false,hotel_home_show_about:false,hotel_home_show_stats:false,hotel_home_show_workflow:false,hotel_home_show_tech:false,
+ hotel_home_featured_columns:5,hotel_home_featured_card_height:112,hotel_home_banner_height:350,hotel_home_hero_min_height:0,hotel_home_search_max_width:1240,hotel_home_section_spacing:38,
+ hotel_home_why_title:'Thoughtfully chosen stays. Seamless booking.',hotel_home_why_subtitle:'More destinations, better stays, camps and a smoother booking experience for every traveler.',
+ hotel_home_about_title:'A New Generation Hospitality Platform',hotel_home_about_subtitle:'Built for Hotels. Designed for Travelers.',
+ hotel_home_workflow_title:'From Search to Stay / Camp — Simplified',hotel_home_workflow_subtitle:'A complete booking experience for hotels and camps, with real-time availability, flexible pricing and secure booking.',
+ hotel_home_tech_title:'One connected hotel & camping ecosystem.',
+ hotel_home_featured_title:'Featured properties',hotel_home_featured_subtitle:'Exceptional stays, handpicked by ANAIRA for your next getaway.',
+
  hotel_home_show_why:false,hotel_home_show_about:false,hotel_home_show_stats:false,hotel_home_show_workflow:false,hotel_home_show_tech:false,
  hotel_home_destination_title:'Top destinations',hotel_home_destination_subtitle:'Explore the places guests are discovering across ANAIRA.',
  hotel_home_footer_text:'ANAIRA Hotels — discover stays, compare live availability and book with confidence.'
@@ -60,9 +68,9 @@ function groupStayProperties(rows=[]){
 }
 
 export default function Hotels(){
- const [settings,setSettings]=useState(defaults),[banners,setBanners]=useState([]),[destinations,setDestinations]=useState([]),
+ const [settings,setSettings]=useState(defaults),[banners,setBanners]=useState([]),[destinations,setDestinations]=useState([]),[featuredIds,setFeaturedIds]=useState([]),
  [q,setQ]=useState(''),[inDate,setInDate]=useState(''),[outDate,setOutDate]=useState(''),[adults,setAdults]=useState(2),[children,setChildren]=useState(0),
- [rows,setRows]=useState([]),[loading,setLoading]=useState(false),[msg,setMsg]=useState(''),[bannerIndex,setBannerIndex]=useState(0),[stayType,setStayType]=useState('all');
+ [rows,setRows]=useState([]),[loading,setLoading]=useState(false),[msg,setMsg]=useState(''),[bannerIndex,setBannerIndex]=useState(0),[stayType,setStayType]=useState('all'),[sortBy,setSortBy]=useState('recommended'),[propertyQuery,setPropertyQuery]=useState(''),[maxPrice,setMaxPrice]=useState(''),[showSavedOnly,setShowSavedOnly]=useState(false),[savedIds,setSavedIds]=useState([]);
  const bannerSlides=banners.length?banners.map((_,i)=>[0,1,2].map(offset=>banners[(i+offset)%banners.length])):[];
 
  useEffect(()=>{(async()=>{
@@ -83,6 +91,8 @@ export default function Hotels(){
        supabase.from('anaira_hotel_store_destinations').select('*').eq('store_id',s.id).eq('active',true).order('display_order')
      ]);
      setBanners(b||[]);setDestinations(d||[]);
+     const {data:featured}=await supabase.rpc('anaira_marketplace_featured_property_ids');
+     setFeaturedIds((featured||[]).map(x=>String(x.restaurant_id)));
    }
    const next=datePlus(1),after=datePlus(2);setInDate(next);setOutDate(after);
    setLoading(true);
@@ -95,6 +105,9 @@ export default function Hotels(){
    }catch(liveError){setRows([]);setMsg(liveError.message||`Unable to load ${TYPE_LABELS[requestedType]||requestedType} availability.`)}
    setLoading(false);
  })()},[]);
+
+ useEffect(()=>{try{const saved=JSON.parse(localStorage.getItem('anaira_hotel_saved_properties')||'[]');setSavedIds(Array.isArray(saved)?saved:[])}catch{setSavedIds([])}},[]);
+ function toggleSaved(id){setSavedIds(current=>{const next=current.includes(id)?current.filter(x=>x!==id):[...current,id];try{localStorage.setItem('anaira_hotel_saved_properties',JSON.stringify(next))}catch{}return next})}
 
  useEffect(()=>{
    if(bannerSlides.length<2){setBannerIndex(0);return}
@@ -119,19 +132,33 @@ export default function Hotels(){
    document.getElementById('hotel-results')?.scrollIntoView({behavior:'smooth',block:'start'});
  }
  async function search(){return runSearch(stayType,q,inDate,outDate)}
- async function chooseDestination(name){setQ(name);setMsg('');const next=inDate||datePlus(1),after=outDate||datePlus(2);if(!inDate)setInDate(next);if(!outDate)setOutDate(after);return runSearch(stayType,name,next,after)}
+ async function chooseDestination(name){setQ(name);setStayType('all');setMsg('');const next=inDate||datePlus(1),after=outDate||datePlus(2);if(!inDate)setInDate(next);if(!outDate)setOutDate(after);return runSearch('all',name,next,after)}
  async function switchStayType(type){setStayType(type);setRows([]);setMsg('');return runSearch(type,q,inDate||datePlus(1),outDate||datePlus(2))}
  const css={
   '--hotel-primary':settings.hotel_home_primary_color||'#17372b','--hotel-accent':settings.hotel_home_accent_color||'#c7a15a',
   '--hotel-bg':settings.hotel_home_background_color||'#f6f3ed','--hotel-surface':settings.hotel_home_surface_color||'#fff',
   '--hotel-text':settings.hotel_home_text_color||'#20362d','--hotel-width':`${settings.hotel_home_container_width||1240}px`,
   '--hotel-radius':`${settings.hotel_home_card_radius||22}px`,'--hotel-cols':settings.hotel_home_hotel_columns||3,
-  '--hotel-dest-cols':settings.hotel_home_destination_columns||5,'--hotel-overlay':settings.hotel_home_hero_overlay||.48
+  '--hotel-dest-cols':settings.hotel_home_destination_columns||5,'--hotel-overlay':settings.hotel_home_hero_overlay||.48,'--hotel-featured-cols':settings.hotel_home_featured_columns||3,'--hotel-featured-height':`${settings.hotel_home_featured_card_height||245}px`,'--hotel-banner-height':`${settings.hotel_home_banner_height||350}px`,'--hotel-hero-min-height':`${settings.hotel_home_hero_min_height||0}px`,'--hotel-search-width':`${settings.hotel_home_search_max_width||1240}px`,'--hotel-section-space':`${settings.hotel_home_section_spacing||38}px`
  };
  // One card per property across every category. The RPCs return room/unit-level
  // rows for some stay types, so grouping only alternative stays created duplicate
  // cards and made the All Stays view look incomplete.
  const displayRows=groupStayProperties(rows);
+ const filteredRows=displayRows.filter(x=>{
+  const title=String(x.property_name||x.hotel_name||x.name||x.listing_override?.title||'').toLowerCase();
+  const location=String(x.destination||x.city||x.address||'').toLowerCase();
+  const matchesText=!propertyQuery||title.includes(propertyQuery.toLowerCase())||location.includes(propertyQuery.toLowerCase());
+  const price=Number(x.rate||0),matchesPrice=!maxPrice||!price||price<=Number(maxPrice);
+  const id=String(x.property_id||x.restaurant_id||x.id||'');
+  return matchesText&&matchesPrice&&(!showSavedOnly||savedIds.includes(id));
+ }).sort((a,b)=>{
+  if(sortBy==='price_low')return Number(a.rate||0)-Number(b.rate||0);
+  if(sortBy==='price_high')return Number(b.rate||0)-Number(a.rate||0);
+  if(sortBy==='name')return String(a.property_name||a.hotel_name||a.name||'').localeCompare(String(b.property_name||b.hotel_name||b.name||''));
+  return 0;
+ }); const featuredRows=filteredRows.filter(x=>featuredIds.includes(String(x.restaurant_id||x.property_id||x.id)));
+
  return <main className="hotel-market-pro hotel-market-full" style={css}>
   <header className="anaira-stays-topbar"><Link href="/anaira/hotels" className="anaira-stays-wordmark"><span className="anaira-stays-mark">A</span><span>ANAIRA <small>STAYS & EXPERIENCES</small></span></Link><nav><a href="#hotel-results">Explore stays</a><a href="#destinations">Destinations</a><a href="/anaira/platform">About ANAIRA</a></nav><a className="anaira-host-link" href="/login">List your property <ArrowRight size={14}/></a></header>
   <section className="hotel-pro-hero">
@@ -188,8 +215,32 @@ export default function Hotels(){
    </section>}
 
 
+   {settings.hotel_home_show_featured!==false&&featuredRows.length>0&&<section className="hotel-pro-featured" id="featured-properties">
+    <div className="hotel-pro-section-head"><div><small>✦ THE ANAIRA EDIT</small><h2>{settings.hotel_home_featured_title}</h2><p>{settings.hotel_home_featured_subtitle}</p></div><span>{featuredRows.length} curated stays</span></div>
+    <div className="hotel-pro-featured-grid">{featuredRows.map((x,index)=>{
+     const kind=x._stay_type||stayType,isAlt=['homestay','guest_house','cottage'].includes(kind),isCamp=kind==='camp',id=x.restaurant_id||x.property_id||x.id;
+     const title=isAlt?(x.property_name||x.name):(isCamp?(x.property_name||x.name):(x.listing_override?.title||x.hotel_name));
+     const image=isAlt?(x.cover_image_url||x.cover_image):(isCamp?(x.cover_image_url||x.cover_image):(x.listing_override?.cover_url||x.cover_image));
+     return <article className="hotel-pro-featured-card" key={'featured:'+kind+':'+id}>
+      <Link href={`/property/${id}?stay_type=${kind}&check_in=${inDate}&check_out=${outDate}&adults=${adults}&children=${children}&booking_source=anaira-global-marketplace`} className="hotel-pro-featured-image">
+       {image?<img src={image} alt={title||'Featured stay'}/>:<div className="hotel-pro-featured-placeholder"><Hotel size={34}/></div>}
+       <span className="hotel-pro-featured-ribbon"><Star size={12} fill="currentColor"/> ANAIRA PICK</span>
+       <span className="hotel-pro-featured-kind">{String(kind).replace('_',' ')}</span>
+      </Link>
+      <div className="hotel-pro-featured-body">
+       <div className="hotel-pro-featured-topline">
+        <small><MapPin size={12}/>{x.destination||x.city||'Explore destination'}</small>
+        <Link className="hotel-pro-featured-book" href={`/property/${id}?stay_type=${kind}&check_in=${inDate}&check_out=${outDate}&adults=${adults}&children=${children}&booking_source=anaira-global-marketplace`}>Book stay <ArrowRight size={13}/></Link>
+       </div>
+       <h3>{title||'Featured hospitality property'}</h3>
+       <p>{isCamp?'A memorable outdoor escape with live camp availability.':isAlt?'A distinctive stay selected for the ANAIRA collection.':'A curated hotel stay with live room availability.'}</p>
+       <div className="hotel-pro-featured-price"><b>{x.rate?('From ₹'+Number(x.rate).toLocaleString('en-IN')):'Explore stay'}</b></div>
+      </div>
+     </article>
+    })}</div>
+   </section>}
    {settings.hotel_home_show_why===true&&<section className="hotel-pro-why" aria-label="Why book with Anaira Hotel and Camping Marketplace">
-    <div className="hotel-pro-section-center"><small>EXPLORE · BOOK · STAY · WITH ANAIRA</small><h2>Thoughtfully chosen stays. Seamless booking.</h2><p>More destinations, better stays, camps and a smoother booking experience for every traveler.</p></div>
+    <div className="hotel-pro-section-center"><small>EXPLORE · BOOK · STAY · WITH ANAIRA</small><h2>{settings.hotel_home_why_title}</h2><p>{settings.hotel_home_why_subtitle}</p></div>
     <div className="hotel-pro-feature-grid">
      <article><i><BadgeCheck size={22}/></i><b>Verified Hospitality Properties</b><span>Handpicked and verified properties</span></article>
      <article><i><MapPinned size={22}/></i><b>Top Destinations</b><span>Explore the best Himalayan locations</span></article>
@@ -222,26 +273,33 @@ export default function Hotels(){
     </div>
    </section>}
    <section id="hotel-results">
-    <div className="hotel-pro-section-head"><div><small>CURATED ANAIRA COLLECTION · {stayType==='all'?'ALL STAYS':stayType.replace('_',' ').toUpperCase()}</small><h2>{q?`${TYPE_LABELS[stayType]||stayType} in ${q}`:`${stayType==='all'?'Explore all stays':`Featured ${TYPE_LABELS[stayType]||stayType}`} with live availability`}</h2><p>{stayType==='all'?'Compare hotels, homestays, guest houses, cottages and camps in one search. Results are sourced from each category’s live inventory engine.':stayType==='hotel'?'Rooms, availability and booking flow are sourced from the canonical Hotel Management System.':'Live availability, guest-based pricing and booking flow are sourced from the canonical Anaira stay engine.'}</p></div><span>{rows.length?`${displayRows.length} live properties`:'No matching live results'}</span></div>
+    <div className="hotel-pro-section-head"><div><small>CURATED ANAIRA COLLECTION · {stayType==='all'?'ALL STAYS':stayType.replace('_',' ').toUpperCase()}</small><h2>{q?`${TYPE_LABELS[stayType]||stayType} in ${q}`:`${stayType==='all'?'Explore all stays':`Featured ${TYPE_LABELS[stayType]||stayType}`} with live availability`}</h2><p>{stayType==='all'?'Compare hotels, homestays, guest houses, cottages and camps in one search. Results are sourced from each category’s live inventory engine.':stayType==='hotel'?'Rooms, availability and booking flow are sourced from the canonical Hotel Management System.':'Live availability, guest-based pricing and booking flow are sourced from the canonical Anaira stay engine.'}</p></div><span>{rows.length?`${filteredRows.length} matching properties`:'No matching live results'}</span></div>
     {stayType==='all'&&<div className="hotel-pro-category-counts">{STAY_TYPES.map(category=><span key={category}><b>{displayRows.filter(x=>x._stay_type===category).length}</b>{TYPE_LABELS[category]}</span>)}</div>}
     {stayType==='all'&&<p className="hotel-pro-approval-note">All five categories are searched. Only active, marketplace-approved properties with live availability appear in this public collection; each property’s direct store remains independent.</p>}
     {msg&&<div className="hotel-pro-message">{msg}</div>}
+    {settings.hotel_home_enable_filters!==false&&<div className="hotel-market-tools">
+      <label className="hotel-market-tool-search"><Search size={16}/><input value={propertyQuery} onChange={e=>setPropertyQuery(e.target.value)} placeholder="Search property or location"/></label>
+      <label className="hotel-market-tool-price"><IndianRupee size={15}/><input type="number" min="0" value={maxPrice} onChange={e=>setMaxPrice(e.target.value)} placeholder="Maximum price"/></label>
+      {settings.hotel_home_enable_sort!==false&&<select aria-label="Sort properties" value={sortBy} onChange={e=>setSortBy(e.target.value)}><option value="recommended">Recommended</option><option value="price_low">Price: low to high</option><option value="price_high">Price: high to low</option><option value="name">Property name</option></select>}
+      {settings.hotel_home_enable_wishlist!==false&&<button type="button" className={showSavedOnly?'active':''} onClick={()=>setShowSavedOnly(v=>!v)}><Heart size={15}/> {showSavedOnly?'Saved stays':'My wishlist'} ({savedIds.length})</button>}
+      {(propertyQuery||maxPrice||showSavedOnly||sortBy!=='recommended')&&<button type="button" onClick={()=>{setPropertyQuery('');setMaxPrice('');setShowSavedOnly(false);setSortBy('recommended')}}>Clear filters</button>}
+     </div>}
     {loading?<div className="hotel-pro-empty"><Search size={30}/><h3>Finding available {TYPE_LABELS[stayType]||stayType}…</h3><p>Checking live inventory across the selected accommodation categories.</p></div>:
-     displayRows.length?<div className="hotel-pro-grid">{displayRows.map((x,index)=>{
+     filteredRows.length?<div className="hotel-pro-grid">{filteredRows.map((x,index)=>{
        const kind=x._stay_type||stayType;
        const isAlternative=['homestay','guest_house','cottage'].includes(kind);
        const isCamp=kind==='camp';
-       const propertyId=isAlternative?x.property_id:x.restaurant_id;
-       const href=isAlternative?`/stay/${kind}/${propertyId}`:`/property/${propertyId}`;
+       const propertyId=x.restaurant_id||x.property_id||x.id;
+       const href=`/property/${propertyId}`;
        const title=isAlternative?(x.property_name||x.name):(isCamp?(x.property_name||x.name):(x.listing_override?.title||x.hotel_name));
        const image=isAlternative?(x.cover_image_url||x.cover_image):(isCamp?(x.cover_image_url||x.cover_image):(x.listing_override?.cover_url||x.cover_image));
        const category=kind.replace('_',' ').toUpperCase();
        return <article className="hotel-pro-card" key={`${kind}:${propertyId||index}`}>
-        <div className="hotel-pro-cover">{image?<img src={image} alt={title||category}/>:<div>{isAlternative?<Home size={42}/>:isCamp?<Compass size={42}/>:<Hotel size={42}/>}</div>}<span>{category}</span></div>
+        <div className="hotel-pro-cover">{image?<img src={image} alt={title||category}/>:<div>{isAlternative?<Home size={42}/>:isCamp?<Compass size={42}/>:<Hotel size={42}/>}</div>}<span>{category}</span><button type="button" className={"hotel-pro-save "+(savedIds.includes(String(propertyId))?"saved":"")} onClick={()=>toggleSaved(String(propertyId))} aria-label={savedIds.includes(String(propertyId))?"Remove from wishlist":"Save property"}><Heart size={17} fill={savedIds.includes(String(propertyId))?"currentColor":"none"}/></button></div>
         <div className="hotel-pro-card-body"><div className="hotel-pro-location"><MapPin size={13}/>{x.destination||x.city||x.address||'Destination'}</div><h3>{title||'Hospitality Property'}</h3>
          <p>{isAlternative?`Live availability · ${x.pricing_mode==='per_person'?'Per-person pricing':'Per-unit pricing'} · Secure booking`:isCamp?(x.description||'Live camps · Per-person pricing · Secure booking'):(x.listing_override?.tagline||'Live rooms · Direct booking · Secure guest journey')}</p>
          <div className="hotel-pro-stats">{isCamp?<><span>{x.available_units||0} available · {x.room_type_count||1} unit types</span><span>{x.rate?`From ₹${Number(x.rate).toLocaleString('en-IN')} / ${x.pricing_mode==='per_person'?'person':'unit'}`:'Check live rates'}</span></>:isAlternative?<><span>{x.available_units||0} available · {x.room_type_count||1} unit types</span><span>From ₹{Number(x.rate||0).toLocaleString('en-IN')} / {x.pricing_mode==='per_person'?'person':'unit'}</span></>:<><span>{x.available_units||0} room types</span><span>{inDate} → {outDate}</span></>}</div>
-         <Link className="hotel-pro-book" href={`${href}?${!isAlternative?`stay_type=${kind}&`:''}check_in=${inDate}&check_out=${outDate}&adults=${adults}&children=${children}&booking_source=anaira-global-marketplace`}>View property & book <ArrowRight size={15}/></Link>
+         <Link className="hotel-pro-book" href={`${href}?stay_type=${kind}&check_in=${inDate}&check_out=${outDate}&adults=${adults}&children=${children}&booking_source=anaira-global-marketplace`}>View property & book <ArrowRight size={15}/></Link>
         </div>
        </article>;
      })}</div>:
@@ -252,11 +310,11 @@ export default function Hotels(){
   {settings.hotel_home_show_about===true&&<section className="hotel-pro-about" aria-label="About Anaira Hotel Engine">
    <div className="hotel-pro-about-copy">
     <small>ABOUT ANAIRA STAYS MARKETPLACE</small>
-    <h2>A New Generation<br/>Hospitality Platform</h2>
+    <h2>{settings.hotel_home_about_title}</h2>
     <div className="hotel-pro-gold-line"/>
     <p><strong>Anaira Graphics & Digital Solution</strong> is a technology and digital solutions company established in <strong>2013</strong>, serving businesses with creative, digital, web and technology solutions.</p>
     <p>With years of experience working with businesses, particularly in the hospitality and local-business ecosystem, Anaira has now expanded into <strong>hospitality technology</strong> with its own Hotel Booking Engine, Camping Booking Engine and combined Hotel & Camping Marketplace platform.</p>
-    <h3>Built for Hotels. Designed for Travelers.</h3>
+    <h3>{settings.hotel_home_about_subtitle}</h3>
     <p>Our goal is to create a connected hospitality ecosystem where <strong>hotels can manage their digital booking presence</strong> and travelers can discover and book suitable properties through a simple and transparent experience.</p>
    </div>
    <div className="hotel-pro-about-media">
@@ -273,7 +331,7 @@ export default function Hotels(){
   </div>}
 
   {settings.hotel_home_show_workflow===true&&<section className="hotel-pro-workflow" aria-label="Anaira Hotel and Camping Engine workflow">
-   <div className="hotel-pro-section-center"><small>HOW ANAIRA WORKS</small><h2>From Search to Stay / Camp — Simplified</h2><p>A complete booking experience for hotels and camps, with real-time availability, flexible pricing and secure booking.</p></div>
+   <div className="hotel-pro-section-center"><small>HOW ANAIRA WORKS</small><h2>{settings.hotel_home_workflow_title}</h2><p>{settings.hotel_home_workflow_subtitle}</p></div>
    <div className="hotel-pro-workflow-grid">
     <article><i><Search size={21}/></i><b>Search Destinations</b><span>Find hotels in your favorite locations</span></article>
     <article><i><Building2 size={21}/></i><b>Explore Options</b><span>View hotels, camps, photos, amenities and reviews</span></article>
@@ -287,13 +345,46 @@ export default function Hotels(){
   </section>}
 
   {settings.hotel_home_show_tech===true&&<section className="hotel-pro-tech">
-   <div><small>OUR HOSPITALITY TECHNOLOGY</small><h2>One connected hotel & camping ecosystem.</h2><p>Hotel rooms and camping tents use separate operational inventory, while the marketplace connects destination search, live availability, pricing, guest verification, payments, confirmations and booking management through one consistent guest journey.</p></div>
+   <div><small>OUR HOSPITALITY TECHNOLOGY</small><h2>{settings.hotel_home_tech_title}</h2><p>Hotel rooms and camping tents use separate operational inventory, while the marketplace connects destination search, live availability, pricing, guest verification, payments, confirmations and booking management through one consistent guest journey.</p></div>
    <div className="hotel-pro-tech-pills"><span><MapPinned size={16}/> Destination search</span><span><BedDouble size={16}/> Rooms & rates</span><span><Compass size={16}/> Camps & tents</span><span><CalendarCheck2 size={16}/> Live availability</span><span><IndianRupee size={16}/> Smart pricing</span><span><CreditCard size={16}/> Payments</span><span><ShieldCheck size={16}/> Secure booking</span></div>
   </section>}
 
   {settings.hotel_home_show_footer!==false&&<footer className="hotel-pro-footer"><b>ANAIRA HOTELS</b><span>{settings.hotel_home_footer_text}</span><Link href="/anaira/platform">ANAIRA Platform</Link></footer>}
 
 <style jsx>{`
+.hotel-pro-featured{width:min(var(--hotel-width),calc(100vw - 56px));margin:var(--hotel-section-space,38px) auto 44px;position:relative;isolation:isolate}
+.hotel-pro-featured .hotel-pro-section-head{position:relative;z-index:3;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:0 0 18px;padding:0 2px}
+.hotel-pro-featured .hotel-pro-section-head>div>small{display:block;position:static;color:#ad873d;font-size:9px;font-weight:900;letter-spacing:.2em;line-height:1.4;margin:0 0 9px}
+.hotel-pro-featured .hotel-pro-section-head h2{display:block;position:static;font:700 clamp(27px,3vw,40px)/1.08 Georgia,serif;color:#17372b;margin:0 0 7px}
+.hotel-pro-featured .hotel-pro-section-head p{font-size:12px;color:#68766f;margin:0}
+.hotel-pro-featured .hotel-pro-section-head>span{flex:0 0 auto;color:#78847c;font-size:10px;padding-bottom:3px}
+.hotel-pro-featured-grid{display:flex;align-items:stretch;gap:16px;overflow-x:auto;overflow-y:hidden;padding:3px 3px 16px;scroll-snap-type:x mandatory;scrollbar-width:auto;scrollbar-color:#c9b47f #eee9df;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scroll-behavior:smooth}
+.hotel-pro-featured-grid::-webkit-scrollbar{height:9px}
+.hotel-pro-featured-grid::-webkit-scrollbar-track{background:#eee9df;border-radius:20px}
+.hotel-pro-featured-grid::-webkit-scrollbar-thumb{background:#c9b47f;border:2px solid #eee9df;border-radius:20px}
+.hotel-pro-featured-card{position:relative;isolation:isolate;display:flex;flex-direction:column;flex:0 0 clamp(270px,24vw,300px);height:340px;min-width:0;overflow:hidden;border:1px solid #e5dcc8;border-radius:15px;background:#fffdf9;box-shadow:0 8px 22px rgba(23,55,43,.07);transition:transform .22s ease,box-shadow .22s ease;scroll-snap-align:start}
+.hotel-pro-featured-card:hover{transform:translateY(-3px);box-shadow:0 14px 28px rgba(23,55,43,.13)}
+.hotel-pro-featured-card>.hotel-pro-featured-image{display:block!important;position:relative;z-index:0;flex:0 0 132px!important;width:100%;height:132px!important;min-height:132px!important;max-height:132px!important;align-self:stretch;box-sizing:border-box;overflow:hidden;background:linear-gradient(135deg,#17372b,#315c43);text-decoration:none}
+.hotel-pro-featured-image>img{display:block;width:100%;height:100%;min-height:100%;object-fit:cover;object-position:center;transition:transform .45s ease}
+.hotel-pro-featured-card:hover .hotel-pro-featured-image>img{transform:scale(1.045)}
+.hotel-pro-featured-image:after{content:'';position:absolute;inset:35% 0 0;background:linear-gradient(transparent,rgba(7,25,18,.38));pointer-events:none}
+.hotel-pro-featured-placeholder{height:100%;display:grid;place-items:center;color:#e5c77e}
+.hotel-pro-featured-ribbon{position:absolute;z-index:2;top:9px;left:9px;display:inline-flex;align-items:center;gap:4px;padding:5px 7px;border:1px solid rgba(234,211,157,.7);border-radius:999px;background:rgba(15,43,32,.94);color:#f0d28a;font-size:7px;font-weight:900;letter-spacing:.08em;line-height:1}
+.hotel-pro-featured-ribbon svg{width:9px;height:9px}
+.hotel-pro-featured-kind{position:absolute;z-index:2;right:8px;bottom:8px;padding:4px 7px;border-radius:999px;background:rgba(255,255,255,.94);color:#17372b;font-size:8px;font-weight:900;text-transform:uppercase}
+.hotel-pro-featured-body{display:flex;flex:1;flex-direction:column;min-width:0;padding:12px 13px 11px;box-sizing:border-box}
+.hotel-pro-featured-topline{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.hotel-pro-featured-topline>small{display:flex;align-items:center;gap:4px;min-width:0;overflow:hidden;color:#a17b32;font-size:8px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;text-overflow:ellipsis}
+.hotel-pro-featured-book{display:inline-flex;flex:0 0 auto;align-items:center;justify-content:center;gap:4px;padding:6px 9px;border:1px solid #d9c18b;border-radius:999px;background:#f8f1df;color:#17372b;font-size:9px;font-weight:900;text-decoration:none;white-space:nowrap}
+.hotel-pro-featured-book:hover{background:#17372b;border-color:#17372b;color:#fff}
+.hotel-pro-featured-book svg{width:12px;height:12px}
+.hotel-pro-featured-body h3{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px;margin:9px 0 6px;color:#17372b;font:700 16px/1.15 Georgia,serif}
+.hotel-pro-featured-body p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:28px;margin:0;color:#748078;font-size:10px;line-height:1.45}
+.hotel-pro-featured-price{display:flex;align-items:center;margin-top:auto;padding-top:10px;border-top:1px solid #eee8dc}
+.hotel-pro-featured-price>b{color:#17372b;font-size:10px;white-space:nowrap}
+@media(max-width:900px){.hotel-pro-featured-card{flex-basis:280px;height:340px}}
+@media(max-width:650px){.hotel-pro-featured{width:calc(100vw - 32px);margin:28px auto 32px}.hotel-pro-featured .hotel-pro-section-head{align-items:flex-start}.hotel-pro-featured .hotel-pro-section-head h2{font-size:27px}.hotel-pro-featured .hotel-pro-section-head>span{padding-top:24px}.hotel-pro-featured-card{flex-basis:82vw;max-width:340px;height:340px}.hotel-pro-featured-card>.hotel-pro-featured-image{height:132px!important;min-height:132px!important;max-height:132px!important;flex-basis:132px!important}}
+.hotel-market-tools{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:16px 0;padding:12px;border:1px solid #e6dfd2;border-radius:16px;background:#fff}.hotel-market-tools label,.hotel-market-tools select,.hotel-market-tools>button{min-height:42px;border:1px solid #e5dfd3;border-radius:10px;background:#fff;padding:0 12px;display:flex;align-items:center;gap:8px;color:#274337;font-size:12px}.hotel-market-tools input{border:0;outline:0;min-width:120px;width:100%;background:transparent;color:#20362d}.hotel-market-tools .hotel-market-tool-search{flex:1;min-width:220px}.hotel-market-tools .hotel-market-tool-price{width:190px}.hotel-market-tools>button{cursor:pointer;font-weight:800}.hotel-market-tools>button.active{background:#17372b;color:#fff}.hotel-pro-cover{position:relative}.hotel-pro-save{position:absolute;right:12px;top:12px;width:38px;height:38px;border:0;border-radius:50%;background:rgba(255,255,255,.94);color:#17372b;display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 14px #0002}.hotel-pro-save.saved{color:#bd3e55}
 .hotel-pro-search-wrap{width:100%}.hotel-stay-switch{display:flex;gap:6px;margin:0 0 8px;flex-wrap:wrap}.hotel-stay-switch button{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.92);color:#17372b;border-radius:999px;padding:8px 14px;font:800 11px Montserrat,Arial,sans-serif;cursor:pointer}.hotel-stay-switch button.active{background:#17372b;color:#fff;border-color:#17372b}.hotel-pro-search{display:grid;grid-template-columns:minmax(235px,1.35fr) minmax(155px,1fr) minmax(155px,1fr) minmax(170px,1.05fr) auto;align-items:stretch;padding:9px;gap:8px;border:1px solid rgba(255,255,255,.5);border-radius:22px;background:rgba(255,255,255,.96);box-shadow:0 22px 65px rgba(0,0,0,.24),0 4px 16px rgba(0,0,0,.10);backdrop-filter:blur(14px);overflow:hidden}
 .hotel-pro-search label{min-width:0;margin:0;border:1px solid #e7ece7;border-radius:15px;background:#fff;padding:10px 13px;display:flex;align-items:center;gap:10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.8);transition:border-color .2s ease,box-shadow .2s ease}
 .hotel-pro-search label:focus-within{border-color:#c7a15a;box-shadow:0 0 0 3px rgba(199,161,90,.12)}
@@ -311,7 +402,7 @@ export default function Hotels(){
  .hotel-pro-banner-viewport{position:relative;overflow:hidden;border-radius:var(--hotel-radius);box-shadow:0 20px 55px rgba(20,40,30,.12);background:transparent}
  .hotel-pro-banner-track{display:flex;width:100%;transition:transform .72s cubic-bezier(.22,.61,.36,1);will-change:transform}
  .hotel-pro-banner-slide{flex:0 0 100%;width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;padding:0}
- .hotel-pro-banner-track .hotel-pro-banner{position:relative;min-width:0;min-height:330px;overflow:hidden;text-decoration:none;border-radius:18px;background:transparent}
+ .hotel-pro-banner-track .hotel-pro-banner{position:relative;min-width:0;min-height:var(--hotel-banner-height,350px);overflow:hidden;text-decoration:none;border-radius:18px;background:transparent}
  .hotel-pro-banner-track .hotel-pro-banner-media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
  .hotel-pro-banner-track .hotel-pro-banner-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(6,35,26,.78),rgba(6,35,26,.24) 58%,rgba(6,35,26,.08))}
  .hotel-pro-banner-track .hotel-pro-banner-content{position:absolute;z-index:2;left:clamp(22px,5vw,58px);right:clamp(22px,5vw,58px);bottom:clamp(22px,5vw,52px);display:flex;flex-direction:column;align-items:flex-start;gap:8px;color:#fff;max-width:720px}
@@ -329,13 +420,13 @@ export default function Hotels(){
  @media(max-width:700px){.hotel-pro-search{grid-template-columns:1fr;padding:8px;border-radius:18px}.hotel-pro-search label{border:1px solid #e7ece7;min-height:52px}.hotel-pro-search button{min-height:54px}.hotel-pro-banner-slide{grid-template-columns:1fr}.hotel-pro-banner-viewport{border-radius:18px}.hotel-pro-banner-track .hotel-pro-banner{min-height:250px}.hotel-banner-arrow{width:36px;height:36px;font-size:25px}.hotel-banner-prev{left:10px}.hotel-banner-next{right:10px}}
 
 /* FINAL PREMIUM HERO / SEARCH REFINEMENT */
-.hotel-pro-hero{background:transparent;min-height:0;padding-top:18px;padding-bottom:34px}
+.hotel-pro-hero{background:transparent;min-height:var(--hotel-hero-min-height,0px);padding-top:18px;padding-bottom:34px}
 .hotel-pro-hero-background-overlay{position:absolute;inset:0;background:#062a1c;pointer-events:none;display:block!important;z-index:1}.hotel-pro-hero-background img,.hotel-pro-hero-background video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.hotel-pro-hero-grid{position:relative;z-index:2}
 .hotel-pro-hero-grid{grid-template-columns:1fr;gap:0;max-width:var(--hotel-width);margin:34px auto 0;align-items:start}
 .hotel-pro-copy{width:100%;max-width:none}
 .hotel-pro-copy h1{max-width:900px}
 .hotel-pro-copy p{max-width:820px}
-.hotel-pro-search{width:100%;box-sizing:border-box;grid-template-columns:minmax(0,1.55fr) minmax(155px,1fr) minmax(155px,1fr) minmax(185px,1.05fr) minmax(145px,auto);margin-top:22px;padding:9px;gap:8px;overflow:visible}
+.hotel-pro-search{width:100%;max-width:var(--hotel-search-width,1240px);box-sizing:border-box;grid-template-columns:minmax(0,1.55fr) minmax(155px,1fr) minmax(155px,1fr) minmax(185px,1.05fr) minmax(145px,auto);margin-top:22px;padding:9px;gap:8px;overflow:visible}
 .hotel-pro-search label{min-width:0;height:68px;box-sizing:border-box;padding:10px 13px;overflow:hidden}
 .hotel-pro-search label span{min-width:0;overflow:hidden}
 .hotel-pro-search input{font-size:12px;line-height:1.25;text-overflow:ellipsis}
@@ -368,7 +459,7 @@ export default function Hotels(){
 }
 
 /* ANAIRA MARKETPLACE CONTENT SECTIONS */
-.hotel-pro-why{margin:34px auto 42px;width:min(var(--hotel-width),calc(100vw - 56px));padding:8px 0 0}
+.hotel-pro-why{margin:var(--hotel-section-space,38px) auto 42px;width:min(var(--hotel-width),calc(100vw - 56px));padding:8px 0 0}
 .hotel-pro-section-center{text-align:center;margin:0 auto 24px;max-width:900px}
 .hotel-pro-section-center small,.hotel-pro-about-copy>small,.hotel-pro-tech small{display:block;color:#a17b32;font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}
 .hotel-pro-section-center h2{margin:7px 0 5px;font:700 clamp(28px,3vw,43px)/1.08 Georgia,serif;color:#17372b}
@@ -380,7 +471,7 @@ export default function Hotels(){
 .hotel-pro-feature-grid b{margin-top:13px;color:#172d25;font-size:12px;line-height:1.25}
 .hotel-pro-feature-grid span{margin-top:6px;color:#6d7871;font-size:10px;line-height:1.4}
 
-.hotel-pro-about{width:min(var(--hotel-width),calc(100vw - 56px));margin:56px auto 0;display:grid;grid-template-columns:1fr 1.18fr;min-height:390px;border:1px solid #e5dcc9;border-left:4px solid #d1a83f;border-radius:22px;overflow:hidden;background:linear-gradient(135deg,#fffefb,#f6f2e8);box-shadow:0 18px 48px rgba(24,43,34,.08)}
+.hotel-pro-about{width:min(var(--hotel-width),calc(100vw - 56px));margin:var(--hotel-section-space,38px) auto 0;display:grid;grid-template-columns:1fr 1.18fr;min-height:390px;border:1px solid #e5dcc9;border-left:4px solid #d1a83f;border-radius:22px;overflow:hidden;background:linear-gradient(135deg,#fffefb,#f6f2e8);box-shadow:0 18px 48px rgba(24,43,34,.08)}
 .hotel-pro-about-copy{padding:48px 46px 42px;display:flex;flex-direction:column;justify-content:center}
 .hotel-pro-about-copy h2{margin:9px 0 9px;font:700 clamp(31px,3.3vw,50px)/1.05 Georgia,serif;color:#142d24}
 .hotel-pro-gold-line{width:52px;height:3px;background:#d2a93e;margin:7px 0 18px}
@@ -398,14 +489,14 @@ export default function Hotels(){
 .hotel-pro-about-stats article b{display:block;color:#172d25;font-size:14px;line-height:1.2}
 .hotel-pro-about-stats article span{display:block;color:#6c7771;font-size:10px;margin-top:4px}
 
-.hotel-pro-workflow{width:min(var(--hotel-width),calc(100vw - 56px));margin:0 auto 34px;border:1px solid #e5dcc9;border-radius:20px;background:#fffdf9;padding:32px 22px 28px}
+.hotel-pro-workflow{width:min(var(--hotel-width),calc(100vw - 56px));margin:0 auto var(--hotel-section-space,38px);border:1px solid #e5dcc9;border-radius:20px;background:#fffdf9;padding:32px 22px 28px}
 .hotel-pro-workflow-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px}
 .hotel-pro-workflow-grid article{position:relative;text-align:center;padding:4px 8px 5px;display:flex;flex-direction:column;align-items:center;min-width:0}
 .hotel-pro-workflow-grid article:not(:last-child)::after{content:'';position:absolute;right:-2px;top:27px;width:24px;border-top:2px dotted #e0bd68}
 .hotel-pro-workflow-grid b{margin-top:9px;color:#172d25;font-size:11px;line-height:1.2}
 .hotel-pro-workflow-grid span{margin-top:5px;color:#69756e;font-size:9px;line-height:1.4;max-width:120px}
 
-.hotel-pro-tech{width:min(var(--hotel-width),calc(100vw - 56px));margin:0 auto 45px;padding:30px 34px;border-radius:20px;background:linear-gradient(135deg,#0d2d22,#173b2d 58%,#244b39);color:#fff;display:grid;grid-template-columns:1.2fr .8fr;gap:28px;align-items:center;box-shadow:0 20px 50px rgba(14,45,34,.18)}
+.hotel-pro-tech{width:min(var(--hotel-width),calc(100vw - 56px));margin:0 auto var(--hotel-section-space,38px);padding:30px 34px;border-radius:20px;background:linear-gradient(135deg,#0d2d22,#173b2d 58%,#244b39);color:#fff;display:grid;grid-template-columns:1.2fr .8fr;gap:28px;align-items:center;box-shadow:0 20px 50px rgba(14,45,34,.18)}
 .hotel-pro-tech h2{margin:7px 0 9px;font:700 clamp(25px,2.5vw,37px)/1.1 Georgia,serif}
 .hotel-pro-tech p{margin:0;color:#c9d7d0;font-size:12px;line-height:1.7;max-width:800px}
 .hotel-pro-tech-pills{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
@@ -448,8 +539,38 @@ export default function Hotels(){
  .hotel-pro-tech{padding:25px 20px;border-radius:16px}
  .hotel-pro-tech-pills{grid-template-columns:1fr}
 }
-`}</style>
+.hotel-pro-footer{position:relative;left:50%;width:100vw;max-width:100vw;transform:translateX(-50%);box-sizing:border-box;min-height:76px;margin:48px 0 0;padding:18px clamp(20px,5vw,80px);display:grid;grid-template-columns:minmax(180px,.7fr) minmax(260px,1.5fr) minmax(150px,.6fr);align-items:center;gap:22px;background:linear-gradient(120deg,#0d2d22,#173b2d);border-top:1px solid rgba(199,161,90,.38);color:#fff}
+.hotel-pro-footer>b{font-size:11px;letter-spacing:1.8px;color:#e0bd68}
+.hotel-pro-footer>span{font-size:10px;line-height:1.5;color:rgba(255,255,255,.72);text-align:center}
+.hotel-pro-footer>a{justify-self:end;color:#e0bd68;text-decoration:none;font-size:10px;font-weight:800}
+.hotel-pro-footer>a:hover{text-decoration:underline}
+@media(max-width:700px){.hotel-pro-footer{left:auto;width:100%;max-width:none;transform:none;margin:32px 0 0;padding:20px;grid-template-columns:1fr;gap:9px;text-align:center}.hotel-pro-footer>span,.hotel-pro-footer>a{justify-self:center;text-align:center}}
 
+ /* MOBILE HERO IMAGE + TEXT VISIBILITY FIX */
+ .hotel-pro-hero{position:relative!important;isolation:isolate;overflow:hidden;background:#102d22!important}
+ .hotel-pro-hero-background{position:absolute!important;inset:0!important;z-index:0!important;display:block!important;overflow:hidden}
+ .hotel-pro-hero-background .hotel-pro-bg-image,.hotel-pro-hero-background .hotel-pro-bg-video{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;object-fit:cover!important;object-position:center!important}
+ .hotel-pro-hero-background-overlay{position:absolute!important;inset:0!important;z-index:1!important;background:linear-gradient(90deg,rgba(5,29,21,.82),rgba(5,29,21,.48) 58%,rgba(5,29,21,.34))!important;pointer-events:none}
+ .hotel-pro-hero-grid{position:relative!important;z-index:2!important}
+ .hotel-pro-copy h1{color:#fff!important;text-shadow:0 2px 18px rgba(0,0,0,.22)}
+ .hotel-pro-copy>p{color:rgba(255,255,255,.94)!important}
+ .hotel-pro-kicker{color:#f0d28a!important}
+ .hotel-pro-hero-media{display:none!important}
+ @media(min-width:701px){.hotel-pro-bg-desktop{display:block!important}.hotel-pro-bg-mobile{display:none!important}}
+ @media(max-width:700px){
+  .hotel-pro-hero{min-height:0!important;padding:28px 16px 30px!important}
+  .hotel-pro-bg-desktop{display:none!important}.hotel-pro-bg-mobile{display:block!important}
+  .hotel-pro-hero-background .hotel-pro-bg-image,.hotel-pro-hero-background .hotel-pro-bg-video{object-position:center center!important}
+  .hotel-pro-hero-background-overlay{background:linear-gradient(180deg,rgba(5,29,21,.70),rgba(5,29,21,.60) 55%,rgba(5,29,21,.76))!important}
+  .hotel-pro-hero-grid{width:100%!important;max-width:100%!important;margin:12px auto 0!important;gap:0!important}
+  .hotel-pro-copy{width:100%!important;max-width:100%!important}
+  .hotel-pro-copy h1{display:block!important;visibility:visible!important;opacity:1!important;color:#fff!important;font-size:clamp(34px,9vw,48px)!important;line-height:1.08!important;margin:16px 0 12px!important}
+  .hotel-pro-copy>p{display:block!important;visibility:visible!important;opacity:1!important;color:#fff!important;font-size:14px!important;line-height:1.6!important;margin:0 auto 22px!important}
+  .hotel-pro-kicker{color:#f1d48e!important}
+ }
+
+`}
+</style>
 
  </main>
 }

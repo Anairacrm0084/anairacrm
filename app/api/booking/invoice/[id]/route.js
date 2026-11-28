@@ -1,6 +1,5 @@
-<<<<<<< HEAD
 import {NextResponse} from 'next/server';
-import {db} from '../../../../../../lib/server/provider';
+import {userDb} from '../../../../../lib/server/provider';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -57,50 +56,13 @@ function makePdf(inv){
  const objs=['<< /Type /Catalog /Pages 2 0 R >>','<< /Type /Pages /Kids [3 0 R] /Count 1 >>','<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>','<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>','<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>',`<< /Length ${Buffer.byteLength(stream)} >>\nstream\n${stream}\nendstream`];
  let out='%PDF-1.4\n';const offsets=[0];for(let i=0;i<objs.length;i++){offsets.push(Buffer.byteLength(out));out+=`${i+1} 0 obj\n${objs[i]}\nendobj\n`;}
  const xref=Buffer.byteLength(out);out+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`;for(let i=1;i<offsets.length;i++)out+=`${String(offsets[i]).padStart(10,'0')} 00000 n \n`;out+=`trailer\n<< /Size ${objs.length+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
-=======
-import {createClient} from '@supabase/supabase-js';
-import {NextResponse} from 'next/server';
-export const runtime='nodejs';
-export const dynamic='force-dynamic';
-const esc=v=>String(v??'').normalize('NFKD').replace(/[^\x20-\x7e]/g,' ').replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)').slice(0,130);
-function pdf(inv){
- const meta=inv.metadata||{};
- const lines=[
-  'ORIGINAL FOR RECIPIENT',`Invoice No: ${inv.invoice_number||'-'}`,
-  `Issued: ${inv.issued_at||'-'}`,`Property: ${inv.property_name||'-'}`,
-  `Address: ${inv.property_address||'-'}`,`GSTIN: ${inv.property_gstin||'Not configured'}`,
-  `Guest: ${inv.billing_name||'-'}`,`Phone: ${inv.billing_phone||'-'}`,
-  `Booking: ${meta.booking_reference||meta.reservation_code||'-'}`,
-  `Check-in: ${meta.check_in||'-'}`,`Check-out: ${meta.check_out||'-'}`,
-  `Accommodation: ${meta.unit_name||'-'}`,
-  `Taxable amount (INR): ${Number(inv.taxable_amount||0).toFixed(2)}`,
-  `CGST (INR): ${Number(inv.cgst_amount||0).toFixed(2)}`,
-  `SGST (INR): ${Number(inv.sgst_amount||0).toFixed(2)}`,
-  `IGST (INR): ${Number(inv.igst_amount||0).toFixed(2)}`,
-  `Total amount (INR): ${Number(inv.total_amount||0).toFixed(2)}`,
-  `Paid at issue (INR): ${Number(meta.paid_amount||0).toFixed(2)}`,
-  `Balance at issue (INR): ${Number(meta.balance_amount||0).toFixed(2)}`,
-  'Computer-generated document. Keep for your records.'
- ];
- const commands=['q','0.06 0.19 0.14 rg','0 728 595 114 re f','Q','BT','/F1 21 Tf','1 1 1 rg','45 795 Td','(ANAIRA | TAX INVOICE) Tj','ET','BT','/F1 10 Tf','0.13 0.19 0.15 rg','45 693 Td'];
- for(const line of lines){commands.push(`(${esc(line)}) Tj`,'0 -25 Td');}
- commands.push('ET');
- const stream=commands.join('\n');
- const objects=['<< /Type /Catalog /Pages 2 0 R >>','<< /Type /Pages /Kids [3 0 R] /Count 1 >>','<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>','<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',`<< /Length ${Buffer.byteLength(stream)} >>\nstream\n${stream}\nendstream`];
- let out='%PDF-1.4\n';const offsets=[0];
- for(let i=0;i<objects.length;i++){offsets.push(Buffer.byteLength(out));out+=`${i+1} 0 obj\n${objects[i]}\nendobj\n`;}
- const xref=Buffer.byteLength(out);out+=`xref\n0 ${objects.length+1}\n0000000000 65535 f \n`;
- for(let i=1;i<offsets.length;i++)out+=`${String(offsets[i]).padStart(10,'0')} 00000 n \n`;
- out+=`trailer\n<< /Size ${objects.length+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
->>>>>>> 1db34ac (Update booking confirmation WhatsApp PDF sharing)
  return Buffer.from(out,'binary');
 }
 export async function POST(req,{params}){
  try{
   const token=String(req.headers.get('authorization')||'').replace(/^Bearer\s+/i,'');
-<<<<<<< HEAD
   if(!token)return NextResponse.json({ok:false,error:'Authentication required.'},{status:401});
-  const client=db(token);
+  const client=userDb(token);
   const {data:{user},error:authError}=await client.auth.getUser(token);
   if(authError||!user)return NextResponse.json({ok:false,error:'Your session has expired. Please sign in again.'},{status:401});
   const {id}=await params;
@@ -112,21 +74,4 @@ export async function POST(req,{params}){
   const filename=`ANAIRA-Invoice-${String(inv.invoice_number||id).replace(/[^a-zA-Z0-9_-]/g,'-')}.pdf`;
   return new Response(pdf,{status:200,headers:{'content-type':'application/pdf','content-disposition':`inline; filename="${filename}"`,'cache-control':'no-store'}});
  }catch(e){return NextResponse.json({ok:false,error:e?.message||'Invoice generation failed.'},{status:400});}
-=======
-  if(!token)return NextResponse.json({ok:false,error:'Authentication required'},{status:401});
-  const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY||process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if(!url||!key)throw new Error('Public Supabase credentials are not configured');
-  const client=createClient(url,key,{global:{headers:{Authorization:`Bearer ${token}`}},auth:{persistSession:false,autoRefreshToken:false}});
-  const {data:{user},error:authError}=await client.auth.getUser(token);
-  if(authError||!user)return NextResponse.json({ok:false,error:'Session expired'},{status:401});
-  const {id}=await params;
-  const {data,error}=await client.rpc('anaira_issue_hms_reservation_invoice',{p_reservation_id:id});
-  if(error)throw error;
-  if(!data?.ok||!data?.invoice)throw new Error('Invoice was not issued');
-  const inv=data.invoice;
-  const filename=`ANAIRA-Invoice-${String(inv.invoice_number||id).replace(/[^a-zA-Z0-9_-]/g,'-')}.pdf`;
-  return new Response(pdf(inv),{status:200,headers:{'content-type':'application/pdf','content-disposition':`inline; filename="${filename}"`,'cache-control':'no-store'}});
- }catch(e){return NextResponse.json({ok:false,error:e?.message||'Invoice generation failed'},{status:400});}
->>>>>>> 1db34ac (Update booking confirmation WhatsApp PDF sharing)
 }
