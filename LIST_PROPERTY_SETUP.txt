@@ -1,0 +1,26 @@
+ANAIRA List Your Property patch
+================================
+
+Changed files:
+- app/anaira/hotels/page.jsx: adds the property-listing modal and form; existing marketplace/search/booking logic is retained.
+- app/api/public/list-property/route.js: validates requests, inserts into Supabase, and sends a Resend notification.
+- supabase/migrations/20261128170000_anaira_property_listing_inquiries.sql: creates the inquiry table with public INSERT-only RLS.
+- LIST_PROPERTY_SETUP.txt: deployment notes.
+
+Supabase project:
+  bhptqdoteucuymmdzsmg
+  https://bhptqdoteucuymmdzsmg.supabase.co
+
+Email:
+  Recipient is fixed to techanaira@gmail.com.
+  Set RESEND_API_KEY and RESEND_FROM (or SEO_REPORT_FROM) in Vercel.
+  RESEND_FROM must be a sender identity verified in Resend.
+
+IMPORTANT:
+The migration is included in this ZIP but has not been remotely applied. Apply the SQL file in the SQL Editor for Supabase project bhptqdoteucuymmdzsmg before deploying. The source ZIP did not include live Supabase credentials or a deployment session, so no claim is made that the remote database or Vercel deployment has been changed.
+
+Test after deployment:
+1. Open /anaira/hotels and click List your property.
+2. Submit a test property.
+3. Verify a row in public.anaira_property_listing_inquiries.
+4. Verify the notification email at techanaira@gmail.com.

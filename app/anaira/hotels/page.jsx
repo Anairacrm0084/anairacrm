@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useState} from 'react';
 import Link from 'next/link';
-import {MapPin,Hotel,Home,House,CalendarDays,ArrowRight,ShieldCheck,Sparkles,ChevronRight,Star,Search,Compass,BadgeCheck,MapPinned,IndianRupee,CalendarCheck2,Headphones,SlidersHorizontal,LockKeyhole,BedDouble,Building2,CreditCard,FileCheck2,Bell,Heart,Globe2} from 'lucide-react';
+import {MapPin,Hotel,Home,House,CalendarDays,ArrowRight,ShieldCheck,Sparkles,ChevronRight,Star,Search,Compass,BadgeCheck,MapPinned,IndianRupee,CalendarCheck2,Headphones,SlidersHorizontal,LockKeyhole,BedDouble,Building2,CreditCard,FileCheck2,Bell,Heart,Globe2,Facebook,Instagram,Linkedin,Phone} from 'lucide-react';
 import {supabase} from '../../../lib/supabase';
 
 const STAY_TYPES=['hotel','camp','homestay','guest_house','cottage'];
@@ -39,7 +39,9 @@ const defaults={
 
  hotel_home_show_why:false,hotel_home_show_about:false,hotel_home_show_stats:false,hotel_home_show_workflow:false,hotel_home_show_tech:false,
  hotel_home_destination_title:'Top destinations',hotel_home_destination_subtitle:'Explore the places guests are discovering across ANAIRA.',
- hotel_home_footer_text:'ANAIRA Hotels — discover stays, compare live availability and book with confidence.'
+ hotel_home_footer_text:'ANAIRA Hotels — discover stays, compare live availability and book with confidence.',
+ anaira_brand_facebook:'',anaira_brand_instagram:'https://instagram.com/anairagraphics',anaira_brand_linkedin:'',
+ anaira_brand_phone_primary:'9736500084',anaira_brand_phone_secondary:'9736580084'
 };
 
 function datePlus(days){const d=new Date();d.setDate(d.getDate()+days);return d.toISOString().slice(0,10)}
@@ -71,6 +73,50 @@ export default function Hotels(){
  const [settings,setSettings]=useState(defaults),[banners,setBanners]=useState([]),[destinations,setDestinations]=useState([]),[featuredIds,setFeaturedIds]=useState([]),
  [q,setQ]=useState(''),[inDate,setInDate]=useState(''),[outDate,setOutDate]=useState(''),[adults,setAdults]=useState(2),[children,setChildren]=useState(0),
  [rows,setRows]=useState([]),[loading,setLoading]=useState(false),[msg,setMsg]=useState(''),[bannerIndex,setBannerIndex]=useState(0),[stayType,setStayType]=useState('all'),[sortBy,setSortBy]=useState('recommended'),[propertyQuery,setPropertyQuery]=useState(''),[maxPrice,setMaxPrice]=useState(''),[showSavedOnly,setShowSavedOnly]=useState(false),[savedIds,setSavedIds]=useState([]);
+
+ const [showPropertyForm,setShowPropertyForm]=useState(false);
+ const [propertySubmitting,setPropertySubmitting]=useState(false);
+ const [propertySuccess,setPropertySuccess]=useState('');
+ const [propertyError,setPropertyError]=useState('');
+ const [propertyEmailSent,setPropertyEmailSent]=useState(null);
+ const [propertyForm,setPropertyForm]=useState({
+  property_name:'',contact_name:'',email:'',phone:'',property_type:'hotel',
+  address:'',city:'',state:'',units:'',website:'',message:'',website_confirm:''
+ });
+ function updatePropertyField(e){
+  const {name,value}=e.target;
+  setPropertyForm(prev=>({...prev,[name]:value}));
+ }
+ async function submitPropertyForm(e){
+  e.preventDefault();
+  if(propertySubmitting)return;
+  setPropertySubmitting(true);
+  setPropertyError('');
+  setPropertySuccess('');
+  setPropertyEmailSent(null);
+  try{
+   const response=await fetch('/api/public/list-property',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(propertyForm)
+   });
+   const result=await response.json().catch(()=>({}));
+   if(!response.ok)throw new Error(result.error||'Unable to submit your property.');
+   setPropertyEmailSent(Boolean(result.emailSent));
+   setPropertySuccess(result.emailSent
+    ?'Your property details have been submitted successfully. Our team will contact you soon.'
+    :'Your property details have been saved. Email notification is not configured yet; please contact the ANAIRA team.');
+   setPropertyForm({
+    property_name:'',contact_name:'',email:'',phone:'',property_type:'hotel',
+    address:'',city:'',state:'',units:'',website:'',message:'',website_confirm:''
+   });
+  }catch(error){
+   setPropertyError(error.message||'Something went wrong. Please try again.');
+  }finally{
+   setPropertySubmitting(false);
+  }
+ }
+
  const bannerSlides=banners.length?banners.map((_,i)=>[0,1,2].map(offset=>banners[(i+offset)%banners.length])):[];
 
  useEffect(()=>{(async()=>{
@@ -79,8 +125,9 @@ export default function Hotels(){
    const requestedParam=params?.get('stay_type')||'all';
    const requestedType=['all',...STAY_TYPES].includes(requestedParam)?requestedParam:'all';
    setStayType(requestedType);
-   const {data}=await supabase.from('anaira_platform_settings').select('key,value').in('key',Object.keys(defaults));
-   const x={...defaults};(data||[]).forEach(r=>x[r.key]=r.value?.value??r.value);setSettings(x);
+   const {data:platformSettings,error:settingsError}=await supabase.from('anaira_platform_settings').select('key,value').in('key',Object.keys(defaults));
+    if(settingsError)console.error('[ANAIRA hotels] Unable to load public platform settings:',settingsError.message);
+   const x={...defaults};(platformSettings||[]).forEach(r=>x[r.key]=r.value?.value??r.value);setSettings(x);
    if(destinationParam)setQ(destinationParam);
    // Resolve the single published platform-level hotel storefront, not one of the
    // many tenant/property stores. Tenant stores may legitimately be unpublished.
@@ -160,7 +207,7 @@ export default function Hotels(){
  }); const featuredRows=filteredRows.filter(x=>featuredIds.includes(String(x.restaurant_id||x.property_id||x.id)));
 
  return <main className="hotel-market-pro hotel-market-full" style={css}>
-  <header className="anaira-stays-topbar"><Link href="/anaira/hotels" className="anaira-stays-wordmark"><span className="anaira-stays-mark">A</span><span>ANAIRA <small>STAYS & EXPERIENCES</small></span></Link><nav><a href="#hotel-results">Explore stays</a><a href="#destinations">Destinations</a><a href="/anaira/platform">About ANAIRA</a></nav><a className="anaira-host-link" href="/login">List your property <ArrowRight size={14}/></a></header>
+  <header className="anaira-stays-topbar"><Link href="/anaira/hotels" className="anaira-stays-wordmark"><span className="anaira-stays-mark">A</span><span>ANAIRA <small>STAYS & EXPERIENCES</small></span></Link><nav><a href="#hotel-results">Explore stays</a><a href="#destinations">Destinations</a><a href="https://graphics.anairapos.in">About ANAIRA</a></nav><button type="button" className="anaira-host-link" onClick={()=>{setShowPropertyForm(true);setPropertySuccess('');setPropertyError('');setPropertyEmailSent(null);}}>List your property <ArrowRight size={14}/></button></header>
   <section className="hotel-pro-hero">
    {(settings.hotel_home_background_media_type==='video'&&settings.hotel_home_background_video)||settings.hotel_home_background_image||settings.hotel_home_background_mobile_image||settings.hotel_home_background_mobile_video?
     <div className="hotel-pro-hero-background" aria-hidden="true">
@@ -349,7 +396,53 @@ export default function Hotels(){
    <div className="hotel-pro-tech-pills"><span><MapPinned size={16}/> Destination search</span><span><BedDouble size={16}/> Rooms & rates</span><span><Compass size={16}/> Camps & tents</span><span><CalendarCheck2 size={16}/> Live availability</span><span><IndianRupee size={16}/> Smart pricing</span><span><CreditCard size={16}/> Payments</span><span><ShieldCheck size={16}/> Secure booking</span></div>
   </section>}
 
-  {settings.hotel_home_show_footer!==false&&<footer className="hotel-pro-footer"><b>ANAIRA HOTELS</b><span>{settings.hotel_home_footer_text}</span><Link href="/anaira/platform">ANAIRA Platform</Link></footer>}
+  {settings.hotel_home_show_footer!==false&&<footer className="hotel-pro-footer">
+    <div className="hotel-pro-footer-brand">
+     <b>ANAIRA HOTELS</b>
+     <strong>Anaira Graphics &amp; Digital Solution</strong>
+     <small>Hospitality technology &amp; digital solutions · Est. 2013</small>
+     <div className="hotel-pro-brand-phones"><a href={`tel:${String(settings.anaira_brand_phone_primary||'9736500084').replace(/[^+0-9]/g,'')}`}><Phone size={13}/>{settings.anaira_brand_phone_primary||'9736500084'}</a><a href={`tel:${String(settings.anaira_brand_phone_secondary||'9736580084').replace(/[^+0-9]/g,'')}`}><Phone size={13}/>{settings.anaira_brand_phone_secondary||'9736580084'}</a></div>
+    </div>
+    <span>{settings.hotel_home_footer_text}</span>
+    <div className="hotel-pro-footer-socials" aria-label="ANAIRA Graphics social media">{[["Facebook",settings.anaira_brand_facebook,Facebook],["Instagram",settings.anaira_brand_instagram,Instagram],["LinkedIn",settings.anaira_brand_linkedin,Linkedin]].map(([label,url,Icon])=>{const href=String(url||'').trim();return href?<a key={label} href={/^https?:\/\//i.test(href)?href:`https://${href}`} target="_blank" rel="noopener noreferrer" aria-label={label} title={label}><Icon size={19}/><span>{label}</span></a>:null})}</div>
+    <a href="https://graphics.anairapos.in" target="_blank" rel="noopener noreferrer">About ANAIRA <ArrowRight size={13}/></a>
+    <div className="hotel-pro-footer-copyright">© {new Date().getFullYear()} Anaira Graphics &amp; Digital Solution. All rights reserved.</div>
+   </footer>}
+
+
+
+    <style jsx>{`.hotel-pro-brand-phones{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}.hotel-pro-brand-phones a{display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.82);font-size:12px;text-decoration:none}.hotel-pro-brand-phones a:hover{color:#e6c98f}.hotel-pro-footer-socials{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.hotel-pro-footer-socials a{display:inline-flex;align-items:center;gap:7px;padding:9px 12px;border:1px solid rgba(255,255,255,.2);border-radius:999px;color:#f4e5c1;background:rgba(255,255,255,.06);text-decoration:none;font-size:12px}.hotel-pro-footer-socials a:hover{background:rgba(199,161,90,.2);border-color:#c7a15a}.hotel-pro-footer-socials svg{flex:0 0 auto}`}</style>
+
+  {showPropertyForm&&<div className="anaira-property-modal" onMouseDown={e=>{if(e.target===e.currentTarget&&!propertySubmitting)setShowPropertyForm(false);}}>
+   <section className="anaira-property-dialog" role="dialog" aria-modal="true" aria-labelledby="anaira-property-title">
+    <header className="anaira-property-header">
+     <div><span>ANAIRA HOSPITALITY PARTNERS</span><h2 id="anaira-property-title">List Your Property</h2><p>Grow your hospitality business with ANAIRA.</p></div>
+     <button type="button" className="anaira-property-close" onClick={()=>setShowPropertyForm(false)} disabled={propertySubmitting} aria-label="Close form">×</button>
+    </header>
+    {propertySuccess?<div className="anaira-property-success">
+     <ShieldCheck size={45}/><h3>Registration Received!</h3><p>{propertySuccess}</p>
+     <button type="button" onClick={()=>setShowPropertyForm(false)}>Done</button>
+    </div>:<form className="anaira-property-form" onSubmit={submitPropertyForm}>
+     <div className="anaira-property-intro"><Building2 size={20}/><span>Share your property details. Our partnership team will get in touch.</span></div>
+     <div className="anaira-property-fields">
+      <label>Property / Hotel Name *<input name="property_name" value={propertyForm.property_name} onChange={updatePropertyField} placeholder="Enter property name" required maxLength={150}/></label>
+      <label>Owner / Contact Person *<input name="contact_name" value={propertyForm.contact_name} onChange={updatePropertyField} placeholder="Full name" required maxLength={120}/></label>
+      <label>Email Address *<input type="email" name="email" value={propertyForm.email} onChange={updatePropertyField} placeholder="your@email.com" required maxLength={254}/></label>
+      <label>Mobile / WhatsApp Number *<input type="tel" name="phone" value={propertyForm.phone} onChange={updatePropertyField} placeholder="+91 XXXXX XXXXX" required minLength={7} maxLength={20}/></label>
+      <label>Property Type *<select name="property_type" value={propertyForm.property_type} onChange={updatePropertyField} required><option value="hotel">Hotel</option><option value="homestay">Homestay</option><option value="camp">Camp / Camping</option><option value="guest_house">Guest House</option><option value="cottage">Cottage</option></select></label>
+      <label>Number of Rooms / Units *<input type="number" name="units" value={propertyForm.units} onChange={updatePropertyField} placeholder="e.g. 12" min="1" max="10000" step="1" required/></label>
+      <label className="anaira-property-full">Complete Property Address *<textarea name="address" value={propertyForm.address} onChange={updatePropertyField} placeholder="Enter complete property address" required maxLength={1000} rows={2}/></label>
+      <label>City / Destination *<input name="city" value={propertyForm.city} onChange={updatePropertyField} placeholder="e.g. Manali" required maxLength={100}/></label>
+      <label>State *<input name="state" value={propertyForm.state} onChange={updatePropertyField} placeholder="e.g. Himachal Pradesh" required maxLength={100}/></label>
+      <label className="anaira-property-full">Website URL (Optional)<input type="url" name="website" value={propertyForm.website} onChange={updatePropertyField} placeholder="https://yourproperty.com" maxLength={500}/></label>
+      <label className="anaira-property-full">Additional Information<textarea name="message" value={propertyForm.message} onChange={updatePropertyField} placeholder="Tell us about facilities, amenities and requirements..." rows={3} maxLength={3000}/></label>
+      <label className="anaira-property-honeypot" aria-hidden="true">Leave this field empty<input name="website_confirm" value={propertyForm.website_confirm} onChange={updatePropertyField} tabIndex={-1} autoComplete="off"/></label>
+     </div>
+     {propertyError&&<div className="anaira-property-error" role="alert">{propertyError}</div>}
+     <div className="anaira-property-submit"><span><ShieldCheck size={15}/> Your information is submitted securely.</span><button type="submit" disabled={propertySubmitting}>{propertySubmitting?'Submitting...':'Submit Property'}{!propertySubmitting&&<ArrowRight size={16}/>}</button></div>
+    </form>}
+   </section>
+  </div>}
 
 <style jsx>{`
 .hotel-pro-featured{width:min(var(--hotel-width),calc(100vw - 56px));margin:var(--hotel-section-space,38px) auto 44px;position:relative;isolation:isolate}
@@ -539,12 +632,16 @@ export default function Hotels(){
  .hotel-pro-tech{padding:25px 20px;border-radius:16px}
  .hotel-pro-tech-pills{grid-template-columns:1fr}
 }
-.hotel-pro-footer{position:relative;left:50%;width:100vw;max-width:100vw;transform:translateX(-50%);box-sizing:border-box;min-height:76px;margin:48px 0 0;padding:18px clamp(20px,5vw,80px);display:grid;grid-template-columns:minmax(180px,.7fr) minmax(260px,1.5fr) minmax(150px,.6fr);align-items:center;gap:22px;background:linear-gradient(120deg,#0d2d22,#173b2d);border-top:1px solid rgba(199,161,90,.38);color:#fff}
-.hotel-pro-footer>b{font-size:11px;letter-spacing:1.8px;color:#e0bd68}
+.hotel-pro-footer{position:relative;left:50%;width:100vw;max-width:100vw;transform:translateX(-50%);box-sizing:border-box;min-height:76px;margin:48px 0 0;padding:18px clamp(20px,5vw,80px);display:grid;grid-template-columns:minmax(210px,1fr) minmax(220px,1.25fr) minmax(210px,1fr) auto;align-items:center;gap:22px;background:linear-gradient(120deg,#0d2d22,#173b2d);border-top:1px solid rgba(199,161,90,.38);color:#fff}
+.hotel-pro-footer-brand{display:flex;flex-direction:column;gap:4px;min-width:0}
+.hotel-pro-footer-brand>b{font-size:11px;letter-spacing:1.8px;color:#e0bd68}
+.hotel-pro-footer-brand>strong{font-size:12px;line-height:1.35;color:#fff;font-weight:800}
+.hotel-pro-footer-brand>small{font-size:9px;line-height:1.4;color:rgba(255,255,255,.62)}.hotel-pro-brand-phones{display:flex;flex-wrap:wrap;gap:9px;margin-top:8px}.hotel-pro-brand-phones a{display:inline-flex;align-items:center;gap:5px;color:rgba(255,255,255,.8);font-size:10px;text-decoration:none}.hotel-pro-footer-socials{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}.hotel-pro-footer-socials a{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid rgba(255,255,255,.2);border-radius:999px;color:#f4e5c1;background:rgba(255,255,255,.06);text-decoration:none;font-size:10px}.hotel-pro-footer-socials a:hover{background:rgba(199,161,90,.2);border-color:#c7a15a}
 .hotel-pro-footer>span{font-size:10px;line-height:1.5;color:rgba(255,255,255,.72);text-align:center}
-.hotel-pro-footer>a{justify-self:end;color:#e0bd68;text-decoration:none;font-size:10px;font-weight:800}
+.hotel-pro-footer>a{justify-self:end;display:inline-flex;align-items:center;gap:6px;color:#e0bd68;text-decoration:none;font-size:10px;font-weight:800}
 .hotel-pro-footer>a:hover{text-decoration:underline}
-@media(max-width:700px){.hotel-pro-footer{left:auto;width:100%;max-width:none;transform:none;margin:32px 0 0;padding:20px;grid-template-columns:1fr;gap:9px;text-align:center}.hotel-pro-footer>span,.hotel-pro-footer>a{justify-self:center;text-align:center}}
+.hotel-pro-footer-copyright{grid-column:1/-1;padding-top:10px;border-top:1px solid rgba(255,255,255,.13);font-size:9px;line-height:1.4;color:rgba(255,255,255,.52);text-align:center}
+@media(max-width:700px){.hotel-pro-footer{left:auto;width:100%;max-width:none;transform:none;margin:32px 0 0;padding:22px 18px;grid-template-columns:1fr;gap:12px;text-align:center}.hotel-pro-footer-brand{align-items:center}.hotel-pro-footer>span,.hotel-pro-footer>a,.hotel-pro-footer-socials{justify-self:center;text-align:center}.hotel-pro-footer-copyright{grid-column:auto}}
 
  /* MOBILE HERO IMAGE + TEXT VISIBILITY FIX */
  .hotel-pro-hero{position:relative!important;isolation:isolate;overflow:hidden;background:#102d22!important}
@@ -568,6 +665,49 @@ export default function Hotels(){
   .hotel-pro-copy>p{display:block!important;visibility:visible!important;opacity:1!important;color:#fff!important;font-size:14px!important;line-height:1.6!important;margin:0 auto 22px!important}
   .hotel-pro-kicker{color:#f1d48e!important}
  }
+
+
+/* ANAIRA LIST YOUR PROPERTY — isolated additions */
+.anaira-host-link{cursor:pointer;font:inherit}
+button.anaira-host-link{border:0}
+.anaira-property-modal{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(5,22,16,.76);backdrop-filter:blur(8px)}
+.anaira-property-dialog{width:min(760px,100%);max-height:92vh;overflow-y:auto;border:1px solid #d9c18b;border-radius:22px;background:#fffdf8;box-shadow:0 25px 90px rgba(0,0,0,.35)}
+.anaira-property-header{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:flex-start;gap:18px;padding:25px 28px;background:linear-gradient(120deg,#103426,#1c4a36);color:#fff}
+.anaira-property-header span{color:#e2c37c;font-size:9px;font-weight:900;letter-spacing:2px}
+.anaira-property-header h2{margin:8px 0 5px;font:700 32px Georgia,serif}
+.anaira-property-header p{margin:0;color:#d4e0d8;font-size:12px}
+.anaira-property-close{flex:0 0 36px;width:36px;height:36px;border:1px solid #ffffff55;border-radius:50%;background:#ffffff12;color:#fff;font-size:25px;line-height:1;cursor:pointer}
+.anaira-property-form{padding:24px 28px 28px}
+.anaira-property-intro{display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:13px;border:1px solid #eadbb8;border-radius:11px;background:#faf5e8;color:#345344;font-size:11px;line-height:1.5}
+.anaira-property-intro svg{flex-shrink:0;color:#ad873d}
+.anaira-property-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.anaira-property-fields label{display:flex;flex-direction:column;gap:7px;min-width:0;color:#284638;font-size:11px;font-weight:800}
+.anaira-property-fields input,.anaira-property-fields select,.anaira-property-fields textarea{width:100%;min-width:0;box-sizing:border-box;padding:12px 13px;border:1px solid #dedfd5;border-radius:10px;outline:none;background:#fff;color:#20362d;font:500 12px Arial,sans-serif}
+.anaira-property-fields input:focus,.anaira-property-fields select:focus,.anaira-property-fields textarea:focus{border-color:#bd9a52;box-shadow:0 0 0 3px #c7a15a20}
+.anaira-property-full{grid-column:1/-1}
+.anaira-property-fields textarea{resize:vertical}
+.anaira-property-honeypot{position:absolute!important;left:-9999px!important;width:1px!important;height:1px!important;overflow:hidden!important}
+.anaira-property-submit{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:23px;padding-top:18px;border-top:1px solid #e9e3d7}
+.anaira-property-submit>span{display:flex;align-items:center;gap:6px;color:#66766b;font-size:10px}
+.anaira-property-submit>span svg{color:#ad873d}
+.anaira-property-submit button,.anaira-property-success button{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:13px 22px;border:0;border-radius:10px;background:linear-gradient(120deg,#d6b66b,#bd9644);color:#17372b;font-size:12px;font-weight:900;cursor:pointer}
+.anaira-property-submit button:disabled{opacity:.6;cursor:wait}
+.anaira-property-error{margin-top:15px;padding:12px;border:1px solid #efc4c4;border-radius:9px;background:#fff1f1;color:#a32929;font-size:12px}
+.anaira-property-success{padding:55px 25px;text-align:center;color:#17372b}
+.anaira-property-success>svg{color:#b18c42}
+.anaira-property-success h3{font:700 27px Georgia,serif}
+.anaira-property-success p{max-width:450px;margin:0 auto 22px;color:#68766e;font-size:13px;line-height:1.7}
+@media(max-width:600px){
+ .anaira-property-modal{padding:8px}
+ .anaira-property-dialog{max-height:95vh;border-radius:16px}
+ .anaira-property-header{padding:20px}
+ .anaira-property-header h2{font-size:26px}
+ .anaira-property-form{padding:18px}
+ .anaira-property-fields{grid-template-columns:1fr;gap:13px}
+ .anaira-property-full{grid-column:auto}
+ .anaira-property-submit{align-items:stretch;flex-direction:column}
+ .anaira-property-submit button{width:100%}
+}
 
 `}
 </style>
